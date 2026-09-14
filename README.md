@@ -104,9 +104,26 @@ Een stijl toevoegen is één blok in `TEMPLATES.stijlen` plus één knop in
   publieke repo. Staat hij geïnstalleerd op de werklaptop, dan pakt de browser
   hem vanzelf — `LETTERTYPE` noemt hem als eerste keuze. Anders valt hij terug
   op een vergelijkbare letter en wijkt de regelval iets af.
-- **Logo en pictogrammen** ontbreken; in de posts op het account zitten witte
-  ronde icoonbadges en dunne cirkellijnen die hier nog niet gemaakt worden.
+- **Logo** ontbreekt nog.
+- **Iconenset**: drie pictogrammen komen uit de toolkit (wereld, gesprek,
+  megafoon). De rest zijn eenvoudige eigen tekeningen. In de posts op het
+  account staan er meer, zoals het Nederlandkaartje en de brancard.
 - **Controle** door communicatie of de export echt aan de huisstijl voldoet.
+
+### Een pictogram toevoegen
+
+Zet een nieuw item in `ICONEN` in `templates.js`. Twee vormen zijn toegestaan:
+
+- een kant-en-klare data-URI (`data:image/png;base64,…`), of
+- SVG-tekst, waarin `{kleur}` wordt vervangen door de huisstijlkleur.
+
+> **Let op bij SVG:** zet altijd `width` én `height` op het `<svg>`-element, niet
+> alleen een `viewBox`. Chrome vult een ontbrekende maat aan, maar Edge en
+> Firefox tekenen zo'n SVG helemaal niet in een canvas — de badge blijft dan
+> leeg. Hier is precies dat misgegaan.
+
+De keuzelijsten in het scherm vullen zich vanzelf; er hoeft geen code aangepast
+te worden.
 
 ## Publiceren
 
