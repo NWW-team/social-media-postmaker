@@ -31,9 +31,76 @@ const LETTERTYPE =
   '"RijksSansVF", "Rijksoverheid Sans", "Segoe UI", system-ui, ' +
   '-apple-system, "Helvetica Neue", Arial, sans-serif';
 
+/*
+ * Decoratie: de dunne witte cirkellijnen met icoonbadges die over de foto lopen.
+ * Maten en onderlinge plaatsing komen uit de toolkitpagina "Mededeling/event":
+ * drie ringen van 56,23% van de breedte met een witte lijn van 3 px, en twee
+ * witte badges van 15,96% en 12,42%. De posities zijn hier gerekend vanaf de
+ * LINKERONDERHOEK van de foto, in eenheden van de fotobreedte.
+ */
+const DECORATIE = {
+  aan: true,
+  lijndikte: 0.00208,
+  lijnkleur: 'rgba(255,255,255,0.9)',
+  badgeKleur: '#FFFFFF',
+  icoonKleur: HUISSTIJL.blauw,
+  icoonDeel: 0.65,          // deel van de badgediameter
+  ringen: [
+    { x: 0.1399, y: -0.1379, d: 0.5623 },
+    { x: 0.5428, y: -0.0240, d: 0.5623 },
+    { x: -0.0748, y: -0.3073, d: 0.5623 },
+  ],
+  badges: [
+    { x: 0.1850, y: -0.4017, d: 0.1596 },
+    { x: 0.3942, y: -0.2563, d: 0.1242 },
+  ],
+};
+
+/*
+ * Eenvoudige eigen pictogrammen, bedoeld als plaatshouder. Vervang ze door de
+ * officiele iconenset: zet de SVG-inhoud hieronder neer en gebruik {kleur} waar
+ * de huisstijlkleur moet komen. Een viewBox van 0 0 100 100 houdt het simpel.
+ */
+const ICONEN = {
+  wereld: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <g fill="none" stroke="{kleur}" stroke-width="7">
+      <circle cx="50" cy="50" r="35"/>
+      <ellipse cx="50" cy="50" rx="16" ry="35"/>
+      <path d="M17 38h66M17 62h66"/>
+    </g></svg>`,
+
+  gezondheid: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <path fill="{kleur}" d="M42 16h16v26h26v16H58v26H42V58H16V42h26z"/></svg>`,
+
+  document: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <g fill="none" stroke="{kleur}" stroke-width="7" stroke-linejoin="round">
+      <path d="M26 14h30l18 18v54H26z"/>
+      <path d="M56 14v18h18"/>
+      <path d="M38 52h24M38 66h24"/>
+    </g></svg>`,
+
+  locatie: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <path fill="{kleur}" d="M50 12c-14 0-25 11-25 25 0 18 25 51 25 51s25-33 25-51c0-14-11-25-25-25zm0 34a9 9 0 1 1 0-18 9 9 0 0 1 0 18z"/></svg>`,
+
+  koffer: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <g fill="none" stroke="{kleur}" stroke-width="7" stroke-linejoin="round">
+      <rect x="16" y="34" width="68" height="50" rx="6"/>
+      <path d="M38 34V24h24v10M50 34v50"/>
+    </g></svg>`,
+
+  paspoort: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <g fill="none" stroke="{kleur}" stroke-width="7" stroke-linejoin="round">
+      <rect x="24" y="14" width="52" height="72" rx="6"/>
+      <circle cx="50" cy="42" r="11"/>
+      <path d="M38 68h24"/>
+    </g></svg>`,
+};
+
 const TEMPLATES = {
   lettertype: LETTERTYPE,
   papier: HUISSTIJL.wit,
+  decoratie: DECORATIE,
+  iconen: ICONEN,
   kleuren: HUISSTIJL,
 
   /* Exportmaten per platform. Instagram schaalt alles boven 1080 px breed zelf
