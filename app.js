@@ -6,6 +6,10 @@
  *
  * De opmaak zelf staat in templates.js, niet hier. Dit bestand tekent alleen
  * wat daar beschreven staat.
+ *
+ * De toolkit schrijft voor: hou je aan de korpsgrootte en aan het maximum
+ * aantal regels per tekstvak. Daarom verkleint de tekst hier niet stiekem —
+ * hij wordt afgekapt en je krijgt een waarschuwing te zien.
  */
 
 'use strict';
@@ -13,7 +17,7 @@
 const state = {
   platform: 'instagram',
   format: 'staand',
-  stijl: 'blauwOnder',
+  stijl: 'fotoBovenVlak',
   foto: null,                     // HTMLImageElement
   fotonaam: '',
   zoom: 1,                        // 1 = precies vullend
@@ -23,24 +27,41 @@ const state = {
 };
 
 const el = {};
+let laatsteWaarschuwingen = [];
 
 /* ---------------------------------------------------------------- opstarten */
 
 document.addEventListener('DOMContentLoaded', () => {
   [
     'canvas', 'dropzone', 'bestandsknop', 'bestandsinvoer', 'voorbeeldknop',
-    'kop', 'sub', 'teller', 'zoom', 'zoomrij', 'resetknop', 'downloadknop',
-    'maatlabel', 'melding', 'fotonaam',
+    'kop', 'sub', 'kopregels', 'subregels', 'zoom', 'zoomrij', 'resetknop',
+    'downloadknop', 'maatlabel', 'stijlbron', 'melding', 'fotonaam', 'formaatnoot',
   ].forEach((id) => { el[id] = document.getElementById(id); });
 
   el.ctx = el.canvas.getContext('2d');
 
+  bouwStijlknoppen();
   koppelKnoppen();
   koppelFotoInvoer();
   koppelSlepen();
   werkbijUI();
   teken();
 });
+
+/* De stijlknoppen komen uit templates.js, zodat een stijl toevoegen daar
+   genoeg is. */
+function bouwStijlknoppen() {
+  const rij = document.getElementById('stijlknoppen');
+  Object.keys(TEMPLATES.stijlen).forEach((naam) => {
+    const knop = document.createElement('button');
+    knop.type = 'button';
+    knop.className = 'keuze breed';
+    knop.dataset.stijl = naam;
+    knop.textContent = TEMPLATES.stijlen[naam].label;
+    knop.setAttribute('aria-pressed', 'false');
+    rij.appendChild(knop);
+  });
+}
 
 /* ------------------------------------------------------------------- invoer */
 
@@ -55,10 +76,9 @@ function koppelKnoppen() {
     });
   });
 
-  [['kop', 'kop'], ['sub', 'sub']].forEach(([id, sleutel]) => {
-    el[id].addEventListener('input', () => {
-      state[sleutel] = el[id].value;
-      werkbijUI();
+  ['kop', 'sub'].forEach((sleutel) => {
+    el[sleutel].addEventListener('input', () => {
+      state[sleutel] = el[sleutel].value;
       teken();
     });
   });
@@ -152,7 +172,6 @@ function zetFoto(img, naam) {
   state.zoom = 1;
   state.brandpunt = { x: 0.5, y: 0.5 };
   el.zoom.value = '1';
-  toonMelding('', '');
   werkbijUI();
   teken();
 }
@@ -240,8 +259,7 @@ function koppelSlepen() {
    foto dat in het midden van het kader staat; slepen verplaatst dat punt. */
 function verschuif(dx, dy) {
   const [breed, hoog] = huidigeMaat();
-  const vlakken = indeling(breed, hoog);
-  const m = fotoMeting(vlakken.foto);
+  const m = fotoMeting(indeling(breed, hoog).foto);
   state.brandpunt.x -= dx / m.tekenBreed;
   state.brandpunt.y -= dy / m.tekenHoog;
   teken();
@@ -254,111 +272,85 @@ function huidigeMaat() {
 }
 
 /*
- * Waar foto en tekstvlak komen te staan. Het tekstvlak groeit mee met de
- * hoeveelheid tekst, zoals in de bestaande posts: twee regels geeft een lager
- * vlak dan vier. De foto krijgt wat overblijft.
+ * Waar foto en tekstvlak staan. De hoogte van het tekstvlak ligt vast in de
+ * toolkit en is uitgedrukt in de breedte, zodat het vlak bij vierkant even
+ * hoog blijft en de foto de ruimte inlevert.
  */
 function indeling(breed, hoog) {
   const str = TEMPLATES.stramien;
   const stijl = TEMPLATES.stijlen[state.stijl];
 
   const marge = breed * str.marge;
-  const binnen = {
-    x: marge,
-    y: marge,
-    b: breed - 2 * marge,
-    h: hoog - 2 * marge,
-  };
+  const kaart = { x: marge, y: marge, b: breed - 2 * marge, h: hoog - 2 * marge };
 
-  const tekstBreedte = binnen.b - 2 * breed * str.paddingZij;
-  const tekst = tekstMeting(breed, binnen.h * str.maxTekstvlak, tekstBreedte);
+  const tekst = tekstMeting(breed, kaart.b - 2 * breed * str.paddingZij);
 
-  const vlakH = tekst.hoogte;
-  const fotoH = binnen.h - vlakH;
+  // De toolkithoogte is het plafond; met vlakKrimpt volgt het vlak de tekst,
+  // zoals in de posts op het account.
+  const plafond = Math.min(stijl.vlakHoogte * breed, kaart.h);
+  let vlakH = str.vlakKrimpt
+    ? Math.min(plafond, tekstHoogte(breed, stijl, tekst))
+    : Math.max(plafond, tekstHoogte(breed, stijl, tekst));
+  if (stijl.positie === 'opFoto') vlakH = 0;
+  vlakH = klem(vlakH, 0, kaart.h);
 
-  const foto = { x: binnen.x, y: binnen.y, b: binnen.b, h: fotoH };
-  const vlak = { x: binnen.x, y: binnen.y, b: binnen.b, h: vlakH };
+  const foto = { x: kaart.x, y: kaart.y, b: kaart.b, h: kaart.h - vlakH };
+  const vlak = { x: kaart.x, y: kaart.y, b: kaart.b, h: vlakH };
 
-  if (stijl.positie === 'onder') {
-    vlak.y = binnen.y + fotoH;
+  if (stijl.positie === 'opFoto') {
+    vlak.h = kaart.h;          // alleen om de tekst in te plaatsen
+  } else if (stijl.positie === 'onder') {
+    vlak.y = kaart.y + foto.h;
   } else {
-    foto.y = binnen.y + vlakH;
+    foto.y = kaart.y + vlakH;
   }
 
-  return { foto, vlak, tekst, stijl, tekstBreedte };
+  // Precies één afgeronde hoek, rechtsonder, op de vorm die daar ligt.
+  const onderste = (stijl.positie === 'onder' && vlakH > 0) ? 'vlak' : 'foto';
+
+  return { kaart, foto, vlak, stijl, onderste, tekst };
+}
+
+/* Hoeveel hoogte de tekst nodig heeft, inclusief de padding van het vlak. */
+function tekstHoogte(breed, stijl, tekst) {
+  const rh = TEMPLATES.regelhoogte;
+  const kopH = tekst.kop.regels.length * tekst.kop.grootte * rh.kop;
+  const subH = tekst.sub.regels.length * tekst.sub.grootte * rh.sub;
+  if (!kopH && !subH) return 0;
+  const tussen = (kopH && subH) ? breed * TEMPLATES.stramien.tussenKopEnSub : 0;
+  return breed * (stijl.paddingBoven + stijl.paddingOnder) + kopH + tussen + subH;
 }
 
 /*
- * Hoe groot de tekst wordt en hoeveel regels dat oplevert. Past het niet binnen
- * de ruimte die het tekstvlak mag innemen, dan verkleinen we stapsgewijs; helpt
- * dat niet genoeg, dan korten we regels af. Liever een afgekapte titel dan een
- * post waarin de tekst over de foto heen loopt.
+ * Regels afbreken op de vaste korpsgrootte uit de toolkit. Past het niet
+ * binnen het toegestane aantal regels, dan kappen we af en melden we het.
+ * Verkleinen doen we niet: de toolkit schrijft de korpsgrootte voor.
  */
-function tekstMeting(breed, maxHoogte, tekstBreedte) {
+function tekstMeting(breed, tekstBreedte) {
   const ctx = el.ctx;
-  const typo = TEMPLATES.typografie;
+  const stijl = TEMPLATES.stijlen[state.stijl];
+  const waarschuwingen = [];
 
-  const kopTekst = state.kop.trim();
-  const subTekst = state.sub.trim();
-  if (!kopTekst && !subTekst) {
-    return { hoogte: 0, kopRegels: [], subRegels: [], kopSize: 0, subSize: 0 };
-  }
-
-  let meting;
-  for (let schaal = 1; ; schaal -= 0.02) {
-    const kopSize = breed * typo.kop.grootte * schaal;
-    const subSize = breed * typo.sub.grootte * schaal;
-
-    ctx.font = fontRegel(typo.kop.gewicht, kopSize);
-    const kopRegels = kopTekst ? breekAf(ctx, kopTekst, tekstBreedte) : [];
-    ctx.font = fontRegel(typo.sub.gewicht, subSize);
-    const subRegels = subTekst ? breekAf(ctx, subTekst, tekstBreedte) : [];
-
-    meting = { kopSize, subSize, kopRegels, subRegels };
-    meting.hoogte = blokHoogte(breed, meting);
-
-    if (meting.hoogte <= maxHoogte || schaal <= typo.minSchaal) break;
-  }
-
-  // Nog te hoog: regels weglaten, laatste met een beletselteken.
-  while (meting.hoogte > maxHoogte &&
-         meting.kopRegels.length + meting.subRegels.length > 1) {
-    if (meting.subRegels.length > 0) {
-      meting.subRegels.pop();
-      if (meting.subRegels.length) {
-        ctx.font = fontRegel(TEMPLATES.typografie.sub.gewicht, meting.subSize);
-        meting.subRegels[meting.subRegels.length - 1] =
-          kortAf(ctx, meting.subRegels[meting.subRegels.length - 1], tekstBreedte);
-      }
-    } else {
-      meting.kopRegels.pop();
-      ctx.font = fontRegel(TEMPLATES.typografie.kop.gewicht, meting.kopSize);
-      meting.kopRegels[meting.kopRegels.length - 1] =
-        kortAf(ctx, meting.kopRegels[meting.kopRegels.length - 1], tekstBreedte);
+  function veld(tekst, spec, naam) {
+    const grootte = breed * spec.grootte;
+    if (!tekst.trim()) return { regels: [], grootte };
+    ctx.font = spec.gewicht + ' ' + grootte.toFixed(1) + 'px ' + TEMPLATES.lettertype;
+    let regels = breekAf(ctx, tekst.trim(), tekstBreedte);
+    if (regels.length > spec.maxRegels) {
+      waarschuwingen.push(
+        naam + ' is te lang: ' + regels.length + ' regels, maximaal ' +
+        spec.maxRegels + ' volgens de toolkit.');
+      regels = regels.slice(0, spec.maxRegels);
+      regels[regels.length - 1] = kortAf(ctx, regels[regels.length - 1], tekstBreedte);
     }
-    meting.hoogte = blokHoogte(breed, meting);
+    return { regels, grootte };
   }
 
-  return meting;
-}
+  const kop = veld(state.kop, stijl.kop, 'De kop');
+  const sub = veld(state.sub, stijl.sub, 'De subkop');
 
-function blokHoogte(breed, m) {
-  const str = TEMPLATES.stramien;
-  const typo = TEMPLATES.typografie;
-  let h = 0;
-  if (m.kopRegels.length) {
-    h += m.kopRegels.length * m.kopSize * typo.kop.regelhoogte;
-  }
-  if (m.subRegels.length) {
-    if (m.kopRegels.length) h += breed * str.tussenKopEnSub;
-    h += m.subRegels.length * m.subSize * typo.sub.regelhoogte;
-  }
-  if (h > 0) h += breed * (str.paddingBoven + str.paddingOnder);
-  return h;
-}
-
-function fontRegel(gewicht, grootte) {
-  return gewicht + ' ' + grootte.toFixed(1) + 'px ' + TEMPLATES.lettertype;
+  laatsteWaarschuwingen = waarschuwingen;
+  return { kop, sub, tekstBreedte };
 }
 
 function kortAf(ctx, regel, maxBreedte) {
@@ -397,10 +389,10 @@ function fotoMeting(vlak) {
   const tekenHoog = state.foto.naturalHeight * schaal;
 
   // Buiten [marge, 1 - marge] zou de foto het vlak loslaten.
-  const margeX = vlak.b / (2 * tekenBreed);
-  const margeY = vlak.h / (2 * tekenHoog);
-  state.brandpunt.x = klem(state.brandpunt.x, margeX, 1 - margeX);
-  state.brandpunt.y = klem(state.brandpunt.y, margeY, 1 - margeY);
+  state.brandpunt.x = klem(state.brandpunt.x,
+                           vlak.b / (2 * tekenBreed), 1 - vlak.b / (2 * tekenBreed));
+  state.brandpunt.y = klem(state.brandpunt.y,
+                           vlak.h / (2 * tekenHoog), 1 - vlak.h / (2 * tekenHoog));
 
   return {
     tekenBreed,
@@ -423,144 +415,98 @@ function teken() {
   }
 
   const ctx = el.ctx;
-  const vlakken = indeling(breed, hoog);
-  const stijl = vlakken.stijl;
+  const indel = indeling(breed, hoog);
 
   ctx.clearRect(0, 0, breed, hoog);
   ctx.fillStyle = TEMPLATES.papier;
   ctx.fillRect(0, 0, breed, hoog);
 
-  tekenFoto(ctx, breed, vlakken.foto, stijl);
-  tekenTekstvlak(ctx, breed, vlakken.vlak, stijl);
-  tekenTekst(ctx, breed, vlakken);
+  tekenFoto(ctx, breed, indel);
+  tekenVlak(ctx, breed, indel);
+  tekenTekst(ctx, breed, indel);
+
+  toonWaarschuwingen();
 }
 
-function tekenFoto(ctx, breed, vlak, stijl) {
+function tekenFoto(ctx, breed, indel) {
+  const vlak = indel.foto;
   if (vlak.h <= 0) return;
 
   ctx.save();
-  pad(ctx, vlak, hoeken(breed, stijl.fotoHoeken));
+  pad(ctx, vlak, indel.onderste === 'foto' ? straal(vlak) : 0);
   ctx.clip();
 
   if (state.foto) {
     const m = fotoMeting(vlak);
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(state.foto, m.x, m.y, m.tekenBreed, m.tekenHoog);
-    tekenDecoratie(ctx, breed, vlak, stijl);
   } else {
-    ctx.fillStyle = '#e9edf2';
+    ctx.fillStyle = '#e6eef4';
     ctx.fillRect(vlak.x, vlak.y, vlak.b, vlak.h);
-    ctx.fillStyle = '#9aa7b4';
+    ctx.fillStyle = '#7f96a8';
     ctx.textAlign = 'center';
-    ctx.font = fontRegel(600, breed * 0.033);
-    ctx.fillText('Nog geen foto gekozen',
-                 vlak.x + vlak.b / 2, vlak.y + vlak.h / 2);
+    ctx.font = '600 ' + (breed * 0.03).toFixed(1) + 'px ' + TEMPLATES.lettertype;
+    ctx.fillText('Nog geen foto gekozen', vlak.x + vlak.b / 2, vlak.y + vlak.h / 2);
     ctx.textAlign = 'left';
   }
 
   ctx.restore();
 }
 
-/* De dunne witte cirkellijnen die in de bestaande posts over de foto lopen. */
-function tekenDecoratie(ctx, breed, vlak, stijl) {
-  const deco = TEMPLATES.decoratie;
-  if (!deco.aan) return;
-
+function tekenVlak(ctx, breed, indel) {
+  const { vlak, stijl } = indel;
+  if (stijl.positie === 'opFoto' || vlak.h <= 0) return;
   ctx.save();
-  ctx.strokeStyle = deco.kleur;
-  ctx.lineWidth = breed * deco.lijndikte;
-  deco.cirkels.forEach((cirkel) => {
-    const [cx, cy] = decoratiePunt(vlak, stijl.decoratieHoek, cirkel.x, cirkel.y);
-    ctx.beginPath();
-    ctx.arc(cx, cy, cirkel.r * vlak.b, 0, Math.PI * 2);
-    ctx.stroke();
-  });
-  ctx.restore();
-}
-
-function decoratiePunt(vlak, hoek, dx, dy) {
-  const x = dx * vlak.b;
-  const y = dy * vlak.b;
-  switch (hoek) {
-    case 'linksboven': return [vlak.x + x, vlak.y + y];
-    case 'rechtsboven': return [vlak.x + vlak.b - x, vlak.y + y];
-    case 'linksonder': return [vlak.x + x, vlak.y + vlak.h - y];
-    default: return [vlak.x + vlak.b - x, vlak.y + vlak.h - y];
-  }
-}
-
-function tekenTekstvlak(ctx, breed, vlak, stijl) {
-  if (vlak.h <= 0) return;
-  ctx.save();
-  pad(ctx, vlak, hoeken(breed, stijl.vlakHoeken));
+  pad(ctx, vlak, indel.onderste === 'vlak' ? straal(vlak) : 0);
   ctx.fillStyle = stijl.vlakKleur;
   ctx.fill();
   ctx.restore();
 }
 
-function tekenTekst(ctx, breed, vlakken) {
-  const { vlak, tekst, stijl } = vlakken;
-  if (!tekst.hoogte) return;
-
+function tekenTekst(ctx, breed, indel) {
+  const { vlak, stijl, tekst } = indel;
   const str = TEMPLATES.stramien;
-  const typo = TEMPLATES.typografie;
 
   const x = vlak.x + breed * str.paddingZij;
-  let y = vlak.y + breed * str.paddingBoven;
+  let y = vlak.y + breed * stijl.paddingBoven;
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
 
-  ctx.fillStyle = stijl.kopKleur;
-  ctx.font = fontRegel(typo.kop.gewicht, tekst.kopSize);
-  tekst.kopRegels.forEach((regel) => {
-    const regelhoogte = tekst.kopSize * typo.kop.regelhoogte;
-    ctx.fillText(regel, x, y + tekst.kopSize * 0.82);
-    y += regelhoogte;
-  });
-
-  if (tekst.subRegels.length) {
-    if (tekst.kopRegels.length) y += breed * str.tussenKopEnSub;
-    ctx.fillStyle = stijl.subKleur;
-    ctx.font = fontRegel(typo.sub.gewicht, tekst.subSize);
-    tekst.subRegels.forEach((regel) => {
-      const regelhoogte = tekst.subSize * typo.sub.regelhoogte;
-      ctx.fillText(regel, x, y + tekst.subSize * 0.82);
-      y += regelhoogte;
-    });
+  y = tekenRegels(ctx, tekst.kop, stijl.kop, TEMPLATES.regelhoogte.kop, x, y);
+  if (tekst.sub.regels.length) {
+    if (tekst.kop.regels.length) y += breed * str.tussenKopEnSub;
+    tekenRegels(ctx, tekst.sub, stijl.sub, TEMPLATES.regelhoogte.sub, x, y);
   }
 }
 
-/* Een rechthoek met per hoek een eigen afronding. Hoeken: lb linksboven,
-   rb rechtsboven, ro rechtsonder, lo linksonder. */
-function hoeken(breed, spec) {
-  const str = TEMPLATES.stramien;
-  const maat = { groot: breed * str.hoekGroot, klein: breed * str.hoekKlein, recht: 0 };
-  return {
-    lb: maat[spec.lb] || 0,
-    rb: maat[spec.rb] || 0,
-    ro: maat[spec.ro] || 0,
-    lo: maat[spec.lo] || 0,
-  };
+function tekenRegels(ctx, veld, spec, regelhoogte, x, y) {
+  if (!veld.regels.length) return y;
+  ctx.fillStyle = spec.kleur;
+  ctx.font = spec.gewicht + ' ' + veld.grootte.toFixed(1) + 'px ' + TEMPLATES.lettertype;
+  veld.regels.forEach((regel) => {
+    ctx.fillText(regel, x, y + veld.grootte * 0.82);
+    y += veld.grootte * regelhoogte;
+  });
+  return y;
 }
 
-function pad(ctx, v, r) {
-  const max = Math.min(v.b, v.h) / 2;
-  const lb = Math.min(r.lb, max);
-  const rb = Math.min(r.rb, max);
-  const ro = Math.min(r.ro, max);
-  const lo = Math.min(r.lo, max);
+/* round1Rect uit de toolkit: de straal is 9,492% van de kortste zijde. */
+function straal(vlak) {
+  return TEMPLATES.stramien.hoekFactor * Math.min(vlak.b, vlak.h);
+}
 
+/* Rechthoek met precies één afgeronde hoek: rechtsonder. */
+function pad(ctx, v, r) {
+  const ro = Math.min(r, Math.min(v.b, v.h));
   ctx.beginPath();
-  ctx.moveTo(v.x + lb, v.y);
-  ctx.lineTo(v.x + v.b - rb, v.y);
-  ctx.quadraticCurveTo(v.x + v.b, v.y, v.x + v.b, v.y + rb);
+  ctx.moveTo(v.x, v.y);
+  ctx.lineTo(v.x + v.b, v.y);
   ctx.lineTo(v.x + v.b, v.y + v.h - ro);
-  ctx.quadraticCurveTo(v.x + v.b, v.y + v.h, v.x + v.b - ro, v.y + v.h);
-  ctx.lineTo(v.x + lo, v.y + v.h);
-  ctx.quadraticCurveTo(v.x, v.y + v.h, v.x, v.y + v.h - lo);
-  ctx.lineTo(v.x, v.y + lb);
-  ctx.quadraticCurveTo(v.x, v.y, v.x + lb, v.y);
+  if (ro > 0) {
+    ctx.quadraticCurveTo(v.x + v.b, v.y + v.h, v.x + v.b - ro, v.y + v.h);
+  }
+  ctx.lineTo(v.x, v.y + v.h);
   ctx.closePath();
 }
 
@@ -602,16 +548,30 @@ function werkbijUI() {
   });
 
   const [breed, hoog] = huidigeMaat();
-  el.maatlabel.textContent = breed + ' × ' + hoog + ' px · ' +
-    TEMPLATES.formats[state.format].verhoudingLabel;
+  const formaat = TEMPLATES.formats[state.format];
+  el.maatlabel.textContent = breed + ' × ' + hoog + ' px · ' + formaat.verhoudingLabel;
+  el.formaatnoot.hidden = formaat.uitToolkit;
 
-  el.teller.textContent =
-    state.kop.trim().length + ' + ' + state.sub.trim().length + ' tekens';
+  const stijl = TEMPLATES.stijlen[state.stijl];
+  el.stijlbron.textContent = 'Toolkit-pagina: ' + stijl.bron;
+  el.kopregels.textContent = 'maximaal ' + stijl.kop.maxRegels + ' regels';
+  el.subregels.textContent = 'maximaal ' + stijl.sub.maxRegels +
+    (stijl.sub.maxRegels === 1 ? ' regel' : ' regels');
 
   el.fotonaam.textContent = state.fotonaam || '';
   el.dropzone.classList.toggle('gevuld', Boolean(state.foto));
   el.zoomrij.hidden = !state.foto;
   el.downloadknop.disabled = !state.foto;
+}
+
+/* Waarschuwingen over te lange tekst mogen een gekozen foto of een geslaagde
+   download niet overschrijven, maar moeten wel meteen zichtbaar zijn. */
+function toonWaarschuwingen() {
+  if (laatsteWaarschuwingen.length) {
+    toonMelding(laatsteWaarschuwingen.join(' '), 'let');
+  } else if (el.melding.classList.contains('let')) {
+    toonMelding('', '');
+  }
 }
 
 function toonMelding(tekst, soort) {
