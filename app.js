@@ -25,7 +25,7 @@ const state = {
   kop: '',
   sub: '',
   decoratie: true,
-  iconen: ['wereld', 'gezondheid'],
+  iconen: ['Wereld (toolkit)', 'Gesprek (toolkit)'],
 };
 
 const el = {};
@@ -78,10 +78,13 @@ function bouwStijlknoppen() {
 function laadIconen() {
   const kleur = TEMPLATES.decoratie.icoonKleur;
   Object.keys(TEMPLATES.iconen).forEach((naam) => {
-    const svg = TEMPLATES.iconen[naam].replace(/\{kleur\}/g, kleur).trim();
+    const bron = TEMPLATES.iconen[naam].trim();
     const img = new Image();
     img.onload = () => teken();          // opnieuw tekenen zodra hij binnen is
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    img.src = bron.startsWith('data:')
+      ? bron
+      : 'data:image/svg+xml;charset=utf-8,' +
+        encodeURIComponent(bron.replace(/\{kleur\}/g, kleur));
     icoonCache[naam] = img;
   });
 }
@@ -91,7 +94,7 @@ function bouwIcoonkeuze() {
     Object.keys(TEMPLATES.iconen).forEach((naam) => {
       const optie = document.createElement('option');
       optie.value = naam;
-      optie.textContent = naam.charAt(0).toUpperCase() + naam.slice(1);
+      optie.textContent = naam;
       keuzelijst.appendChild(optie);
     });
     keuzelijst.value = state.iconen[i];
