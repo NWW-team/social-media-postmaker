@@ -24,9 +24,12 @@ const state = {
   brandpunt: { x: 0.5, y: 0.5 },  // welk punt van de foto in het midden staat
   kop: '',
   sub: '',
+  decoratie: true,
+  iconen: ['wereld', 'gezondheid'],
 };
 
 const el = {};
+const icoonCache = {};
 let laatsteWaarschuwingen = [];
 
 /* ---------------------------------------------------------------- opstarten */
@@ -36,11 +39,14 @@ document.addEventListener('DOMContentLoaded', () => {
     'canvas', 'dropzone', 'bestandsknop', 'bestandsinvoer', 'voorbeeldknop',
     'kop', 'sub', 'kopregels', 'subregels', 'zoom', 'zoomrij', 'resetknop',
     'downloadknop', 'maatlabel', 'stijlbron', 'melding', 'fotonaam', 'formaatnoot',
+    'decoratieAan', 'icoon0', 'icoon1', 'icoonrij',
   ].forEach((id) => { el[id] = document.getElementById(id); });
 
   el.ctx = el.canvas.getContext('2d');
 
+  laadIconen();
   bouwStijlknoppen();
+  bouwIcoonkeuze();
   koppelKnoppen();
   koppelFotoInvoer();
   koppelSlepen();
@@ -60,6 +66,46 @@ function bouwStijlknoppen() {
     knop.textContent = TEMPLATES.stijlen[naam].label;
     knop.setAttribute('aria-pressed', 'false');
     rij.appendChild(knop);
+  });
+}
+
+/*
+ * Iconen staan als SVG-tekst in templates.js en worden hier omgezet naar een
+ * data-URI. Geen los bestand dus: dat houdt de pagina werkend als je index.html
+ * lokaal dubbelklikt, waar de browser het laden van losse bestanden in een
+ * canvas blokkeert.
+ */
+function laadIconen() {
+  const kleur = TEMPLATES.decoratie.icoonKleur;
+  Object.keys(TEMPLATES.iconen).forEach((naam) => {
+    const svg = TEMPLATES.iconen[naam].replace(/\{kleur\}/g, kleur).trim();
+    const img = new Image();
+    img.onload = () => teken();          // opnieuw tekenen zodra hij binnen is
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    icoonCache[naam] = img;
+  });
+}
+
+function bouwIcoonkeuze() {
+  [el.icoon0, el.icoon1].forEach((keuzelijst, i) => {
+    Object.keys(TEMPLATES.iconen).forEach((naam) => {
+      const optie = document.createElement('option');
+      optie.value = naam;
+      optie.textContent = naam.charAt(0).toUpperCase() + naam.slice(1);
+      keuzelijst.appendChild(optie);
+    });
+    keuzelijst.value = state.iconen[i];
+    keuzelijst.addEventListener('change', () => {
+      state.iconen[i] = keuzelijst.value;
+      teken();
+    });
+  });
+
+  el.decoratieAan.checked = state.decoratie;
+  el.decoratieAan.addEventListener('change', () => {
+    state.decoratie = el.decoratieAan.checked;
+    el.icoonrij.hidden = !state.decoratie;
+    teken();
   });
 }
 
@@ -440,6 +486,7 @@ function tekenFoto(ctx, breed, indel) {
     const m = fotoMeting(vlak);
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(state.foto, m.x, m.y, m.tekenBreed, m.tekenHoog);
+    tekenDecoratie(ctx, vlak);
   } else {
     ctx.fillStyle = '#e6eef4';
     ctx.fillRect(vlak.x, vlak.y, vlak.b, vlak.h);
@@ -449,6 +496,52 @@ function tekenFoto(ctx, breed, indel) {
     ctx.fillText('Nog geen foto gekozen', vlak.x + vlak.b / 2, vlak.y + vlak.h / 2);
     ctx.textAlign = 'left';
   }
+
+  ctx.restore();
+}
+
+/*
+ * De witte ringen met icoonbadges. Alles is gerekend vanaf de linkeronderhoek
+ * van de foto, in eenheden van de fotobreedte, zodat de decoratie bij elk
+ * formaat en elke stijl dezelfde verhouding houdt. Het staat binnen de clip van
+ * de foto, dus het loopt nooit over het tekstvlak heen.
+ */
+function tekenDecoratie(ctx, foto) {
+  const d = TEMPLATES.decoratie;
+  if (!d.aan || !state.decoratie) return;
+
+  const eenheid = foto.b;
+  const ox = foto.x;
+  const oy = foto.y + foto.h;
+  const cirkel = (cx, cy, straal) => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, straal, 0, Math.PI * 2);
+  };
+
+  ctx.save();
+
+  ctx.strokeStyle = d.lijnkleur;
+  ctx.lineWidth = eenheid * d.lijndikte;
+  d.ringen.forEach((ring) => {
+    cirkel(ox + ring.x * eenheid, oy + ring.y * eenheid, ring.d / 2 * eenheid);
+    ctx.stroke();
+  });
+
+  d.badges.forEach((badge, i) => {
+    const cx = ox + badge.x * eenheid;
+    const cy = oy + badge.y * eenheid;
+    const straal = badge.d / 2 * eenheid;
+
+    cirkel(cx, cy, straal);
+    ctx.fillStyle = d.badgeKleur;
+    ctx.fill();
+
+    const icoon = icoonCache[state.iconen[i]];
+    if (icoon && icoon.complete && icoon.naturalWidth) {
+      const maat = straal * 2 * d.icoonDeel;
+      ctx.drawImage(icoon, cx - maat / 2, cy - maat / 2, maat, maat);
+    }
+  });
 
   ctx.restore();
 }

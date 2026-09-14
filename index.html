@@ -155,6 +155,33 @@
     resize: vertical;
   }
 
+  .aanvink {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .aanvink input { width: 18px; height: 18px; }
+
+  label.veld.kolom {
+    flex: 1 1 140px;
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  label.veld.kolom select {
+    display: block;
+    width: 100%;
+    margin-top: 5px;
+    padding: 8px;
+    border: 1px solid var(--rand);
+    border-radius: 4px;
+    font: inherit;
+    font-weight: 400;
+    background: #fff;
+  }
+
   #zoomrij { margin-top: 12px; }
   #zoom { width: 100%; }
 
@@ -251,7 +278,27 @@
     </fieldset>
 
     <fieldset>
-      <legend>4. Tekst</legend>
+      <legend>4. Cirkels en icoontjes</legend>
+      <label class="aanvink">
+        <input type="checkbox" id="decoratieAan">
+        Witte cirkellijnen met icoonbadges over de foto
+      </label>
+      <div id="icoonrij" class="knoprij" style="margin-top:10px">
+        <label class="veld kolom" for="icoon0">Grote badge
+          <select id="icoon0"></select>
+        </label>
+        <label class="veld kolom" for="icoon1">Kleine badge
+          <select id="icoon1"></select>
+        </label>
+      </div>
+      <p class="hulp">
+        De pictogrammen zijn plaatshouders. De officiële iconenset kan erin;
+        zie de README.
+      </p>
+    </fieldset>
+
+    <fieldset>
+      <legend>5. Tekst</legend>
       <label class="veld" for="kop">Kop <span id="kopregels"></span></label>
       <textarea id="kop" rows="2" placeholder="Bijvoorbeeld: Souvenirs meenemen uit het buitenland?"></textarea>
       <label class="veld" for="sub" style="margin-top:12px">Subtekst <span id="subregels"></span></label>
