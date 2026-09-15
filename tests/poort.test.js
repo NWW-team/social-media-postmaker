@@ -34,6 +34,10 @@ const huisstijl = {
   iconen: {
     'Proeficoon A': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" width="10" height="10"><circle cx="5" cy="5" r="4" fill="{kleur}"/></svg>',
     'Proeficoon B': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" width="10" height="10"><rect x="1" y="1" width="8" height="8" fill="{kleur}"/></svg>',
+    // Kort maar achteraan in het alfabet, en lang maar vooraan: zo valt op als
+    // de keuzelijst de volgorde van Postgres overneemt in plaats van het alfabet.
+    'Zebra': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" width="10" height="10"><path d="M1 1h8v8H1z" fill="{kleur}"/></svg>',
+    'Aanvraag': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" width="10" height="10"><path d="M5 1 9 9H1z" fill="{kleur}"/></svg>',
   },
   platforms: { instagram: { label: 'Instagram', maten: { staand: [1080, 1350], vierkant: [1080, 1080] } },
                facebook:  { label: 'Facebook',  maten: { staand: [1200, 1500], vierkant: [1200, 1200] } } },
@@ -302,6 +306,20 @@ const zichtbaar = (page, id) => page.evaluate((i) => {
         .filter((naam) => String(uit[naam]) !== String(verwacht[naam]))
         .map((naam) => `${naam}: ${uit[naam]} i.p.v. ${verwacht[naam]}`);
       return { ok: fout.length === 0, uitleg: fout.length ? fout.join('; ') : 'alle zes kloppen' };
+    });
+
+  /*
+   * Postgres geeft jsonb-sleutels terug op lengte en pas daarbinnen op alfabet.
+   * Bij twintig iconen is dat een onvindbare lijst, dus de app sorteert zelf.
+   */
+  alles &= await run('de icoonlijsten staan op alfabet, niet op sleutellengte',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      const lijsten = await p.evaluate(() => ['icoon0', 'icoon1'].map(
+        (id) => [...document.getElementById(id).options].map((o) => o.value)));
+      const verwacht = ['Aanvraag', 'Proeficoon A', 'Proeficoon B', 'Zebra'];
+      const goed = lijsten.every((lijst) => String(lijst) === String(verwacht));
+      return { ok: goed, uitleg: goed ? verwacht.join(', ') : `kreeg ${lijsten[0]}` };
     });
 
   console.log(alles ? '\nAlle frontendtests geslaagd.' : '\nEr zijn tests gefaald.');
