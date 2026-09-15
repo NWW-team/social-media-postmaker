@@ -74,27 +74,11 @@ img { max-inline-size: 100%; }
 }
 
 /*
- * Het beeldmerk staat nog niet in deze repo; zie README.md, "Nog te doen".
- * Tot die tijd een zichtbare plaatshouder: liever een leeg vakje dat zegt dat
- * er iets hoort te staan, dan een tekstlogo dat voor het echte kan doorgaan.
+ * De kopbalk draagt alleen nog de sessie: wie is er ingelogd, en de uitlogknop.
+ * Er stond een gestippelde plaatshouder voor het beeldmerk naast de naam van de
+ * tool; die is er op verzoek uit. Wie de pagina moet herkennen heeft de titel
+ * van het tabblad en de kop in de hero.
  */
-.merk { display: flex; align-items: center; gap: 12px; }
-.merk__plek {
-  inline-size: 40px;
-  block-size: 46px;
-  border: 2px dashed var(--rhc-color-border-default);
-  border-radius: 3px;
-  display: grid;
-  place-items: center;
-  font-size: 9px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--rhc-color-foreground-subtle);
-  flex-shrink: 0;
-}
-.merk__naam { font-weight: 600; line-height: 1.25; }
-.merk__naam span { display: block; font-weight: 400; font-size: 0.875rem; color: var(--rhc-color-foreground-subtle); }
-
 .sessie {
   display: flex;
   align-items: center;
@@ -331,13 +315,6 @@ input[type="range"] { inline-size: 100%; }
 
 <div class="werkgebied">
   <div class="kopbalk">
-    <div class="merk">
-      <span class="merk__plek" aria-hidden="true">logo</span>
-      <span class="merk__naam">
-        Social Media Opmaaktool
-        <span>Plaats voor het beeldmerk van de organisatie</span>
-      </span>
-    </div>
     <div class="sessie" id="sessiebalk" hidden>
       <span class="adres" id="sessieadres"></span>
       <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button" id="uitlogknop">Uitloggen</button>
