@@ -30,7 +30,34 @@ const state = {
   kop: '',
   sub: '',
   decoratie: true,
+  decoratiepositie: 'linksonder',
   iconen: ['Wereld (toolkit)', 'Gesprek (toolkit)'],
+};
+
+/*
+ * Waar de cirkels en de badges staan.
+ *
+ * De huisstijl beschrijft er maar één: de groep zoals hij op de
+ * toolkitpagina's staat, gerekend vanaf de linkeronderhoek van de foto. Op het
+ * account staat diezelfde groep ook rechtsonder, bovenin en onderaan het
+ * midden — zie de posts over het paspoort in Brazilië en over alleen reizen
+ * met kinderen. Dat zijn geen andere tekeningen maar dezelfde, gespiegeld of
+ * verschoven.
+ *
+ * Daarom staan de vijf andere plekken hier als bewerking van die ene groep, en
+ * niet als vijf extra coördinatenlijsten in Supabase. Verandert de huisstijl de
+ * cirkels, dan verschuiven alle zes de plekken mee.
+ *
+ * 'links' en 'onder' samen zijn precies de huisstijl zoals hij was: dat is de
+ * standaard en die tekent tot op de pixel hetzelfde als voorheen.
+ */
+const DECORATIEPOSITIES = {
+  linksonder:  { label: 'Linksonder',  zij: 'links',  hoogte: 'onder' },
+  middenonder: { label: 'Middenonder', zij: 'midden', hoogte: 'onder' },
+  rechtsonder: { label: 'Rechtsonder', zij: 'rechts', hoogte: 'onder' },
+  linksboven:  { label: 'Linksboven',  zij: 'links',  hoogte: 'boven' },
+  middenboven: { label: 'Middenboven', zij: 'midden', hoogte: 'boven' },
+  rechtsboven: { label: 'Rechtsboven', zij: 'rechts', hoogte: 'boven' },
 };
 
 const el = {};
@@ -87,7 +114,8 @@ function startApp() {
     'canvas', 'dropzone', 'bestandsknop', 'bestandsinvoer', 'voorbeeldknop',
     'kop', 'sub', 'kopregels', 'subregels', 'zoom', 'zoomrij', 'resetknop',
     'downloadknop', 'maatlabel', 'stijlbron', 'melding', 'fotonaam', 'formaatnoot',
-    'decoratieAan', 'icoon0', 'icoon1', 'icoonrij', 'miniatuur', 'stijlvoorbeeldnoot',
+    'decoratieAan', 'decoratiepositie', 'icoon0', 'icoon1', 'icoonrij',
+    'miniatuur', 'stijlvoorbeeldnoot',
   ].forEach((id) => { el[id] = document.getElementById(id); });
 
   el.ctx = el.canvas.getContext('2d');
@@ -305,6 +333,18 @@ function laadIconen() {
 }
 
 function bouwIcoonkeuze() {
+  Object.keys(DECORATIEPOSITIES).forEach((naam) => {
+    const optie = document.createElement('option');
+    optie.value = naam;
+    optie.textContent = DECORATIEPOSITIES[naam].label;
+    el.decoratiepositie.appendChild(optie);
+  });
+  el.decoratiepositie.value = state.decoratiepositie;
+  el.decoratiepositie.addEventListener('change', () => {
+    state.decoratiepositie = el.decoratiepositie.value;
+    teken();
+  });
+
   [el.icoon0, el.icoon1].forEach((keuzelijst, i) => {
     Object.keys(TEMPLATES.iconen).forEach((naam) => {
       const optie = document.createElement('option');
@@ -815,45 +855,84 @@ function ovaal(ctx, vlak, cxDeel, cyDeel, rxDeel, ryDeel, stops) {
 }
 
 /*
- * De witte ringen met icoonbadges. Alles is gerekend vanaf de linkeronderhoek
- * van de foto, in eenheden van de fotobreedte, zodat de decoratie bij elk
- * formaat en elke stijl dezelfde verhouding houdt. Het staat binnen de clip van
- * de foto, dus het loopt nooit over het tekstvlak heen.
+ * Van een cirkel uit de huisstijl naar een plek op het doek.
+ *
+ * De huisstijl rekent vanaf de linkeronderhoek van de foto, in eenheden van de
+ * fotobreedte: de foto is dus altijd precies 1 breed en y loopt negatief naar
+ * boven. Daardoor houdt de decoratie bij elk formaat en elke stijl dezelfde
+ * verhouding, en is een andere plek een som en geen tweede tekening.
+ *
+ * Rechts en boven zijn spiegelingen om het midden van de foto. Dat is expres:
+ * de grootste ring steekt aan de linkerkant onder de foto uit, en juist dat
+ * aflopen hoort bij de stijl. Netjes binnen de foto schuiven zou hem kleiner
+ * laten lijken dan hij is. Het midden is wel een verschuiving — daar valt niets
+ * te spiegelen — en dan ligt het midden van de groep op het midden van de foto;
+ * wat links en rechts uitsteekt, steekt dus aan beide kanten evenveel uit.
+ *
+ * Alleen de cirkels verhuizen, niet de iconen: die worden hierna om hun eigen
+ * middelpunt getekend en staan dus nooit op hun kop of in spiegelbeeld.
+ */
+function decoratiePlaatsing(foto, positienaam) {
+  const d = TEMPLATES.decoratie;
+  const positie = DECORATIEPOSITIES[positienaam] || DECORATIEPOSITIES.linksonder;
+  const eenheid = foto.b;
+  const fotohoogte = foto.h / eenheid;
+
+  let verschuif = 0;
+  if (positie.zij === 'midden') {
+    const vormen = (d.ringen || []).concat(d.badges || []);
+    if (vormen.length) {
+      const links = Math.min.apply(null, vormen.map((v) => v.x - v.d / 2));
+      const rechts = Math.max.apply(null, vormen.map((v) => v.x + v.d / 2));
+      verschuif = 0.5 - (links + rechts) / 2;
+    }
+  }
+
+  return (vorm) => {
+    const x = positie.zij === 'rechts' ? 1 - vorm.x : vorm.x + verschuif;
+    const y = positie.hoogte === 'boven' ? -fotohoogte - vorm.y : vorm.y;
+    return {
+      cx: foto.x + x * eenheid,
+      cy: foto.y + foto.h + y * eenheid,
+      straal: vorm.d / 2 * eenheid,
+    };
+  };
+}
+
+/*
+ * De witte ringen met icoonbadges, op de gekozen plek. Het staat binnen de clip
+ * van de foto, dus het loopt nooit over het tekstvlak heen.
  */
 function tekenDecoratie(ctx, foto, opdracht) {
   const d = TEMPLATES.decoratie;
   if (!d.aan || !opdracht.decoratie) return;
 
-  const eenheid = foto.b;
-  const ox = foto.x;
-  const oy = foto.y + foto.h;
-  const cirkel = (cx, cy, straal) => {
+  const plaats = decoratiePlaatsing(foto, opdracht.decoratiepositie);
+  const cirkel = (plek) => {
     ctx.beginPath();
-    ctx.arc(cx, cy, straal, 0, Math.PI * 2);
+    ctx.arc(plek.cx, plek.cy, plek.straal, 0, Math.PI * 2);
   };
 
   ctx.save();
 
   ctx.strokeStyle = d.lijnkleur;
-  ctx.lineWidth = eenheid * d.lijndikte;
+  ctx.lineWidth = foto.b * d.lijndikte;
   d.ringen.forEach((ring) => {
-    cirkel(ox + ring.x * eenheid, oy + ring.y * eenheid, ring.d / 2 * eenheid);
+    cirkel(plaats(ring));
     ctx.stroke();
   });
 
   d.badges.forEach((badge, i) => {
-    const cx = ox + badge.x * eenheid;
-    const cy = oy + badge.y * eenheid;
-    const straal = badge.d / 2 * eenheid;
+    const plek = plaats(badge);
 
-    cirkel(cx, cy, straal);
+    cirkel(plek);
     ctx.fillStyle = d.badgeKleur;
     ctx.fill();
 
     const icoon = icoonCache[opdracht.iconen[i]];
     if (icoon && icoon.complete && icoon.naturalWidth) {
-      const maat = straal * 2 * d.icoonDeel;
-      ctx.drawImage(icoon, cx - maat / 2, cy - maat / 2, maat, maat);
+      const maat = plek.straal * 2 * d.icoonDeel;
+      ctx.drawImage(icoon, plek.cx - maat / 2, plek.cy - maat / 2, maat, maat);
     }
   });
 
@@ -1017,6 +1096,7 @@ function leesConcept() {
     kop: state.kop,
     sub: state.sub,
     decoratie: state.decoratie,
+    decoratiepositie: state.decoratiepositie,
     iconen: state.iconen.slice(),
     zoom: state.zoom,
     brandpunt: { x: state.brandpunt.x, y: state.brandpunt.y },
@@ -1040,6 +1120,12 @@ function pasConceptToe(inhoud) {
   state.sub = typeof inhoud.sub === 'string' ? inhoud.sub : '';
   state.decoratie = Boolean(inhoud.decoratie);
 
+  // Een concept van voor deze keuze kent de plek niet; die valt dan terug op
+  // linksonder, en dat is precies hoe hij bewaard is.
+  state.decoratiepositie = DECORATIEPOSITIES[inhoud.decoratiepositie]
+    ? inhoud.decoratiepositie
+    : 'linksonder';
+
   if (Array.isArray(inhoud.iconen)) {
     state.iconen = state.iconen.map((huidig, i) =>
       (typeof inhoud.iconen[i] === 'string' && TEMPLATES.iconen[inhoud.iconen[i]])
@@ -1061,6 +1147,7 @@ function pasConceptToe(inhoud) {
   el.zoom.value = String(state.zoom);
   el.decoratieAan.checked = state.decoratie;
   el.icoonrij.hidden = !state.decoratie;
+  el.decoratiepositie.value = state.decoratiepositie;
   el.icoon0.value = state.iconen[0];
   el.icoon1.value = state.iconen[1];
 
