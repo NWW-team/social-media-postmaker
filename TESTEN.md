@@ -13,9 +13,18 @@ afwijking hier betekent dat de toegangsregels niet doen wat ze beloven.
 
 ## Voorbereiding
 
-Stappen 1 tot en met 8 uit `supabase/LEESMIJ.md` zijn af, en `config.js` is
-ingevuld. Open de gepubliceerde pagina in een **privévenster** (`Ctrl+Shift+N`).
+Het meeste staat al klaar. Wat nog moet gebeuren voordat je kunt testen, zijn
+**stap 3 en stap 4** uit `supabase/LEESMIJ.md`: registratie uitzetten en de
+twee testaccounts aanmaken. Beide kunnen alleen via het dashboard.
+
+De tabellen, policies, huisstijl, allowlist en `config.js` zijn al ingericht en
+gecontroleerd (zie de statustabel in `supabase/LEESMIJ.md`).
+
+Open daarna de gepubliceerde pagina in een **privévenster** (`Ctrl+Shift+N`).
 Zo weet je zeker dat je met een schone sessie begint.
+
+> Zonder stap 3 en 4 lopen de tests vast op het eerste inlogscherm: er bestaat
+> dan nog geen account om mee in te loggen.
 
 ---
 
@@ -200,6 +209,16 @@ gekomen en kan elke toegelaten gebruiker collega's binnenlaten. Meld dat.
 **Verwacht:** `[]`.
 
 ---
+
+## Al uitgevoerd vanuit de database
+
+De policies zijn al beproefd met `supabase/04_rls_test.sql`, dat expliciet naar
+de rollen `anon` en `authenticated` schakelt: 12 van de 12 goed. Dat toetst hoe
+Postgres de policies evalueert.
+
+Test 6 hieronder toetst de schakel die dáár niet in zit: of PostgREST een
+publishable key op de rol `anon` afbeeldt en een ingelogd token op
+`authenticated`. Die moet je vanuit de browser doen.
 
 ## Wat deze tests niet aantonen
 

@@ -3,13 +3,36 @@
 Alles hieronder doe je in `https://supabase.com/dashboard`. Je hebt geen
 terminal, geen CLI en geen lokale installatie nodig.
 
+## Stand van zaken
+
+Via de Supabase-connector is het meeste al uitgevoerd op project
+`bsaltminmhvdsdkaqkag`. Wat jij nog zelf moet doen staat hieronder met
+**NOG TE DOEN** ervoor: dat zijn stap 3 en stap 4. Voor die twee bestaat geen
+API — ze kunnen alleen via het dashboard.
+
+| Stap | Wat | Status |
+| --- | --- | --- |
+| 1 | Tabellen, RLS en policies | Gedaan |
+| 2 | Huisstijl gevuld (11 sleutels, 8 iconen) | Gedaan, md5 gecontroleerd |
+| 3 | Registratie uitzetten | **NOG TE DOEN — alleen jij** |
+| 4 | Twee testaccounts aanmaken | **NOG TE DOEN — alleen jij** |
+| 5 | `redacteur@example.org` op de allowlist | Gedaan |
+| 6 | URL en publishable key opgehaald | Gedaan |
+| 7 | `config.js` ingevuld | Gedaan |
+| 8 | Controle en RLS-test | Gedaan, 12 van 12 goed |
+
+---
+
 > Het dashboard verandert af en toe van indeling. Staat een menu-item niet waar
 > ik het beschrijf, gebruik dan de zoekbalk bovenin (`Ctrl+K`) en typ de naam
 > tussen aanhalingstekens. De namen zelf zijn stabieler dan de plek.
 
 ---
 
-## Stap 1 — Tabellen en toegangsregels aanmaken
+## Stap 1 — Tabellen en toegangsregels aanmaken *(gedaan)*
+
+Al uitgevoerd als migratie `toegangsregels_allowlist_huisstijl_concepten`.
+Hieronder staat hoe je het zou herhalen, bijvoorbeeld in een nieuw project.
 
 1. Open je project.
 2. Klik links op **SQL Editor**.
@@ -22,7 +45,10 @@ tabellen aan, zet RLS aan en legt de policies vast.
 
 ---
 
-## Stap 2 — De huisstijl vullen
+## Stap 2 — De huisstijl vullen *(gedaan)*
+
+De 11 sleutels staan erin en zijn per waarde met md5 vergeleken met het
+oorspronkelijke `templates.js`; alle acht iconen komen exact overeen.
 
 Dit bestand staat **niet** in de repo, met opzet: het bevat precies de config
 die we achter de allowlist zetten. Je hebt het los van mij gekregen als
@@ -40,7 +66,10 @@ het niet terug in GitHub.
 
 ---
 
-## Stap 3 — Registratie uitzetten
+## Stap 3 — Registratie uitzetten — **NOG TE DOEN**
+
+> Dit kan ik niet voor je doen: de Supabase-connector heeft geen tool om de
+> auth-instellingen te wijzigen. Het is een paar klikken.
 
 Dit is de echte grendel op "geen vrije registratie". Niet een verborgen knop in
 de frontend, maar een serverinstelling: Supabase weigert daarna elk
@@ -58,7 +87,12 @@ in stap 4 lossen we de bevestigingsmail anders op.
 
 ---
 
-## Stap 4 — De twee testaccounts aanmaken
+## Stap 4 — De twee testaccounts aanmaken — **NOG TE DOEN**
+
+> Ook dit kan ik niet voor je doen. Accounts rechtstreeks in `auth.users`
+> schrijven met SQL is een bekende maar broze truc — je omzeilt dan de
+> wachtwoordafhandeling van Supabase Auth en loopt kans op half werkende
+> accounts. Twee klikken in het dashboard is veiliger.
 
 Handmatig aangemaakte accounts kun je meteen bevestigen. Zo heb je geen
 bevestigingsmail nodig en hoef je de e-mailinstellingen van het project niet te
@@ -85,7 +119,11 @@ Slechts één van de twee krijgt toegang tot gegevens — dat regelt stap 5.
 
 ---
 
-## Stap 5 — Eén account op de allowlist zetten
+## Stap 5 — Eén account op de allowlist zetten *(gedaan)*
+
+`redacteur@example.org` staat op de lijst. `buitenstaander@example.org`
+bewust niet. De regels hieronder heb je nodig om later echte collega's toe
+te voegen.
 
 1. **SQL Editor** → **New query**.
 2. Plak en **Run**:
@@ -123,7 +161,10 @@ delete from public.toegestane_gebruikers where email = 'iemand@organisatie.nl';
 
 ---
 
-## Stap 6 — De publieke projectconfiguratie ophalen
+## Stap 6 — De publieke projectconfiguratie ophalen *(gedaan)*
+
+Project-URL en publishable key staan inmiddels in `config.js`. De tabel met
+sleutels-die-nooit-in-de-frontend-horen blijft belangrijk om te kennen.
 
 1. Klik linksonder op het tandwiel (**Project Settings**).
 2. Ga naar **Data API**. Kopieer de **Project URL**
@@ -148,14 +189,27 @@ scherm. Een weggehaalde commit is niet genoeg — GitHub bewaart de geschiedenis
 
 ---
 
-## Stap 7 — De sleutels in de app zetten
+## Stap 7 — De sleutels in de app zetten *(gedaan)*
 
-Open `config.js` in GitHub (of vraag mij het te doen) en vul de twee waarden uit
-stap 6 in. Dat bestand mag gewoon in de publieke repo staan.
+`config.js` bevat nu:
+
+```
+url:            https://bsaltminmhvdsdkaqkag.supabase.co
+publishableKey: sb_publishable_...
+```
+
+Dat bestand mag gewoon in de publieke repo staan — zie de tabel bij stap 6
+voor wat er níét in mag.
 
 ---
 
-## Stap 8 — Controleren
+## Stap 8 — Controleren *(gedaan)*
+
+Uitgevoerd: alle drie de tabellen hebben RLS aan met expliciete policies, de
+beveiligingsadviezen van Supabase staan op nul, en `supabase/04_rls_test.sql`
+gaf 12 van de 12 goed.
+
+Zo herhaal je het zelf, bijvoorbeeld na een wijziging aan de policies:
 
 1. **SQL Editor** → **New query** → plak `supabase/03_controle.sql` → **Run**.
 2. Loop de vijf resultaatblokken langs:
@@ -164,4 +218,9 @@ stap 6 in. Dat bestand mag gewoon in de publieke repo staan.
    - blok 4: `redacteur@example.org`, `heeft_account = true`, `bevestigd = true`;
    - blok 5: `buitenstaander@example.org` — bestaat wel, staat niet op de lijst.
 
-Klopt dit, dan staan de toegangsregels goed en kun je gaan testen.
+Klopt dit, dan staan de toegangsregels goed.
+
+3. Draai daarna `supabase/04_rls_test.sql`. Dat bestand schakelt naar de rollen
+   `anon` en `authenticated` en beproeft de policies écht — in de SQL Editor ben
+   je namelijk een rol die RLS omzeilt, dus een gewone `select` bewijst niets.
+   Elke regel hoort `ja` te geven in de kolom `goed`.

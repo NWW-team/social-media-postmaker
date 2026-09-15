@@ -60,9 +60,17 @@ create policy "eigen allowlist-rij lezen"
 -- aanroeper daar rechten op nodig heeft. search_path is leeggezet en alles
 -- staat volledig gekwalificeerd: anders zou iemand met rechten op een eigen
 -- schema een nep-tabel voor kunnen schuiven.
+--
+-- Hij staat in het schema `private` en niet in `public`. PostgREST publiceert
+-- alleen `public`, dus zo bestaat /rest/v1/rpc/is_toegestaan niet. De policies
+-- roepen hem binnen de database aan en hebben dat eindpunt niet nodig.
 -- ---------------------------------------------------------------------
 
-create or replace function public.is_toegestaan()
+create schema if not exists private;
+revoke all on schema private from public;
+grant usage on schema private to authenticated;
+
+create or replace function private.is_toegestaan()
 returns boolean
 language sql
 stable
@@ -76,11 +84,11 @@ as $$
   );
 $$;
 
-comment on function public.is_toegestaan() is
+comment on function private.is_toegestaan() is
   'True als het e-mailadres in het huidige JWT op de allowlist staat.';
 
-revoke all on function public.is_toegestaan() from public, anon;
-grant execute on function public.is_toegestaan() to authenticated;
+revoke all on function private.is_toegestaan() from public, anon;
+grant execute on function private.is_toegestaan() to authenticated;
 
 
 -- ---------------------------------------------------------------------
@@ -112,7 +120,7 @@ create policy "huisstijl lezen door toegestane gebruikers"
   on public.huisstijl
   for select
   to authenticated
-  using ((select public.is_toegestaan()));
+  using ((select private.is_toegestaan()));
 
 
 -- ---------------------------------------------------------------------
@@ -153,23 +161,23 @@ grant select, insert, update, delete on public.concepten to authenticated;
 drop policy if exists "eigen concepten lezen" on public.concepten;
 create policy "eigen concepten lezen"
   on public.concepten for select to authenticated
-  using (gebruiker_id = (select auth.uid()) and (select public.is_toegestaan()));
+  using (gebruiker_id = (select auth.uid()) and (select private.is_toegestaan()));
 
 drop policy if exists "eigen concepten toevoegen" on public.concepten;
 create policy "eigen concepten toevoegen"
   on public.concepten for insert to authenticated
-  with check (gebruiker_id = (select auth.uid()) and (select public.is_toegestaan()));
+  with check (gebruiker_id = (select auth.uid()) and (select private.is_toegestaan()));
 
 drop policy if exists "eigen concepten bijwerken" on public.concepten;
 create policy "eigen concepten bijwerken"
   on public.concepten for update to authenticated
-  using (gebruiker_id = (select auth.uid()) and (select public.is_toegestaan()))
-  with check (gebruiker_id = (select auth.uid()) and (select public.is_toegestaan()));
+  using (gebruiker_id = (select auth.uid()) and (select private.is_toegestaan()))
+  with check (gebruiker_id = (select auth.uid()) and (select private.is_toegestaan()));
 
 drop policy if exists "eigen concepten verwijderen" on public.concepten;
 create policy "eigen concepten verwijderen"
   on public.concepten for delete to authenticated
-  using (gebruiker_id = (select auth.uid()) and (select public.is_toegestaan()));
+  using (gebruiker_id = (select auth.uid()) and (select private.is_toegestaan()));
 
 -- bijgewerkt_op bijhouden, zodat de lijst op volgorde van bewerken staat.
 create or replace function public.zet_bijgewerkt_op()

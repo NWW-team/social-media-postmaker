@@ -20,11 +20,11 @@
 
 const SUPABASE_CONFIG = {
   // Project Settings -> Data API -> Project URL
-  url: 'VUL_IN_https://xxxxxxxxxxxx.supabase.co',
+  url: 'https://bsaltminmhvdsdkaqkag.supabase.co',
 
   // Project Settings -> API Keys -> Publishable key (sb_publishable_...)
   // Heeft je project die nog niet: de legacy "anon public" key.
-  publishableKey: 'VUL_IN_sb_publishable_xxxxxxxxxxxxxxxxxxxx',
+  publishableKey: 'sb_publishable_P9pKRusn57X41-xBg5LXRw_Ykqkc4kw',
 };
 
 /* Kleine hulp zodat een niet-ingevulde config een duidelijke melding geeft
