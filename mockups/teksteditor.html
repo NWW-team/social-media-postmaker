@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>De letterknoppen in het tekstveld — drie voorstellen</title>
+
+<!--
+  Zelfde opzet als index.html in deze map: de échte Rijkshuisstijl Community
+  uit npm, en verder laadt deze pagina niets van buiten. Dubbelklikken werkt.
+-->
+<link rel="stylesheet" href="../vendor/rijkshuisstijl/font.css">
+<link rel="stylesheet" href="../vendor/rijkshuisstijl/rhc-tokens-hemelblauw.css">
+<link rel="stylesheet" href="../vendor/rijkshuisstijl/rhc-components.css">
+
+<style>
+/* ===================================================================== *
+ * 1. De keuzebalk eromheen — met opzet NIET in de huisstijl.
+ *
+ * Donker en neutraal, zodat je de vergelijkingsbalk nooit aanziet voor een
+ * onderdeel van het ontwerp. Overgenomen uit index.html in deze map, zodat
+ * de twee mockuppagina's zich hetzelfde gedragen.
+ * ===================================================================== */
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  font: 15px/1.5 "Fira Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.vlag {
+  background: #7c2d12;
+  color: #fff;
+  padding: 12px 20px;
+  font-size: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: baseline;
+}
+.vlag b { color: #fff; }
+.vlag a { color: #fed7aa; }
+
+.kiezer {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 40;
+  background: #0f172a;
+  border-block-end: 1px solid #1e293b;
+  padding: 14px 20px 0;
+}
+.kiezer__titel { margin: 0 0 2px; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.kiezer__onder { margin: 0 0 12px; font-size: 13px; color: #94a3b8; max-width: 82ch; }
+.kiezer__rij { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.kiezer__spatie { flex: 1 1 20px; }
+
+.tab {
+  appearance: none;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #cbd5e1;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.tab:hover { border-color: #475569; color: #f1f5f9; }
+.tab[aria-selected="true"] { background: #e2e8f0; border-color: #e2e8f0; color: #0f172a; font-weight: 600; }
+.tab__nr { opacity: 0.6; margin-inline-end: 5px; }
+
+.breedterij { display: flex; gap: 6px; align-items: center; }
+.breedterij__label { font-size: 12px; color: #94a3b8; }
+.breedteknop {
+  appearance: none;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #cbd5e1;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.breedteknop[aria-pressed="true"] { background: #334155; color: #f1f5f9; }
+
+.uitleg {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 4px 22px;
+  padding: 12px 0 14px;
+  font-size: 13px;
+}
+.uitleg h2 { grid-column: 1 / -1; margin: 0 0 2px; font-size: 14px; color: #f1f5f9; }
+.uitleg dl { margin: 0; }
+.uitleg dt { color: #94a3b8; font-size: 12px; }
+.uitleg dd { margin: 0 0 6px; color: #cbd5e1; }
+.uitleg .duur { color: #fdba74; }
+
+/* ===================================================================== *
+ * 2. Het raam waarin een voorstel staat.
+ * ===================================================================== */
+
+.raam {
+  margin: 22px auto 60px;
+  background: #fff;
+  color: #000;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  transition: max-inline-size 0.18s ease;
+
+  /* Containerquery, geen mediaquery: Laptop/Telefoon versmalt het raam, niet
+     het browservenster. */
+  container-type: inline-size;
+}
+.raam--breed { max-inline-size: min(1180px, calc(100% - 40px)); }
+.raam--smal  { max-inline-size: min(400px, calc(100% - 40px)); }
+
+.mockup {
+  font-family: var(--rhc-text-font-family-default);
+  font-size: var(--rhc-text-font-size-sm);
+  line-height: var(--rhc-text-line-height-md);
+  color: var(--rhc-color-foreground-default);
+  background: #fff;
+  padding: 26px clamp(16px, 3vw, 30px) 34px;
+}
+.mockup h1, .mockup h2, .mockup h3, .mockup p, .mockup fieldset, .mockup legend { margin: 0; padding: 0; }
+.mockup fieldset { border: 0; min-inline-size: 0; }
+.mockup button, .mockup input, .mockup select, .mockup textarea { font: inherit; }
+
+@media (prefers-reduced-motion: reduce) { .raam { transition: none; } }
+
+/* ===================================================================== *
+ * 3. De stap zoals hij in de tool staat: invoer links, voorbeeld rechts.
+ * ===================================================================== */
+
+.stap__kop { margin-block-end: 18px; }
+.stap__kop h2 { font-size: var(--rhc-text-font-size-sm); font-weight: 700; }
+.stap__kop p { color: var(--rhc-color-foreground-subtle); margin-block-start: 4px !important; }
+
+.werkvlak {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 30px;
+  align-items: start;
+}
+@container (max-width: 860px) {
+  .werkvlak { grid-template-columns: minmax(0, 1fr); }
+}
+
+.veldnaam { font-weight: 600; display: block; margin-block-end: 6px; }
+.blok + .blok { margin-block-start: 20px; }
+
+.noot {
+  font-size: 0.875rem;
+  color: var(--rhc-color-foreground-subtle);
+  margin-block-start: 10px !important;
+}
+
+/* De melding onder het voorbeeld: dezelfde toon als in de tool. */
+.melding {
+  margin-block-start: 14px !important;
+  padding: 10px 12px;
+  border-inline-start: 4px solid #e17000;
+  background: #fdf6ec;
+  font-size: 0.875rem;
+}
+.melding:empty { display: none; }
+
+/* ===================================================================== *
+ * 4. De werkbalk — het onderwerp van deze drie voorstellen.
+ * ===================================================================== */
+
+.editor { display: block; }
+
+.werkbalk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 7px;
+  border: 1px solid var(--rhc-color-border-default);
+  border-block-end: 0;
+  border-start-start-radius: var(--rhc-border-radius-md);
+  border-start-end-radius: var(--rhc-border-radius-md);
+  background: var(--rhc-color-cool-grey-50);
+}
+.werkbalk__spatie { flex: 1 1 8px; }
+.werkbalk select {
+  border: 1px solid var(--rhc-color-border-default);
+  border-radius: var(--rhc-border-radius-md);
+  background: #fff;
+  padding: 4px 6px;
+  font-size: 0.875rem;
+}
+
+/* De knoppen zijn bewust geen utrecht-button: een werkbalkknop is een schakelaar
+   die aan of uit staat, geen knop die iets in gang zet. Vandaar aria-pressed. */
+.knop {
+  appearance: none;
+  min-inline-size: 34px;
+  block-size: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--rhc-color-border-default);
+  border-radius: var(--rhc-border-radius-md);
+  background: #fff;
+  color: var(--rhc-color-foreground-default);
+  cursor: pointer;
+  line-height: 1;
+}
+.knop:hover { border-color: var(--rhc-color-primary-500); }
+.knop:focus-visible {
+  outline: var(--rhc-focus-outline-width) solid var(--rhc-focus-outline-color);
+  outline-offset: var(--rhc-focus-outline-offset);
+}
+.knop[aria-pressed="true"] {
+  background: var(--rhc-color-primary-500);
+  border-color: var(--rhc-color-primary-500);
+  color: #fff;
+}
+.knop--vet { font-weight: 700; }
+.knop--schuin { font-style: italic; font-family: Georgia, "Times New Roman", serif; }
+.knop--tekst { font-size: 0.8125rem; }
+
+/* Het veld zelf. Met de werkbalk erboven horen ze als één ding te lezen, dus
+   de bovenhoeken zijn recht en de randen sluiten op elkaar aan. */
+.veld {
+  display: block;
+  inline-size: 100%;
+  min-block-size: 76px;
+  padding: 10px 12px;
+  border: 1px solid var(--rhc-color-border-default);
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+  border-end-start-radius: var(--rhc-border-radius-md);
+  border-end-end-radius: var(--rhc-border-radius-md);
+  background: #fff;
+  resize: vertical;
+  font-size: 1rem;
+}
+.veld:focus-visible {
+  outline: var(--rhc-focus-outline-width) solid var(--rhc-focus-outline-color);
+  outline-offset: calc(var(--rhc-focus-outline-offset) * -1);
+}
+.veld--rijk { min-block-size: 76px; cursor: text; }
+.veld--sub { min-block-size: 52px; }
+
+/* Voorstel 3: een dunne rij ónder het veld in plaats van een balk erboven. */
+.veld--boven {
+  border-start-start-radius: var(--rhc-border-radius-md);
+  border-start-end-radius: var(--rhc-border-radius-md);
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+  border-block-end: 0;
+}
+.onderrij {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  padding: 5px 6px;
+  border: 1px solid var(--rhc-color-border-default);
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+  border-end-start-radius: var(--rhc-border-radius-md);
+  border-end-end-radius: var(--rhc-border-radius-md);
+  background: var(--rhc-color-cool-grey-50);
+}
+.onderrij .knop { block-size: 26px; min-inline-size: 28px; padding: 0 7px; font-size: 0.8125rem; }
+.stand {
+  margin-inline-start: auto;
+  font-size: 0.75rem;
+  color: var(--rhc-color-foreground-subtle);
+  padding-inline: 4px;
+}
+.stand--afwijkend { color: #a04500; font-weight: 600; }
+
+.tip {
+  font-size: 0.75rem;
+  color: var(--rhc-color-foreground-subtle);
+  margin-block-start: 6px !important;
+}
+
+/* ===================================================================== *
+ * 5. Het voorbeeld van de post.
+ *
+ * Alle maten afgeleid van --pb, met de verhoudingen uit de PowerPoint-toolkit,
+ * net als in index.html: de korpsgroottes zijn echt 66/54/40/30/24 pt op een
+ * canvas van 1080 pt breed, de marge echt 3,54 %, de hoek echt 9,492 %.
+ * ===================================================================== */
+
+.voorbeeldkolom { display: grid; gap: 10px; justify-items: start; }
+.voorbeeldkolom > p { color: var(--rhc-color-foreground-subtle); font-size: 0.875rem; }
+
+.post {
+  --pb: 300px;
+  --marge: calc(var(--pb) * 0.0354);
+  --inspring: calc(var(--pb) * 0.0576);
+  --hoek: calc(var(--pb) * 0.09492);
+
+  --blauw: #007bc7;
+  --donkerblauw: #154173;
+  --lichtblauw: #c7e5f3;
+
+  position: relative;
+  inline-size: var(--pb);
+  max-inline-size: 100%;
+  aspect-ratio: 4 / 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  border-end-end-radius: var(--hoek);
+  background: #0b3a5c;
+  isolation: isolate;
+}
+/*
+ * Het fotovak. De cirkels horen bij de FOTO en niet bij de post: ze worden in
+ * de tool gerekend vanaf de linkeronderhoek van de foto en lopen daar buiten
+ * weg. Vandaar een eigen vak met overflow: hidden — dat is dezelfde clip die
+ * de tekencode op het canvas gebruikt.
+ */
+.post__beeld {
+  position: relative;
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: hidden;
+  z-index: 1;
+}
+.post__foto {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(90% 60% at 72% 12%, #ffd9a3 0%, rgba(255, 217, 163, 0) 58%),
+    radial-gradient(85% 60% at 12% 92%, #07293f 0%, rgba(7, 41, 63, 0) 62%),
+    linear-gradient(158deg, #5aa9d0 0%, #2f74a0 42%, #123c58 100%);
+}
+.post__foto::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(38% 26% at 26% 62%, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0) 70%),
+    radial-gradient(22% 30% at 62% 74%, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0) 70%);
+}
+
+/* Vierkant, even breed als de foto en met de onderkant op de onderkant van de
+   foto: dan is één eenheid van de viewBox precies 1 % van de fotobreedte, net
+   als in de huisstijl. Wat buiten de foto valt, klipt de svg zelf weg. */
+.post__ringen {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-end: 0;
+  inline-size: 100%;
+  aspect-ratio: 1;
+}
+
+.post__vlak {
+  position: relative;
+  z-index: 2;
+  background: var(--lichtblauw);
+  color: var(--blauw);
+  padding: calc(var(--pb) * 0.059) var(--inspring) calc(var(--pb) * 0.0625);
+}
+.post__kop {
+  display: block;
+  font-size: calc(var(--pb) * 0.05);      /* 54 pt */
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+.post__sub {
+  display: block;
+  font-size: calc(var(--pb) * 0.027778);  /* 30 pt */
+  line-height: 1.2;
+  margin-block-start: calc(var(--pb) * 0.022) !important;
+}
+
+/* De vijf korpsgroottes uit de toolkit, als klasse. In de tool zijn dit de
+   sleutels pt24 tot en met pt66 in de huisstijl; hier dezelfde verhoudingen. */
+.k-pt24 { font-size: calc(var(--pb) * 0.022222) !important; }
+.k-pt30 { font-size: calc(var(--pb) * 0.027778) !important; }
+.k-pt40 { font-size: calc(var(--pb) * 0.037037) !important; }
+.k-pt54 { font-size: calc(var(--pb) * 0.05) !important; }
+.k-pt66 { font-size: calc(var(--pb) * 0.061111) !important; }
+
+/* Voor voorstel 2: dezelfde maten, maar op een stuk ván een regel. Daar telt
+   de maat van de post, niet die van de omringende tekst — vandaar em op basis
+   van --pb en niet van de ouder. */
+.post__kop .k-pt24, .post__sub .k-pt24,
+.post__kop .k-pt30, .post__sub .k-pt30,
+.post__kop .k-pt40, .post__sub .k-pt40,
+.post__kop .k-pt54, .post__sub .k-pt54,
+.post__kop .k-pt66, .post__sub .k-pt66 { line-height: 1; }
+</style>
+</head>
+<body>
+
+<p class="vlag">
+  <b>Dit is niet de tool.</b>
+  Drie voorstellen om de letterknoppen in het tekstveld zelf te zetten, in
+  plaats van als los blok eronder. Ze werken: typ in de velden en klik op de
+  knoppen, het voorbeeld verandert mee.
+  <a href="../">Naar de tool &rarr;</a>
+  <a href="index.html">De vijf indelingsmockups &rarr;</a>
+</p>
+
+<div class="kiezer">
+  <p class="kiezer__titel">De letterknoppen in het tekstveld — drie voorstellen</p>
+  <p class="kiezer__onder">
+    In de tool staan grootte, gewicht en schuin nu als los blok onder de
+    tekstvelden. Hieronder drie manieren om ze bij de tekst zelf te zetten. Het
+    verschil dat er het meest toe doet zit tussen 1 en 3 enerzijds — de knoppen
+    gelden voor het hele veld — en 2 anderzijds, waar ze gelden voor wat je
+    geselecteerd hebt. Dat laatste is een andere tool onder de motorkap.
+  </p>
+
+  <div class="kiezer__rij" role="tablist" aria-label="Voorstel kiezen">
+    <button type="button" class="tab" role="tab" aria-selected="true"  aria-controls="v1" id="t1"><span class="tab__nr">1</span> Werkbalk boven het veld</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="v2" id="t2"><span class="tab__nr">2</span> Werkbalk op de selectie</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="v3" id="t3"><span class="tab__nr">3</span> Dunne rij onder het veld</button>
+
+    <span class="kiezer__spatie"></span>
+
+    <span class="breedterij">
+      <span class="breedterij__label">Toon op</span>
+      <button type="button" class="breedteknop" id="breedLaptop" aria-pressed="true">Laptop</button>
+      <button type="button" class="breedteknop" id="breedTelefoon" aria-pressed="false">Telefoon</button>
+    </span>
+  </div>
+
+  <div class="uitleg">
+    <h2 id="uitlegNaam"></h2>
+    <dl><dt>Wat je ziet</dt><dd id="uitlegZiet"></dd></dl>
+    <dl><dt>Goed voor</dt><dd id="uitlegGoed"></dd></dl>
+    <dl><dt>Zwakke kant</dt><dd id="uitlegZwak"></dd></dl>
+    <dl><dt>Bouwwerk</dt><dd id="uitlegBouw"></dd></dl>
+  </div>
+</div>
+
+<div class="raam raam--breed" id="raam">
+
+<!-- ==================================================================== 1 -->
+<section class="mockup hemelblauw" id="v1" role="tabpanel" aria-labelledby="t1">
+  <div class="stap__kop">
+    <h2>3. Tekst</h2>
+    <p>De knoppen staan op het veld en gelden voor het hele veld.</p>
+  </div>
+
+  <div class="werkvlak">
+    <div>
+      <div class="blok">
+        <span class="veldnaam" id="v1-koplabel">Kop</span>
+        <div class="editor">
+          <div class="werkbalk" role="toolbar" aria-label="Opmaak van de kop">
+            <select data-rol="korps" data-veld="v1-kop" aria-label="Korpsgrootte van de kop"></select>
+            <button type="button" class="knop knop--vet" data-rol="vet" data-veld="v1-kop" aria-pressed="false" aria-label="Vet">B</button>
+            <button type="button" class="knop knop--schuin" data-rol="schuin" data-veld="v1-kop" aria-pressed="false" aria-label="Schuin">I</button>
+            <span class="werkbalk__spatie"></span>
+            <button type="button" class="knop knop--tekst" data-rol="terug" data-veld="v1-kop">Uit de stijl</button>
+          </div>
+          <textarea class="veld" id="v1-kop" rows="2" aria-labelledby="v1-koplabel">Hoe kan ik een nieuw paspoort aanvragen als ik in Brazilië woon?</textarea>
+        </div>
+      </div>
+
+      <div class="blok">
+        <span class="veldnaam" id="v1-sublabel">Subtekst</span>
+        <div class="editor">
+          <div class="werkbalk" role="toolbar" aria-label="Opmaak van de subtekst">
+            <select data-rol="korps" data-veld="v1-sub" aria-label="Korpsgrootte van de subtekst"></select>
+            <button type="button" class="knop knop--vet" data-rol="vet" data-veld="v1-sub" aria-pressed="false" aria-label="Vet">B</button>
+            <button type="button" class="knop knop--schuin" data-rol="schuin" data-veld="v1-sub" aria-pressed="false" aria-label="Schuin">I</button>
+            <span class="werkbalk__spatie"></span>
+            <button type="button" class="knop knop--tekst" data-rol="terug" data-veld="v1-sub">Uit de stijl</button>
+          </div>
+          <textarea class="veld veld--sub" id="v1-sub" rows="1" aria-labelledby="v1-sublabel">Dit regel je bij de ambassade.</textarea>
+        </div>
+      </div>
+
+      <p class="noot">
+        De keuzelijst bevat alleen de vijf korpsgroottes uit de toolkit, en de
+        gewichten zijn de snedes die de huisstijlletter werkelijk heeft.
+      </p>
+    </div>
+
+    <div class="voorbeeldkolom">
+      <p>Voorbeeld</p>
+      <div class="post" id="v1-post">
+        <span class="post__beeld">
+          <span class="post__foto"></span>
+          <!-- Dezelfde maten als in de huisstijl, maal 100: ringen d 0,5623 op
+               (0,1399 / -0,1379), (0,5428 / -0,024) en (-0,0748 / -0,3073). -->
+          <svg class="post__ringen" viewBox="0 0 100 100" aria-hidden="true">
+            <g fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="0.208">
+              <circle cx="13.99" cy="86.21" r="28.12"/>
+              <circle cx="54.28" cy="97.60" r="28.12"/>
+              <circle cx="-7.48" cy="69.27" r="28.12"/>
+            </g>
+            <circle cx="18.50" cy="59.83" r="7.98" fill="#fff"/>
+            <circle cx="39.42" cy="74.37" r="6.21" fill="#fff"/>
+          </svg>
+        </span>
+        <span class="post__vlak">
+          <span class="post__kop" id="v1-postkop"></span>
+          <span class="post__sub" id="v1-postsub"></span>
+        </span>
+      </div>
+      <p class="melding" id="v1-melding"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================================== 2 -->
+<section class="mockup hemelblauw" id="v2" role="tabpanel" aria-labelledby="t2" hidden>
+  <div class="stap__kop">
+    <h2>3. Tekst</h2>
+    <p>Selecteer een woord en klik op een knop: de opmaak geldt voor dat stuk.</p>
+  </div>
+
+  <div class="werkvlak">
+    <div>
+      <div class="blok">
+        <span class="veldnaam" id="v2-koplabel">Kop</span>
+        <div class="editor">
+          <div class="werkbalk" role="toolbar" aria-label="Opmaak van de kop">
+            <select data-rol="korps" data-veld="v2-kop" aria-label="Korpsgrootte van de selectie"></select>
+            <button type="button" class="knop knop--vet" data-rol="vet" data-veld="v2-kop" aria-label="Vet">B</button>
+            <button type="button" class="knop knop--schuin" data-rol="schuin" data-veld="v2-kop" aria-label="Schuin">I</button>
+            <span class="werkbalk__spatie"></span>
+            <button type="button" class="knop knop--tekst" data-rol="terug" data-veld="v2-kop">Opmaak weg</button>
+          </div>
+          <div class="veld veld--rijk" id="v2-kop" contenteditable="true" role="textbox"
+               aria-multiline="true" aria-labelledby="v2-koplabel">Hoe kan ik een <b>nieuw paspoort</b> aanvragen als ik in Brazilië woon?</div>
+        </div>
+        <p class="tip">Probeer het: sleep over “Brazilië” en klik op <b>B</b> of op een korpsgrootte.</p>
+      </div>
+
+      <div class="blok">
+        <span class="veldnaam" id="v2-sublabel">Subtekst</span>
+        <div class="editor">
+          <div class="werkbalk" role="toolbar" aria-label="Opmaak van de subtekst">
+            <select data-rol="korps" data-veld="v2-sub" aria-label="Korpsgrootte van de selectie"></select>
+            <button type="button" class="knop knop--vet" data-rol="vet" data-veld="v2-sub" aria-label="Vet">B</button>
+            <button type="button" class="knop knop--schuin" data-rol="schuin" data-veld="v2-sub" aria-label="Schuin">I</button>
+            <span class="werkbalk__spatie"></span>
+            <button type="button" class="knop knop--tekst" data-rol="terug" data-veld="v2-sub">Opmaak weg</button>
+          </div>
+          <div class="veld veld--rijk veld--sub" id="v2-sub" contenteditable="true" role="textbox"
+               aria-multiline="true" aria-labelledby="v2-sublabel">Dit regel je bij de <i>ambassade</i>.</div>
+        </div>
+      </div>
+
+      <p class="noot">
+        Dit is de enige van de drie waarin één woord anders kan zijn dan de rest
+        van de regel. Dat is ook de dure: de export tekent nu hele regels in één
+        letter, en dat zou regel voor regel in stukken moeten.
+      </p>
+    </div>
+
+    <div class="voorbeeldkolom">
+      <p>Voorbeeld</p>
+      <div class="post" id="v2-post">
+        <span class="post__beeld">
+          <span class="post__foto"></span>
+          <!-- Dezelfde maten als in de huisstijl, maal 100: ringen d 0,5623 op
+               (0,1399 / -0,1379), (0,5428 / -0,024) en (-0,0748 / -0,3073). -->
+          <svg class="post__ringen" viewBox="0 0 100 100" aria-hidden="true">
+            <g fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="0.208">
+              <circle cx="13.99" cy="86.21" r="28.12"/>
+              <circle cx="54.28" cy="97.60" r="28.12"/>
+              <circle cx="-7.48" cy="69.27" r="28.12"/>
+            </g>
+            <circle cx="18.50" cy="59.83" r="7.98" fill="#fff"/>
+            <circle cx="39.42" cy="74.37" r="6.21" fill="#fff"/>
+          </svg>
+        </span>
+        <span class="post__vlak">
+          <span class="post__kop" id="v2-postkop"></span>
+          <span class="post__sub" id="v2-postsub"></span>
+        </span>
+      </div>
+      <p class="melding" id="v2-melding"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================================== 3 -->
+<section class="mockup hemelblauw" id="v3" role="tabpanel" aria-labelledby="t3" hidden>
+  <div class="stap__kop">
+    <h2>3. Tekst</h2>
+    <p>Een dunne rij onder het veld, met rechts wat er nu staat.</p>
+  </div>
+
+  <div class="werkvlak">
+    <div>
+      <div class="blok">
+        <span class="veldnaam" id="v3-koplabel">Kop</span>
+        <div class="editor">
+          <textarea class="veld veld--boven" id="v3-kop" rows="2" aria-labelledby="v3-koplabel">Hoe kan ik een nieuw paspoort aanvragen als ik in Brazilië woon?</textarea>
+          <div class="onderrij" role="toolbar" aria-label="Opmaak van de kop">
+            <button type="button" class="knop" data-rol="kleiner" data-veld="v3-kop" aria-label="Kleiner">A&minus;</button>
+            <button type="button" class="knop" data-rol="groter" data-veld="v3-kop" aria-label="Groter">A+</button>
+            <button type="button" class="knop knop--vet" data-rol="vet" data-veld="v3-kop" aria-pressed="false" aria-label="Vet">B</button>
+            <button type="button" class="knop knop--schuin" data-rol="schuin" data-veld="v3-kop" aria-pressed="false" aria-label="Schuin">I</button>
+            <span class="stand" data-stand="v3-kop"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="blok">
+        <span class="veldnaam" id="v3-sublabel">Subtekst</span>
+        <div class="editor">
+          <textarea class="veld veld--boven veld--sub" id="v3-sub" rows="1" aria-labelledby="v3-sublabel">Dit regel je bij de ambassade.</textarea>
+          <div class="onderrij" role="toolbar" aria-label="Opmaak van de subtekst">
+            <button type="button" class="knop" data-rol="kleiner" data-veld="v3-sub" aria-label="Kleiner">A&minus;</button>
+            <button type="button" class="knop" data-rol="groter" data-veld="v3-sub" aria-label="Groter">A+</button>
+            <button type="button" class="knop knop--vet" data-rol="vet" data-veld="v3-sub" aria-pressed="false" aria-label="Vet">B</button>
+            <button type="button" class="knop knop--schuin" data-rol="schuin" data-veld="v3-sub" aria-pressed="false" aria-label="Schuin">I</button>
+            <span class="stand" data-stand="v3-sub"></span>
+          </div>
+        </div>
+      </div>
+
+      <p class="noot">
+        A&minus; en A+ lopen langs dezelfde vijf korpsgroottes; aan het eind van
+        de ladder houdt het op. Rechts in de rij staat wat er nu staat, en die
+        tekst kleurt zodra je van de stijl afwijkt.
+      </p>
+    </div>
+
+    <div class="voorbeeldkolom">
+      <p>Voorbeeld</p>
+      <div class="post" id="v3-post">
+        <span class="post__beeld">
+          <span class="post__foto"></span>
+          <!-- Dezelfde maten als in de huisstijl, maal 100: ringen d 0,5623 op
+               (0,1399 / -0,1379), (0,5428 / -0,024) en (-0,0748 / -0,3073). -->
+          <svg class="post__ringen" viewBox="0 0 100 100" aria-hidden="true">
+            <g fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="0.208">
+              <circle cx="13.99" cy="86.21" r="28.12"/>
+              <circle cx="54.28" cy="97.60" r="28.12"/>
+              <circle cx="-7.48" cy="69.27" r="28.12"/>
+            </g>
+            <circle cx="18.50" cy="59.83" r="7.98" fill="#fff"/>
+            <circle cx="39.42" cy="74.37" r="6.21" fill="#fff"/>
+          </svg>
+        </span>
+        <span class="post__vlak">
+          <span class="post__kop" id="v3-postkop"></span>
+          <span class="post__sub" id="v3-postsub"></span>
+        </span>
+      </div>
+      <p class="melding" id="v3-melding"></p>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+'use strict';
+
+/* De korpsladder uit de toolkit, klein naar groot — dezelfde vijf sleutels als
+   in de huisstijl in Supabase. */
+const LADDER = [
+  { sleutel: 'pt24', label: '24 pt' },
+  { sleutel: 'pt30', label: '30 pt' },
+  { sleutel: 'pt40', label: '40 pt' },
+  { sleutel: 'pt54', label: '54 pt' },
+  { sleutel: 'pt66', label: '66 pt' },
+];
+
+/* Wat de stijl "Foto boven, lichtblauw vlak" zelf voorschrijft. Alleen hiervan
+   afwijken levert een melding op — precies zoals in de tool. */
+const STIJL = {
+  kop: { korps: 'pt54', vet: true,  schuin: false },
+  sub: { korps: 'pt30', vet: false, schuin: false },
+};
+
+const stand = {};   // per veld-id: { korps, vet, schuin }
+
+function soort(id) { return id.endsWith('-sub') ? 'sub' : 'kop'; }
+
+/* ------------------------------------------------- voorstel 1 en 3: hele veld */
+
+function zetStand(id, nieuw) {
+  stand[id] = Object.assign({}, stand[id], nieuw);
+  werkbij(id);
+}
+
+function werkbij(id) {
+  const voorstel = id.slice(0, 2);
+  const welk = soort(id);
+  const s = stand[id];
+  const bron = document.getElementById(id);
+  const doel = document.getElementById(voorstel + '-post' + welk);
+
+  doel.textContent = bron.value;
+  doel.className = 'post__' + welk + ' k-' + s.korps;
+  doel.style.fontWeight = s.vet ? '700' : '400';
+  doel.style.fontStyle = s.schuin ? 'italic' : 'normal';
+
+  document.querySelectorAll('[data-veld="' + id + '"][aria-pressed]').forEach((knop) => {
+    knop.setAttribute('aria-pressed', String(Boolean(s[knop.dataset.rol])));
+  });
+  const lijst = document.querySelector('select[data-veld="' + id + '"]');
+  if (lijst) lijst.value = s.korps;
+
+  const chip = document.querySelector('[data-stand="' + id + '"]');
+  if (chip) {
+    const stukken = [labelVan(s.korps)];
+    if (s.vet) stukken.push('vet');
+    if (s.schuin) stukken.push('schuin');
+    chip.textContent = stukken.join(' · ');
+    chip.classList.toggle('stand--afwijkend', Boolean(verschil(id)));
+  }
+
+  meld(voorstel);
+}
+
+function labelVan(sleutel) {
+  const sport = LADDER.find((l) => l.sleutel === sleutel);
+  return sport ? sport.label : sleutel;
+}
+
+/* Waarin dit veld van zijn stijl afwijkt — of niets. */
+function verschil(id) {
+  const s = stand[id];
+  const eigen = STIJL[soort(id)];
+  const stukken = [];
+  if (s.korps !== eigen.korps) stukken.push(labelVan(s.korps) + ' in plaats van ' + labelVan(eigen.korps));
+  if (s.vet !== eigen.vet) stukken.push(s.vet ? 'vet' : 'niet vet');
+  if (s.schuin !== eigen.schuin) stukken.push('schuin');
+  return stukken.length ? stukken.join(', ') : null;
+}
+
+/* De melding onder het voorbeeld, in dezelfde bewoording als de tool. */
+function meld(voorstel) {
+  const regels = [];
+  [['kop', 'De kop'], ['sub', 'De subkop']].forEach(([welk, naam]) => {
+    const id = voorstel + '-' + welk;
+    if (!stand[id]) return;
+    const v = verschil(id);
+    if (v) regels.push(naam + ' wijkt af van de toolkit: ' + v + '.');
+  });
+  document.getElementById(voorstel + '-melding').textContent = regels.join(' ');
+}
+
+/* --------------------------------------------------- voorstel 2: op de selectie */
+
+/*
+ * De selectie in een stuk opmaak zetten. Dit is de mockupversie: hij toont wat
+ * je zou zien, niet wat de tool straks moet doen. Daar komt de opmaak op het
+ * canvas terecht en moet een regel in stukken worden gemeten en getekend.
+ */
+function opSelectie(id, doen) {
+  const veld = document.getElementById(id);
+  const sel = window.getSelection();
+  if (!sel.rangeCount || sel.isCollapsed || !veld.contains(sel.anchorNode)) {
+    tipTonen(id);
+    return;
+  }
+  veld.focus();
+  doen(sel);
+  spiegel(id);
+}
+
+let tipTeller = 0;
+function tipTonen(id) {
+  const voorstel = id.slice(0, 2);
+  const melding = document.getElementById(voorstel + '-melding');
+  melding.textContent = 'Selecteer eerst een stuk tekst: in dit voorstel geldt de knop voor wat je hebt geselecteerd.';
+  const eigen = ++tipTeller;
+  setTimeout(() => { if (eigen === tipTeller) spiegel(id); }, 2600);
+}
+
+/* Het voorbeeld volgt het veld. De inhoud komt uit dit eigen veld en nergens
+   anders vandaan, dus er valt hier niets van buiten binnen te halen. */
+function spiegel(id) {
+  const voorstel = id.slice(0, 2);
+  const welk = soort(id);
+  document.getElementById(voorstel + '-post' + welk).innerHTML =
+    document.getElementById(id).innerHTML;
+  document.getElementById(voorstel + '-melding').textContent =
+    'In dit voorstel geldt de opmaak per stuk tekst, dus de melding zou per stuk moeten zeggen waarin het afwijkt.';
+}
+
+/* ------------------------------------------------------------------ opbouw */
+
+['v1-kop', 'v1-sub', 'v3-kop', 'v3-sub'].forEach((id) => {
+  stand[id] = Object.assign({}, STIJL[soort(id)]);
+  document.getElementById(id).addEventListener('input', () => werkbij(id));
+});
+
+document.querySelectorAll('select[data-rol="korps"]').forEach((lijst) => {
+  const heelVeld = Boolean(stand[lijst.dataset.veld]);
+
+  /*
+   * Bij voorstel 2 hangt de maat aan de selectie en niet aan het veld, dus er
+   * IS geen huidige maat om te tonen. Zonder deze eerste regel zou de lijst
+   * "24 pt" laten zien alsof dat er staat, terwijl het gewoon de bovenste optie
+   * is. Hij springt na elke keuze weer terug naar deze stand.
+   */
+  if (!heelVeld) {
+    const leeg = document.createElement('option');
+    leeg.value = '';
+    leeg.textContent = 'Grootte…';
+    lijst.appendChild(leeg);
+  }
+
+  LADDER.forEach((sport) => {
+    const optie = document.createElement('option');
+    optie.value = sport.sleutel;
+    optie.textContent = sport.label;
+    lijst.appendChild(optie);
+  });
+
+  lijst.addEventListener('change', () => {
+    const id = lijst.dataset.veld;
+    if (heelVeld) { zetStand(id, { korps: lijst.value }); return; }
+    const gekozen = lijst.value;
+    lijst.value = '';
+    if (!gekozen) return;
+    opSelectie(id, () => {
+      document.execCommand('insertHTML', false,
+        '<span class="k-' + gekozen + '">' +
+        window.getSelection().toString().replace(/[<>&]/g, (t) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[t])) +
+        '</span>');
+    });
+  });
+});
+
+document.querySelectorAll('.knop[data-rol]').forEach((knop) => {
+  knop.addEventListener('click', () => {
+    const id = knop.dataset.veld;
+    const rol = knop.dataset.rol;
+
+    // Voorstel 1 en 3: het hele veld.
+    if (stand[id]) {
+      if (rol === 'vet' || rol === 'schuin') zetStand(id, { [rol]: !stand[id][rol] });
+      if (rol === 'terug') zetStand(id, Object.assign({}, STIJL[soort(id)]));
+      if (rol === 'groter' || rol === 'kleiner') {
+        const nu = LADDER.findIndex((l) => l.sleutel === stand[id].korps);
+        const stap = Math.min(LADDER.length - 1, Math.max(0, nu + (rol === 'groter' ? 1 : -1)));
+        zetStand(id, { korps: LADDER[stap].sleutel });
+      }
+      return;
+    }
+
+    // Voorstel 2: de selectie.
+    if (rol === 'terug') {
+      opSelectie(id, () => document.execCommand('removeFormat'));
+      return;
+    }
+    opSelectie(id, () => document.execCommand(rol === 'vet' ? 'bold' : 'italic'));
+  });
+});
+
+['v2-kop', 'v2-sub'].forEach((id) => {
+  document.getElementById(id).addEventListener('input', () => spiegel(id));
+  spiegel(id);
+});
+
+['v1-kop', 'v1-sub', 'v3-kop', 'v3-sub'].forEach(werkbij);
+
+/* --------------------------------------------------------------- de balk */
+
+const UITLEG = {
+  v1: {
+    naam: '1 — Werkbalk boven het veld',
+    ziet: 'Een balk op het tekstvak met de korpsgrootte, <b>B</b>, <b>I</b> en een knop terug naar de stijl. De knoppen gelden voor het hele veld.',
+    goed: 'Je ziet meteen wat er kan, en de knoppen horen zichtbaar bij het veld waar ze over gaan. Herkenbaar uit elke tekstverwerker.',
+    zwak: 'Neemt hoogte in boven elk veld, dus het scherm wordt iets langer. Een werkbalk suggereert bovendien dat je een woord kunt selecteren, en dat kan hier niet.',
+    bouw: '<span class="duur">Klein.</span> De knoppen zetten precies wat er nu al in de tool zit; alleen de plek verandert. Geen wijziging aan de export.',
+  },
+  v2: {
+    naam: '2 — Werkbalk op de selectie',
+    ziet: 'Dezelfde balk, maar hij werkt op wat je geselecteerd hebt. Eén woord vet of groter kan, de rest van de regel blijft zoals hij was.',
+    goed: 'Dit is wat mensen van een tekstverwerker verwachten. Een sleutelwoord uitlichten kan alleen hier.',
+    zwak: 'Je kunt er een regel mee maken met drie korpsgroottes door elkaar. De melding “je wijkt af van de toolkit” moet dan per stuk tekst iets zeggen, en dat leest minder duidelijk.',
+    bouw: '<span class="duur">Groot.</span> De export tekent nu hele regels in één letter. Per stuk opmaak betekent: elke regel in stukken meten, het afbreken per stuk doen en per stuk tekenen. Ook een concept bewaart dan opgemaakte tekst in plaats van kale tekst.',
+  },
+  v3: {
+    naam: '3 — Dunne rij onder het veld',
+    ziet: 'Een lage rij onder het tekstvak: A&minus;, A+, <b>B</b>, <b>I</b>, en rechts wat er nu staat. De knoppen gelden voor het hele veld.',
+    goed: 'De minste hoogte van de drie en het rustigste beeld. De stand rechts kleurt zodra je van de stijl afwijkt, dus je ziet het zonder naar de melding te kijken.',
+    zwak: 'A&minus; en A+ zeggen niet wélke maat je krijgt; dat staat pas rechts in de rij. En een rij ónder het veld wordt makkelijker over het hoofd gezien dan een balk erboven.',
+    bouw: '<span class="duur">Klein.</span> Net als 1: dezelfde werking als nu, andere plek. Geen wijziging aan de export.',
+  },
+};
+
+const tabs = [...document.querySelectorAll('[role="tab"]')];
+const raam = document.getElementById('raam');
+
+function toon(id) {
+  tabs.forEach((tab) => {
+    const doel = document.getElementById(tab.getAttribute('aria-controls'));
+    const aan = tab.getAttribute('aria-controls') === id;
+    tab.setAttribute('aria-selected', String(aan));
+    doel.hidden = !aan;
+  });
+  const u = UITLEG[id];
+  document.getElementById('uitlegNaam').textContent = u.naam;
+  document.getElementById('uitlegZiet').innerHTML = u.ziet;
+  document.getElementById('uitlegGoed').innerHTML = u.goed;
+  document.getElementById('uitlegZwak').innerHTML = u.zwak;
+  document.getElementById('uitlegBouw').innerHTML = u.bouw;
+}
+
+tabs.forEach((tab) => tab.addEventListener('click', () => toon(tab.getAttribute('aria-controls'))));
+
+const laptop = document.getElementById('breedLaptop');
+const telefoon = document.getElementById('breedTelefoon');
+
+function breedte(smal) {
+  raam.classList.toggle('raam--smal', smal);
+  raam.classList.toggle('raam--breed', !smal);
+  laptop.setAttribute('aria-pressed', String(!smal));
+  telefoon.setAttribute('aria-pressed', String(smal));
+}
+
+laptop.addEventListener('click', () => breedte(false));
+telefoon.addEventListener('click', () => breedte(true));
+
+document.querySelector('[role="tablist"]').addEventListener('keydown', (e) => {
+  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+  const nu = tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true');
+  const volgende = (nu + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+  toon(tabs[volgende].getAttribute('aria-controls'));
+  tabs[volgende].focus();
+  e.preventDefault();
+});
+
+toon('v1');
+</script>
+
+</body>
+</html>
