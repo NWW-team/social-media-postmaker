@@ -43,7 +43,7 @@ niet. Heb je toegang nodig, vraag dan de beheerder je toe te voegen — zie
    of onderaan of bovenaan het midden.
 7. Wil je een woord uitlichten, selecteer het dan en klik in de werkbalk boven
    het veld op een korpsgrootte, **B** of **I**. Je ziet onder het voorbeeld
-   waarin je van de stijl afwijkt; **Uit de stijl** haalt het weer weg.
+   waarin je van de stijl afwijkt; **Opmaak verwijderen** haalt het weer weg.
 8. Klik **PNG downloaden**.
 
 Stap 2 laat de vijf kaarten zien wat elke stijl met jouw materiaal doet. Heb je
@@ -133,8 +133,8 @@ het. Drie bewuste afwijkingen:
   werkbalk: selecteer een woord en kies een korpsgrootte, **B** of **I**. De
   maten zijn de vijf korpsgroottes hierboven, dus je blijft met de maat binnen
   de toolkit — maar je wijkt af van de stijl, en dat staat dan met zoveel
-  woorden onder het voorbeeld. **Uit de stijl** haalt de opmaak van de selectie
-  weer weg.
+  woorden onder het voorbeeld. **Opmaak verwijderen** zet de selectie terug
+  zoals de stijl hem voorschrijft.
 
   **B is een schakelaar, geen "maak vetter".** In de meeste stijlen is de kop al
   vet; daar haalt B het vet er dus af. De knop laat met zijn ingedrukte stand
