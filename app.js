@@ -243,12 +243,12 @@ function tekenVoorbeelden() {
 
   stijlkaartjes.forEach((kaartje) => {
     tekenKlein(kaartje.canvas, KAARTBREEDTE, Math.round(KAARTBREEDTE * verhouding),
-               opdrachtMet({ stijl: kaartje.stijl }));
+               opdrachtMet({ stijl: kaartje.stijl, voorbeeldje: true }));
   });
 
   if (el.miniatuur) {
     tekenKlein(el.miniatuur, MINIATUURBREEDTE,
-               Math.round(MINIATUURBREEDTE * verhouding), opdrachtMet(null));
+               Math.round(MINIATUURBREEDTE * verhouding), opdrachtMet({ voorbeeldje: true }));
   }
 }
 
@@ -703,15 +703,90 @@ function tekenFoto(ctx, breed, indel, opdracht) {
     ctx.drawImage(opdracht.foto, m.x, m.y, m.tekenBreed, m.tekenHoog);
     tekenDecoratie(ctx, vlak, opdracht);
   } else {
-    ctx.fillStyle = '#e6eef4';
-    ctx.fillRect(vlak.x, vlak.y, vlak.b, vlak.h);
-    ctx.fillStyle = '#7f96a8';
-    ctx.textAlign = 'center';
-    ctx.font = '600 ' + (breed * 0.03).toFixed(1) + 'px ' + TEMPLATES.lettertype;
-    ctx.fillText('Nog geen foto gekozen', vlak.x + vlak.b / 2, vlak.y + vlak.h / 2);
-    ctx.textAlign = 'left';
+    tekenPlaatshouder(ctx, breed, vlak, opdracht);
   }
 
+  ctx.restore();
+}
+
+/*
+ * Wat er staat voordat je een foto hebt gekozen.
+ *
+ * Eerst stond hier een grijs vlak met "Nog geen foto gekozen". Daarmee valt de
+ * opmaak niet te beoordelen: de kop is wit of diepblauw, de cirkellijnen zijn
+ * wit, en die zie je pas als er iets fotoachtigs onder ligt. In de mockups lag
+ * daarom een verloop onder elke post, en dat is precies wat er miste.
+ *
+ * Dit is hetzelfde verloop, van CSS naar canvas overgezet: een blauwe diagonaal
+ * met een warme gloed rechtsboven, een donkere hoek linksonder en twee zachte
+ * schaduwen. Geen foto, en het mag er ook nooit voor doorgaan — op het grote
+ * canvas staat het er daarom met zoveel woorden bij. Op de stijlkaartjes niet:
+ * vijf keer dezelfde melding naast elkaar is ruis, en daar gaat het om de vorm.
+ *
+ * De kleuren staan bewust hier en niet in Supabase. De huisstijl beschrijft hoe
+ * een post eruitziet, niet hoe een plaatshouder eruitziet; hetzelfde geldt voor
+ * de gegenereerde voorbeeldfoto verderop.
+ */
+function tekenPlaatshouder(ctx, breed, vlak, opdracht) {
+  const diagonaal = ctx.createLinearGradient(
+    vlak.x, vlak.y, vlak.x + vlak.b, vlak.y + vlak.h);
+  diagonaal.addColorStop(0, '#5aa9d0');
+  diagonaal.addColorStop(0.42, '#2f74a0');
+  diagonaal.addColorStop(1, '#123c58');
+  ctx.fillStyle = diagonaal;
+  ctx.fillRect(vlak.x, vlak.y, vlak.b, vlak.h);
+
+  // Donkere hoek linksonder, warme gloed rechtsboven, dan twee zachte plekken.
+  ovaal(ctx, vlak, 0.12, 0.92, 0.85, 0.60, [[0, 'rgba(7,41,63,1)'], [0.62, 'rgba(7,41,63,0)']]);
+  ovaal(ctx, vlak, 0.72, 0.12, 0.90, 0.60, [[0, 'rgba(255,217,163,1)'], [0.58, 'rgba(255,217,163,0)']]);
+  ovaal(ctx, vlak, 0.26, 0.62, 0.38, 0.26, [[0, 'rgba(0,0,0,0.32)'], [0.70, 'rgba(0,0,0,0)']]);
+  ovaal(ctx, vlak, 0.62, 0.74, 0.22, 0.30, [[0, 'rgba(0,0,0,0.22)'], [0.70, 'rgba(0,0,0,0)']]);
+
+  tekenDecoratie(ctx, vlak, opdracht);
+
+  if (opdracht.voorbeeldje) return;
+
+  const grootte = breed * 0.03;
+  ctx.font = '600 ' + grootte.toFixed(1) + 'px ' + TEMPLATES.lettertype;
+  const tekst = 'Nog geen foto gekozen';
+  const b = ctx.measureText(tekst).width + grootte * 1.6;
+  const h = grootte * 2;
+  const x = vlak.x + (vlak.b - b) / 2;
+  // Bovenin, niet in het midden: de cirkellijnen en de badges komen uit de
+  // linkeronderhoek omhoog, en daar liep de melding dwars doorheen.
+  const y = vlak.y + vlak.h * 0.06;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(x, y, b, h);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.textAlign = 'center';
+  ctx.fillText(tekst, vlak.x + vlak.b / 2, y + h / 2 + grootte * 0.35);
+  ctx.textAlign = 'left';
+}
+
+/*
+ * Een ovaal verloop, zoals radial-gradient(rx ry at cx cy, …) in CSS. Alles in
+ * delen van het vlak, zodat het op elk formaat en op elk kaartje hetzelfde valt.
+ * Canvas kent alleen ronde verlopen, dus we rekken de ruimte op en tekenen er
+ * een cirkel in.
+ */
+function ovaal(ctx, vlak, cxDeel, cyDeel, rxDeel, ryDeel, stops) {
+  const cx = vlak.x + vlak.b * cxDeel;
+  const cy = vlak.y + vlak.h * cyDeel;
+  const rx = vlak.b * rxDeel;
+  const ry = vlak.h * ryDeel;
+  const rek = rx / ry;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(rek, 1);
+
+  const verloop = ctx.createRadialGradient(0, 0, 0, 0, 0, ry);
+  stops.forEach(([positie, kleur]) => verloop.addColorStop(positie, kleur));
+  ctx.fillStyle = verloop;
+
+  // Het vlak teruggerekend naar de opgerekte ruimte: precies genoeg vullen.
+  ctx.fillRect((vlak.x - cx) / rek, vlak.y - cy, vlak.b / rek, vlak.h);
   ctx.restore();
 }
 

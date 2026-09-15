@@ -42,8 +42,11 @@ niet. Heb je toegang nodig, vraag dan de beheerder je toe te voegen — zie
 6. Klik **PNG downloaden**.
 
 Stap 2 werkt pas echt als er een foto en tekst staan: dan laten de vijf kaarten
-zien wat elke stijl met jouw materiaal doet. Zonder foto tonen ze het lege
-sjabloon.
+zien wat elke stijl met jouw materiaal doet. Zolang je nog geen foto hebt
+gekozen, tekent de tool een verloop als plaatshouder — anders is er niets om de
+witte koppen en de witte cirkellijnen tegen af te zetten en valt de opmaak niet
+te beoordelen. Op het grote voorbeeld staat er dan **Nog geen foto gekozen** bij,
+zodat de plaatshouder nooit voor een foto kan doorgaan.
 
 ## Waar blijft mijn foto?
 
