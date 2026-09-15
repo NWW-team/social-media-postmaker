@@ -96,7 +96,7 @@ function configIsIngevuld() { return true; }`;
 const rijenToegestaan = {
   huisstijl: { data: Object.entries(huisstijl).map(([sleutel, waarde]) => ({ sleutel, waarde })), error: null },
   concepten: { data: [
-    { id: 'c1', titel: 'Souvenirs juli', inhoud: { platform:'facebook', format:'vierkant', stijl:'proefB', kop:'Test kop', sub:'Test sub', decoratie:true, decoratiepositie:'rechtsboven', iconen:['Proeficoon A','Proeficoon B'], zoom:1.4, brandpunt:{x:0.4,y:0.6}, opmaak:{ kop:{korps:'pt66', gewicht:null, schuin:true}, sub:{korps:null, gewicht:600, schuin:false} } }, bijgewerkt_op: '2026-09-15T10:00:00Z' },
+    { id: 'c1', titel: 'Souvenirs juli', inhoud: { platform:'facebook', format:'vierkant', stijl:'proefB', kop:[{tekst:'Test ', korps:null, gewicht:null, schuin:false},{tekst:'paspoort', korps:'pt66', gewicht:700, schuin:true}], sub:'Test sub', decoratie:true, decoratiepositie:'rechtsboven', iconen:['Proeficoon A','Proeficoon B'], zoom:1.4, brandpunt:{x:0.4,y:0.6} }, bijgewerkt_op: '2026-09-15T10:00:00Z' },
     /* Bewaard voordat de cirkels konden verhuizen: zonder de sleutel. */
     { id: 'c2', titel: 'Souvenirs juni', inhoud: { platform:'instagram', format:'staand', stijl:'proefA', kop:'Oud concept', sub:'', decoratie:true, iconen:['Proeficoon A','Proeficoon B'], zoom:1, brandpunt:{x:0.5,y:0.5} }, bijgewerkt_op: '2026-09-14T10:00:00Z' },
   ], error: null },
@@ -239,11 +239,12 @@ const zichtbaar = (page, id) => page.evaluate((i) => {
       await p.selectOption('#conceptlijst', 'c1');
       await p.click('#conceptOpenen');
       await p.waitForTimeout(200);
-      const st = await p.evaluate(() => ({ ...state, foto: state.foto }));
+      const st = await p.evaluate(() => ({ ...state, foto: state.foto, koptekst: platteTekst(state.kop) }));
       const opgeslagen = await p.evaluate(() => leesConcept());
       const keuzelijst = await p.evaluate(() => document.getElementById('decoratiepositie').value);
       return { ok: st.platform === 'facebook' && st.format === 'vierkant' && st.stijl === 'proefB'
-                   && st.kop === 'Test kop' && Math.abs(st.zoom - 1.4) < 1e-9 && st.foto === null
+                   && st.koptekst === 'Test paspoort'
+                   && Math.abs(st.zoom - 1.4) < 1e-9 && st.foto === null
                    && !('foto' in opgeslagen)
                    && st.decoratiepositie === 'rechtsboven' && keuzelijst === 'rechtsboven',
                uitleg: `${st.platform}/${st.format}/${st.stijl} zoom=${st.zoom}, plek=${st.decoratiepositie}/${keuzelijst}, foto in concept=${'foto' in opgeslagen}` };
@@ -326,96 +327,186 @@ const zichtbaar = (page, id) => page.evaluate((i) => {
    * Meten en tekenen moeten dezelfde letter gebruiken. Zouden ze uiteenlopen,
    * dan breekt de tekst af op de ene maat en staat hij er in de andere: regels
    * over de rand, of een vlak met lucht eronder. Daarom toetst dit niet of er
-   * "iets" verandert maar of de fontregel van het veld meebeweegt, want dat is
-   * precies de regel waarmee breekAf() heeft gemeten.
+   * "iets" verandert maar wat er per stukje uit de meting komt — dat is precies
+   * waarmee breekAfStukken() heeft gemeten en waarmee tekenRegels() tekent.
    */
-  alles &= await run('grotere, vette en schuine letter komen in de tekening terecht',
+  alles &= await run('opmaak op een stuk tekst komt alleen op dat stuk terecht',
     { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
     async (p) => {
       const uit = await p.evaluate(() => {
-        const lees = () => {
-          const [breed, hoog] = huidigeMaat(state);
-          const indel = indeling(breed, hoog, state);
-          return {
-            kop: fontVan(indel.tekst.kop.spec, indel.tekst.kop.grootte),
-            sub: fontVan(indel.tekst.sub.spec, indel.tekst.sub.grootte),
-            vlak: Math.round(indel.vlak.h),
-          };
-        };
-        const zet = (o) => {
-          state.opmaak = {
-            kop: Object.assign({ korps: null, gewicht: null, schuin: false }, o.kop || {}),
-            sub: Object.assign({ korps: null, gewicht: null, schuin: false }, o.sub || {}),
-          };
-          teken();
-          return lees();
-        };
-        state.kop = 'Souvenirs meenemen uit het buitenland';
-        state.sub = 'Dit zijn de regels.';
         state.stijl = 'proefA';
+        state.sub = [];
+        state.kop = [
+          { tekst: 'Souvenirs ', korps: null, gewicht: null, schuin: false },
+          { tekst: 'meenemen', korps: 'pt66', gewicht: 700, schuin: true },
+          { tekst: ' uit het buitenland', korps: null, gewicht: null, schuin: false },
+        ];
+        toonTekstvelden();
+        teken();
+
+        const [breed, hoog] = huidigeMaat(state);
+        const indel = indeling(breed, hoog, state);
+        const regels = indel.tekst.kop.regels;
         return {
-          standaard: zet({}),
-          groot: zet({ kop: { korps: 'pt66' } }),
-          klein: zet({ kop: { korps: 'pt24' } }),
-          schuin: zet({ kop: { schuin: true } }),
-          vet: zet({ sub: { gewicht: 700 } }),
-          melding: (() => { zet({ kop: { korps: 'pt66', schuin: true } });
-                            return document.getElementById('melding').textContent; })(),
-          terug: (() => { document.getElementById('opmaakterug').click();
-                          return { stand: lees(), leeg: JSON.stringify(state.opmaak) }; })(),
+          stukjes: regels.map((r) => r.stukjes.map((s) => ({
+            tekst: s.tekst, font: fontVan(s.spec), grootte: Math.round(s.spec.grootte),
+            gewicht: s.spec.gewicht, schuin: s.spec.schuin,
+          }))),
+          groottes: regels.map((r) => Math.round(r.grootte)),
+          tekst: regels.map((r) => r.stukjes.map((s) => s.tekst).join('')),
+          melding: document.getElementById('melding').textContent,
         };
       });
 
-      const maat = (font) => Number(/(\d+(?:\.\d+)?)px/.exec(font)[1]);
+      const alle = uit.stukjes.flat();
       const fouten = [];
-      if (!(maat(uit.groot.kop) > maat(uit.standaard.kop))) fouten.push('66 pt is niet groter');
-      if (!(maat(uit.klein.kop) < maat(uit.standaard.kop))) fouten.push('24 pt is niet kleiner');
-      // Groter korps, meer regels, dus een hoger tekstvlak.
-      if (!(uit.groot.vlak > uit.standaard.vlak)) fouten.push('het tekstvlak groeit niet mee');
-      if (!uit.schuin.kop.startsWith('italic ')) fouten.push('schuin komt niet in de fontregel');
-      if (uit.standaard.kop.startsWith('italic ')) fouten.push('standaard is al schuin');
-      if (!uit.vet.sub.startsWith('700 ')) fouten.push('vet komt niet in de fontregel: ' + uit.vet.sub);
+
+      // pt66 is 0,061 van 1080 in de verzonnen huisstijl hierboven: 66 px.
+      const uitgelicht = alle.find((s) => s.tekst.includes('meenemen'));
+      const rest = alle.find((s) => s.tekst.includes('Souvenirs'));
+
+      if (!uitgelicht || uitgelicht.grootte !== 66 || uitgelicht.gewicht !== 700 || !uitgelicht.schuin) {
+        fouten.push('het uitgelichte stuk klopt niet: ' + JSON.stringify(uitgelicht));
+      }
+      if (!rest || rest.grootte !== 54 || rest.schuin) {
+        fouten.push('de rest volgt de stijl niet: ' + JSON.stringify(rest));
+      }
+      // De regel met het grote woord erin is zo hoog als dat woord.
+      const metGroot = uit.stukjes.findIndex((r) => r.some((s) => s.grootte === 66));
+      if (metGroot < 0 || uit.groottes[metGroot] !== 66) {
+        fouten.push('de regelhoogte volgt het grootste stuk niet: ' + uit.groottes.join(','));
+      }
+      // Woorden blijven heel en in volgorde staan.
+      if (!uit.tekst.join(' ').includes('Souvenirs meenemen uit het')) {
+        fouten.push('de tekst is niet heel gebleven: ' + JSON.stringify(uit.tekst));
+      }
       if (!/wijkt af van de toolkit/.test(uit.melding)) fouten.push('geen melding bij afwijken');
-      if (uit.terug.stand.kop !== uit.standaard.kop) fouten.push('"terug naar de stijl" herstelt niet');
-      if (/true|pt66|[67]00/.test(uit.terug.leeg)) fouten.push('state.opmaak niet leeg: ' + uit.terug.leeg);
 
       return { ok: fouten.length === 0,
                uitleg: fouten.length ? fouten.join('; ')
-                                     : `${uit.standaard.kop} -> ${uit.groot.kop} / ${uit.schuin.kop}` };
+                                     : alle.map((s) => s.font).join(' | ') };
     });
 
-  alles &= await run('concept bewaart en herstelt de letterinstellingen',
+  /*
+   * Een woord mag half opgemaakt zijn. Dan bestaat dat woord uit twee stukjes
+   * en mag het nog steeds niet middenin afgebroken worden.
+   */
+  alles &= await run('een half opgemaakt woord blijft één woord',
     { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
     async (p) => {
+      const uit = await p.evaluate(() => {
+        state.stijl = 'proefA';
+        state.sub = [];
+        state.kop = [
+          { tekst: 'aaa bbb pas', korps: null, gewicht: null, schuin: false },
+          { tekst: 'poort ccc', korps: null, gewicht: 700, schuin: false },
+        ];
+        teken();
+        const [breed, hoog] = huidigeMaat(state);
+        const regels = indeling(breed, hoog, state).tekst.kop.regels;
+        return regels.map((r) => r.stukjes.map((s) => s.tekst).join(''));
+      });
+      const heel = uit.every((regel) => !/pas$/.test(regel)) &&
+                   uit.join(' ').includes('paspoort');
+      return { ok: heel, uitleg: JSON.stringify(uit) };
+    });
+
+  /*
+   * De werkbalk werkt op de selectie. Dit klikt hem aan zoals een redacteur dat
+   * doet: slepen over een woord en op B drukken.
+   */
+  /*
+   * De B-knop is een schakelaar, geen "maak vetter". In proefA is de kop al 700
+   * en de subtekst 400, dus dezelfde klik hoort in het ene veld vet aan te
+   * zetten en in het andere uit. Anders zou B op een kop niets zichtbaars doen.
+   */
+  alles &= await run('de werkbalk schakelt vet op de selectie, en laat de rest staan',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      const uit = await p.evaluate(() => {
+        state.stijl = 'proefA';               // kop 700, sub 400
+        const klikOpWoord = (veldnaam, woord) => {
+          const host = document.getElementById(veldnaam);
+          const knoop = host.firstChild;
+          const begin = knoop.nodeValue.indexOf(woord);
+          const bereik = document.createRange();
+          bereik.setStart(knoop, begin);
+          bereik.setEnd(knoop, begin + woord.length);
+          const sel = getSelection();
+          sel.removeAllRanges();
+          sel.addRange(bereik);
+          document.querySelector('#' + veldnaam + 'balk [data-rol="vet"]').click();
+          return {
+            stukken: state[veldnaam].map((s) => s.tekst + '/' + (s.gewicht || 'stijl')),
+            // Blijft de selectie op hetzelfde woord staan na het opnieuw opbouwen?
+            selectie: getSelection().toString(),
+            html: host.innerHTML,
+          };
+        };
+
+        state.kop = [{ tekst: 'Souvenirs meenemen uit het buitenland', korps: null, gewicht: null, schuin: false }];
+        state.sub = [{ tekst: 'Dit zijn de regels', korps: null, gewicht: null, schuin: false }];
+        toonTekstvelden();
+        teken();
+
+        return { sub: klikOpWoord('sub', 'regels'), kop: klikOpWoord('kop', 'meenemen') };
+      });
+
+      const fouten = [];
+      // De subtekst is 400, dus vet gaat AAN.
+      if (uit.sub.stukken.length !== 2 || !uit.sub.stukken[1].endsWith('/700')) {
+        fouten.push('vet ging niet aan in de subtekst: ' + uit.sub.stukken.join(' · '));
+      }
+      // De kop is al 700, dus dezelfde knop haalt vet ERAF.
+      if (uit.kop.stukken.length !== 3 || !uit.kop.stukken[1].endsWith('/400')) {
+        fouten.push('vet ging niet uit in de kop: ' + uit.kop.stukken.join(' · '));
+      }
+      if (uit.kop.selectie !== 'meenemen') {
+        fouten.push('de selectie is versprongen: "' + uit.kop.selectie + '"');
+      }
+      if (!/data-gewicht="400"/.test(uit.kop.html)) {
+        fouten.push('het veld toont de opmaak niet: ' + uit.kop.html);
+      }
+
+      return { ok: fouten.length === 0,
+               uitleg: fouten.length ? fouten.join('; ')
+                                     : 'sub: ' + uit.sub.stukken.join(' · ') + ' | kop: ' + uit.kop.stukken.join(' · ') };
+    });
+
+  alles &= await run('concept bewaart opgemaakte tekst, en oude concepten blijven werken',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      // c1 bewaart stukken, c2 is van voor de werkbalk en bewaart een string.
       await p.selectOption('#conceptlijst', 'c1');
       await p.click('#conceptOpenen');
       await p.waitForTimeout(200);
-      const na = await p.evaluate(() => ({
-        state: state.opmaak,
-        scherm: {
-          korps: document.getElementById('kopKorps').value,
-          schuin: document.getElementById('kopSchuin').checked,
-          subGewicht: document.getElementById('subGewicht').value,
-        },
-        opnieuw: leesConcept().opmaak,
+      const nieuw = await p.evaluate(() => ({
+        stukken: state.kop.map((s) => [s.tekst, s.korps, s.gewicht, s.schuin]),
+        opnieuw: leesConcept().kop.map((s) => [s.tekst, s.korps, s.gewicht, s.schuin]),
+        html: document.getElementById('kop').innerHTML,
       }));
-      const goed = na.state.kop.korps === 'pt66' && na.state.kop.schuin === true
-                   && na.state.sub.gewicht === 600
-                   && na.scherm.korps === 'pt66' && na.scherm.schuin === true
-                   && na.scherm.subGewicht === '600'
-                   && na.opnieuw.kop.korps === 'pt66';
 
-      // En een concept van voor deze knoppen laat de stijl gewoon staan.
       await p.selectOption('#conceptlijst', 'c2');
       await p.click('#conceptOpenen');
       await p.waitForTimeout(200);
-      const oud = await p.evaluate(() => JSON.stringify(state.opmaak));
-      const terug = !/true|pt\d|[4-7]00/.test(oud);
+      const oud = await p.evaluate(() => ({
+        stukken: state.kop.map((s) => [s.tekst, s.korps, s.gewicht, s.schuin]),
+        tekst: document.getElementById('kop').textContent,
+      }));
 
-      return { ok: goed && terug,
-               uitleg: goed ? (terug ? 'bewaard, hersteld en oud concept valt terug'
-                                     : 'oud concept valt niet terug: ' + oud)
-                            : JSON.stringify(na) };
+      const fouten = [];
+      if (nieuw.stukken.length !== 2) fouten.push('stukken niet teruggezet: ' + JSON.stringify(nieuw.stukken));
+      if (String(nieuw.stukken[1]) !== String(['paspoort', 'pt66', 700, true])) {
+        fouten.push('opmaak niet teruggezet: ' + JSON.stringify(nieuw.stukken[1]));
+      }
+      if (String(nieuw.opnieuw) !== String(nieuw.stukken)) fouten.push('bewaren en terugzetten lopen uiteen');
+      if (!/data-korps="pt66"/.test(nieuw.html)) fouten.push('het veld toont de opmaak niet: ' + nieuw.html);
+      if (oud.stukken.length !== 1 || oud.stukken[0][1] !== null) {
+        fouten.push('oud concept niet omgezet: ' + JSON.stringify(oud.stukken));
+      }
+      if (oud.tekst !== 'Oud concept') fouten.push('oude tekst niet in het veld: ' + oud.tekst);
+
+      return { ok: fouten.length === 0, uitleg: fouten.length ? fouten.join('; ') : 'beide vormen goed' };
     });
 
   console.log(alles ? '\nAlle frontendtests geslaagd.' : '\nEr zijn tests gefaald.');
