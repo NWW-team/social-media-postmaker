@@ -39,13 +39,22 @@ niet. Heb je toegang nodig, vraag dan de beheerder je toe te voegen — zie
    of het scrollwiel.
 5. Typ de kop en de subtekst. Elke stijl heeft een maximum aantal regels uit
    de toolkit; ga je eroverheen, dan zie je dat meteen.
-6. Klik **PNG downloaden**.
+6. Kies waar de cirkels met de icoonbadges staan: in een van de vier hoeken,
+   of onderaan of bovenaan het midden.
+7. Klik **PNG downloaden**.
 
 Stap 2 laat de vijf kaarten zien wat elke stijl met jouw materiaal doet. Heb je
 nog niets getypt, dan staat er voorbeeldtekst op de kaarten — zonder tekst is er
 namelijk geen tekstvlak, en dan lijken alle stijlen op elkaar. Zodra je één van
 de twee velden invult, staat overal je eigen tekst. Het grote voorbeeld en de
 download krijgen die voorbeeldtekst nooit: die tonen wat je werkelijk downloadt.
+
+De cirkelgroep staat in de huisstijl op één plek: linksonder, zoals op de
+toolkitpagina's. Op het account staat diezelfde groep ook rechtsonder, bovenin
+en onderaan het midden. Dat zijn geen andere tekeningen maar dezelfde,
+gespiegeld om het midden van de foto — en zo rekent de tool ze ook uit. Eén
+plek in Supabase levert dus zes plekken in het scherm, en past de huisstijl de
+cirkels aan, dan schuiven alle zes mee.
 
 Zolang je nog geen foto hebt gekozen, tekent de tool een verloop als plaatshouder — anders is er niets om de
 witte koppen en de witte cirkellijnen tegen af te zetten en valt de opmaak niet

@@ -91,7 +91,11 @@ function configIsIngevuld() { return true; }`;
 
 const rijenToegestaan = {
   huisstijl: { data: Object.entries(huisstijl).map(([sleutel, waarde]) => ({ sleutel, waarde })), error: null },
-  concepten: { data: [{ id: 'c1', titel: 'Souvenirs juli', inhoud: { platform:'facebook', format:'vierkant', stijl:'proefB', kop:'Test kop', sub:'Test sub', decoratie:true, iconen:['Proeficoon A','Proeficoon B'], zoom:1.4, brandpunt:{x:0.4,y:0.6} }, bijgewerkt_op: '2026-09-15T10:00:00Z' }], error: null },
+  concepten: { data: [
+    { id: 'c1', titel: 'Souvenirs juli', inhoud: { platform:'facebook', format:'vierkant', stijl:'proefB', kop:'Test kop', sub:'Test sub', decoratie:true, decoratiepositie:'rechtsboven', iconen:['Proeficoon A','Proeficoon B'], zoom:1.4, brandpunt:{x:0.4,y:0.6} }, bijgewerkt_op: '2026-09-15T10:00:00Z' },
+    /* Bewaard voordat de cirkels konden verhuizen: zonder de sleutel. */
+    { id: 'c2', titel: 'Souvenirs juni', inhoud: { platform:'instagram', format:'staand', stijl:'proefA', kop:'Oud concept', sub:'', decoratie:true, iconen:['Proeficoon A','Proeficoon B'], zoom:1, brandpunt:{x:0.5,y:0.5} }, bijgewerkt_op: '2026-09-14T10:00:00Z' },
+  ], error: null },
 };
 
 async function run(naam, scenario, controle) {
@@ -233,10 +237,71 @@ const zichtbaar = (page, id) => page.evaluate((i) => {
       await p.waitForTimeout(200);
       const st = await p.evaluate(() => ({ ...state, foto: state.foto }));
       const opgeslagen = await p.evaluate(() => leesConcept());
+      const keuzelijst = await p.evaluate(() => document.getElementById('decoratiepositie').value);
       return { ok: st.platform === 'facebook' && st.format === 'vierkant' && st.stijl === 'proefB'
                    && st.kop === 'Test kop' && Math.abs(st.zoom - 1.4) < 1e-9 && st.foto === null
-                   && !('foto' in opgeslagen),
-               uitleg: `${st.platform}/${st.format}/${st.stijl} zoom=${st.zoom}, foto in concept=${'foto' in opgeslagen}` };
+                   && !('foto' in opgeslagen)
+                   && st.decoratiepositie === 'rechtsboven' && keuzelijst === 'rechtsboven',
+               uitleg: `${st.platform}/${st.format}/${st.stijl} zoom=${st.zoom}, plek=${st.decoratiepositie}/${keuzelijst}, foto in concept=${'foto' in opgeslagen}` };
+    });
+
+  alles &= await run('concept van voor de cirkelplek valt terug op linksonder',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      // Eerst een concept mét plek openen, zodat de terugval ook echt iets
+      // moet terugzetten in plaats van te blijven staan waar hij al stond.
+      await p.selectOption('#conceptlijst', 'c1');
+      await p.click('#conceptOpenen');
+      await p.waitForTimeout(200);
+      await p.selectOption('#conceptlijst', 'c2');
+      await p.click('#conceptOpenen');
+      await p.waitForTimeout(200);
+      const plek = await p.evaluate(() => state.decoratiepositie);
+      const keuzelijst = await p.evaluate(() => document.getElementById('decoratiepositie').value);
+      return { ok: plek === 'linksonder' && keuzelijst === 'linksonder',
+               uitleg: `plek=${plek}/${keuzelijst}` };
+    });
+
+  /*
+   * De zes plekken zijn spiegelingen en een verschuiving van één groep uit de
+   * huisstijl. Dit rekent ze na op een foto van 1000 bij 800, met de ring en de
+   * badge uit de verzonnen huisstijl hierboven: gaat er iets mis in de
+   * omrekening, dan is het hier te zien en niet pas in de export.
+   */
+  alles &= await run('de zes cirkelplekken komen op de juiste plaats uit',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      const uit = await p.evaluate(() => {
+        const foto = { x: 0, y: 0, b: 1000, h: 800 };
+        const ring = { x: 0.14, y: -0.14, d: 0.56 };
+        const plekken = {};
+        Object.keys(DECORATIEPOSITIES).forEach((naam) => {
+          const p = decoratiePlaatsing(foto, naam)(ring);
+          plekken[naam] = [Math.round(p.cx), Math.round(p.cy), Math.round(p.straal)];
+        });
+        // Een onbekende naam hoort niet te laten vallen, maar terug te vallen.
+        plekken.onzin = (() => {
+          const p = decoratiePlaatsing(foto, 'bestaatniet')(ring);
+          return [Math.round(p.cx), Math.round(p.cy), Math.round(p.straal)];
+        })();
+        return plekken;
+      });
+
+      // linksonder = de huisstijl zelf; rechts is 1 - x; boven spiegelt om het
+      // midden van de foto; midden legt het midden van de groep op 0,5.
+      const verwacht = {
+        linksonder:  [140, 660, 280],
+        rechtsonder: [860, 660, 280],
+        linksboven:  [140, 140, 280],
+        rechtsboven: [860, 140, 280],
+        middenonder: [500, 660, 280],
+        middenboven: [500, 140, 280],
+        onzin:       [140, 660, 280],
+      };
+      const fout = Object.keys(verwacht)
+        .filter((naam) => String(uit[naam]) !== String(verwacht[naam]))
+        .map((naam) => `${naam}: ${uit[naam]} i.p.v. ${verwacht[naam]}`);
+      return { ok: fout.length === 0, uitleg: fout.length ? fout.join('; ') : 'alle zes kloppen' };
     });
 
   console.log(alles ? '\nAlle frontendtests geslaagd.' : '\nEr zijn tests gefaald.');
