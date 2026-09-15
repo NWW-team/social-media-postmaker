@@ -90,8 +90,8 @@ function startApp() {
   teken();
 }
 
-/* De stijlknoppen komen uit templates.js, zodat een stijl toevoegen daar
-   genoeg is. */
+/* De stijlknoppen komen uit de huisstijl in Supabase, zodat een stijl
+   toevoegen daar genoeg is en hier niets hoeft te veranderen. */
 function bouwStijlknoppen() {
   const rij = document.getElementById('stijlknoppen');
   Object.keys(TEMPLATES.stijlen).forEach((naam) => {
@@ -106,10 +106,10 @@ function bouwStijlknoppen() {
 }
 
 /*
- * Iconen staan als SVG-tekst in templates.js en worden hier omgezet naar een
- * data-URI. Geen los bestand dus: dat houdt de pagina werkend als je index.html
- * lokaal dubbelklikt, waar de browser het laden van losse bestanden in een
- * canvas blokkeert.
+ * Iconen komen als SVG-tekst uit de huisstijl en worden hier omgezet naar een
+ * data-URI. Geen los bestand dus: een canvas waar een extern plaatje in is
+ * getekend raakt "besmet" en weigert daarna te exporteren. Met een data-URI
+ * blijft de PNG-download werken.
  */
 function laadIconen() {
   const kleur = TEMPLATES.decoratie.icoonKleur;

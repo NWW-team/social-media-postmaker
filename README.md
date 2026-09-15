@@ -13,8 +13,16 @@ moeten wachten. Zie [STRATEGY.md](STRATEGY.md) voor het waarom.
 
 ## Gebruiken
 
-Open de gepubliceerde pagina, of download `index.html` en dubbelklik erop. Werkt
-in Edge en Chrome, zonder installatie en zonder inloggen.
+Open de gepubliceerde pagina en log in. Werkt in Edge en Chrome, zonder
+installatie.
+
+Alleen vooraf toegelaten accounts komen binnen; zelf een account aanmaken kan
+niet. Heb je toegang nodig, vraag dan de beheerder je toe te voegen — zie
+[supabase/LEESMIJ.md](supabase/LEESMIJ.md) stap 5.
+
+> Dubbelklikken op een gedownloade `index.html` werkt sinds de koppeling met
+> Supabase niet meer: de huisstijl komt uit de database en daar moet de pagina
+> voor kunnen inloggen. Hetzelfde geldt voor offline werken.
 
 1. Kies platform en formaat.
 2. Kies een stijl.
@@ -28,12 +36,26 @@ in Edge en Chrome, zonder installatie en zonder inloggen.
 
 ## Waar blijft mijn foto?
 
-Op je eigen computer. Er is geen server: de pagina is alleen HTML, CSS en
-JavaScript, en alle bewerking gebeurt in je browser. De foto wordt niet
-geüpload, niet opgeslagen en niet gelogd. Sluit je het tabblad, dan is alles weg.
+Op je eigen computer. Het inpassen, bijsnijden en exporteren gebeurt volledig in
+je browser; er gaat geen enkele pixel naar een server. Sluit je het tabblad, dan
+is de foto weg.
 
-Je kunt dat zelf controleren: zet je netwerk uit en ververs de pagina — hij
-blijft gewoon werken.
+Dat is geen belofte op erewoord maar een eigenschap van de code: `app.js` leest
+je bestand met `FileReader`, tekent het op een `<canvas>` en exporteert dat
+canvas. Er is geen upload-aanroep om te vergeten. Je kunt het zelf zien in het
+tabblad **Netwerk** van de ontwikkelaarsconsole (`F12`): terwijl je sleept en
+zoomt, gebeurt er niets.
+
+Wat wél naar Supabase gaat:
+
+| Gegeven | Wanneer |
+| --- | --- |
+| Je e-mailadres en wachtwoord | Bij inloggen |
+| De huisstijl die je ophaalt | Bij het openen van de app |
+| Naam, kop, subtekst en instellingen van een concept | Alleen als je op **Bewaren** klikt |
+
+Een bewaard concept bevat dus een recept, geen plaatje. Open je het later, dan
+sleep je je foto er opnieuw in.
 
 ## Exportmaten
 
@@ -80,23 +102,39 @@ het. Twee bewuste afwijkingen:
 
 ## De opmaak aanpassen
 
-Alles wat met vormgeving te maken heeft staat in **`templates.js`**. Daar pas je
-aan, nergens anders:
+De huisstijl stond in `templates.js`. Die staat er niet meer: hij zit nu in
+Supabase, in de tabel `public.huisstijl`, achter de allowlist. Aanpassen doe je
+in het dashboard, niet in deze repo.
 
-| Wat                                  | Waar in `templates.js` |
-| ------------------------------------ | ---------------------- |
-| Kleuren                              | `HUISSTIJL`            |
-| Lettertype                           | `LETTERTYPE`           |
-| Marge, inspringing, hoekafronding    | `TEMPLATES.stramien`   |
-| Korpsgroottes en regelhoogte         | `TEMPLATES.korps`, `TEMPLATES.regelhoogte` |
-| De vijf stijlen en hun regellimieten | `TEMPLATES.stijlen`    |
-| Exportmaten per platform             | `TEMPLATES.platforms`  |
+Elke rij is één sleutel met een stuk JSON:
+
+| Sleutel | Wat erin staat |
+| --- | --- |
+| `kleuren` | De huisstijlkleuren |
+| `lettertype` | De letterstapel |
+| `stramien` | Marge, inspringing, hoekafronding |
+| `korps`, `regelhoogte` | Korpsgroottes en regelhoogte |
+| `stijlen` | De vijf stijlen en hun regellimieten |
+| `platforms`, `formats` | Exportmaten en verhoudingen |
+| `decoratie`, `iconen` | De cirkellijnen en de badges |
+| `papier` | De achtergrondkleur van de export |
 
 Maten staan in verhoudingen van de breedte (0–1), niet in pixels. Zo klopt
 hetzelfde sjabloon zowel op 1080 als op 1200 pixels breed.
 
-Een stijl toevoegen is één blok in `TEMPLATES.stijlen` plus één knop in
-`index.html`. Verder niets.
+Een waarde wijzigen gaat via **SQL Editor**:
+
+```sql
+update public.huisstijl
+set waarde = jsonb_set(waarde, '{blauw}', '"#0055AA"')
+where sleutel = 'kleuren';
+```
+
+Een stijl toevoegen is één blok in de sleutel `stijlen`. De knoppen in het
+scherm komen daar vanzelf uit; `index.html` hoeft niet aangepast te worden.
+
+Er is met opzet **geen** schrijfpolicy op deze tabel: vanuit de browser kan
+niemand de huisstijl veranderen, ook een toegelaten redacteur niet.
 
 ### Nog te doen
 
@@ -112,7 +150,8 @@ Een stijl toevoegen is één blok in `TEMPLATES.stijlen` plus één knop in
 
 ### Een pictogram toevoegen
 
-Zet een nieuw item in `ICONEN` in `templates.js`. Twee vormen zijn toegestaan:
+Voeg een item toe aan de sleutel `iconen` in de tabel `public.huisstijl`. Twee
+vormen zijn toegestaan:
 
 - een kant-en-klare data-URI (`data:image/png;base64,…`), of
 - SVG-tekst, waarin `{kleur}` wordt vervangen door de huisstijlkleur.
@@ -125,6 +164,55 @@ Zet een nieuw item in `ICONEN` in `templates.js`. Twee vormen zijn toegestaan:
 De keuzelijsten in het scherm vullen zich vanzelf; er hoeft geen code aangepast
 te worden.
 
+## Toegang
+
+Alleen vooraf toegelaten accounts kunnen de tool gebruiken. Inrichten:
+[supabase/LEESMIJ.md](supabase/LEESMIJ.md). Nalopen of het werkt:
+[TESTEN.md](TESTEN.md).
+
+### Wat wél is afgeschermd
+
+De **huisstijl** en de **opgeslagen concepten**. Die staan in Supabase achter
+row level security. Elke policy toetst twee dingen: ben je wie je zegt te zijn
+(`auth.uid()`), en sta je op de allowlist (`public.is_toegestaan()`). Die toets
+draait in Postgres, bij elk verzoek opnieuw — niet in de browser, waar de
+bezoeker hem zou kunnen omzeilen.
+
+Gevolg: haal je met de ontwikkelaarsconsole het inlogscherm weg, dan zie je de
+app-onderdelen en verder niets. Geen stijl, geen kleur, geen maat, een blanco
+canvas. De tool is zonder huisstijl geen tool.
+
+Toegang intrekken is één regel SQL en werkt direct, ook bij een lopende sessie.
+
+### Wat níét is afgeschermd
+
+**De bestanden zelf.** `index.html`, `app.js`, `auth.js` en `config.js` zijn
+voor iedereen op te vragen, en dat blijft zo. GitHub Pages serveert statische
+bestanden zonder enige sessiecontrole; er is geen plek waar zo'n controle in
+past. Een inlogscherm in HTML is een scherm, geen slot.
+
+Dat is bewust en het is geen lek: in die bestanden staat niets geheims. De
+Supabase-URL en de publishable key horen publiek te zijn — ze zeggen alleen
+wélk project je aanspreekt, niet wie je bent.
+
+Wil je dat ook de pagina zelf privé is, dan is er een voorziening nodig die
+GitHub Pages niet heeft: **edge-authenticatie**, een laag die de sessie
+controleert vóórdat er één byte HTML wordt geleverd. Opties:
+
+| Waar | Hoe | Kanttekening |
+| --- | --- | --- |
+| Cloudflare Pages + Cloudflare Access | Allowlist op e-mailadres, geen codewijziging | Gratis tot 50 gebruikers; meest passend hier |
+| Netlify of Vercel | Edge-middleware die de Supabase-sessie verifieert | Vraagt wel code |
+| GitHub Pages privé | Repo privé zetten | Alleen met GitHub Enterprise Cloud; bezoekers moeten org-lid zijn |
+
+### Een openstaand punt
+
+De huisstijl-config heeft in deze **openbare** repo gestaan en staat nog in de
+Git-geschiedenis. Hem er nu uit halen beperkt wat er in de toekomst bij komt,
+maar haalt niet terug wat al gepubliceerd is. Wil je dat ook dichtzetten, dan
+moet de repo privé worden of de geschiedenis herschreven. Dat is een aparte
+beslissing; hij is nog niet genomen.
+
 ## Publiceren
 
 De pagina is een statische site. Publiceren via GitHub Pages:
@@ -132,21 +220,44 @@ De pagina is een statische site. Publiceren via GitHub Pages:
 Settings → Pages → Source: *Deploy from a branch* → Branch: `main`, map `/ (root)`.
 
 Na een minuut staat hij op `https://nww-team.github.io/social-media-postmaker/`.
-Let op: de repo is openbaar, dus die pagina is voor iedereen zichtbaar.
+
+Vul vóór het publiceren `config.js` in — zonder die twee waarden toont de
+pagina alleen een foutmelding. Zie [supabase/LEESMIJ.md](supabase/LEESMIJ.md)
+stap 6.
 
 ## Bestanden
 
-| Bestand        | Wat erin staat                                   |
-| -------------- | ------------------------------------------------ |
-| `index.html`   | Het scherm en alle opmaak van de pagina zelf     |
-| `app.js`       | Foto inpassen, slepen, zoomen, tekenen, exporteren |
-| `templates.js` | De huisstijl: kleuren, stramien, stijlen, maten  |
-| `STRATEGY.md`  | Waarom dit product bestaat                       |
+| Bestand | Wat erin staat |
+| --- | --- |
+| `index.html` | Het scherm, het inlogscherm en alle opmaak van de pagina |
+| `app.js` | Foto inpassen, slepen, zoomen, tekenen, exporteren |
+| `auth.js` | Inloggen, uitloggen, huisstijl en concepten ophalen |
+| `config.js` | De publieke Supabase-URL en publishable key |
+| `supabase/01_schema.sql` | Tabellen, RLS en policies — hier ligt de toegangscontrole |
+| `supabase/03_controle.sql` | Nalopen of RLS op elke tabel aan staat |
+| `supabase/LEESMIJ.md` | Wat je zelf in het Supabase-dashboard doet |
+| `TESTEN.md` | Testdraaiboek voor de toegangscontrole |
+| `tests/poort.test.js` | Geautomatiseerde test van de poortlogica |
+| `STRATEGY.md` | Waarom dit product bestaat |
 
-Geen build, geen dependencies, geen installatie.
+Eén afhankelijkheid: de Supabase-client, via een `<script>`-tag uit een CDN.
+Verder geen build, geen package.json, geen installatie.
+
+`tests/poort.test.js` is optioneel en heeft Node en Playwright nodig. Je hebt
+het niet nodig om de app te gebruiken of aan te passen.
+
+### Sleutels die hier nooit in horen
+
+De service-role key, de secret key, het databasewachtwoord en het JWT-secret.
+De eerste twee negeren álle policies. Zet ze niet in `config.js`, niet in een
+ander bestand, en niet in een chatbericht. Zie
+[supabase/LEESMIJ.md](supabase/LEESMIJ.md) stap 6 voor wat je doet als er toch
+één is rondgegaan.
 
 ## Wat er nog niet in zit
 
-Stories en Reels (9:16), webtekst omzetten naar social tekst, concepten
-opslaan, rechtstreeks posten, een koppeling met een beeldbank, en de
-icoonbadges en cirkellijnen uit de toolkit.
+Stories en Reels (9:16), webtekst omzetten naar social tekst, rechtstreeks
+posten, en een koppeling met een beeldbank.
+
+Concepten opslaan zit er sinds de Supabase-koppeling wél in — per redacteur
+afgeschermd, en zonder de foto.
