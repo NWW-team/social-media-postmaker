@@ -122,7 +122,7 @@ function startApp() {
 
   // De standaardiconen staan in state hardgecodeerd; komt de set uit Supabase
   // ooit anders terug, dan pakken we gewoon de eerste twee die er wel zijn.
-  const beschikbaar = Object.keys(TEMPLATES.iconen);
+  const beschikbaar = icoonnamen();
   state.iconen = state.iconen.map(
     (naam, i) => (beschikbaar.includes(naam) ? naam : beschikbaar[i] || beschikbaar[0])
   );
@@ -332,6 +332,19 @@ function laadIconen() {
   });
 }
 
+/*
+ * De iconen op alfabet.
+ *
+ * Postgres geeft de sleutels van een jsonb-waarde terug op lengte en pas
+ * daarbinnen op alfabet, dus zonder dit staat "Euro" boven "Ambassade" en
+ * "Nederlandse vlag" onderaan bij de toolkiticonen. Bij acht iconen viel dat
+ * nog te overzien, bij twintig niet meer. localeCompare met 'nl' zet ook
+ * iconen met een accent op hun plek.
+ */
+function icoonnamen() {
+  return Object.keys(TEMPLATES.iconen).sort((a, b) => a.localeCompare(b, 'nl'));
+}
+
 function bouwIcoonkeuze() {
   Object.keys(DECORATIEPOSITIES).forEach((naam) => {
     const optie = document.createElement('option');
@@ -346,7 +359,7 @@ function bouwIcoonkeuze() {
   });
 
   [el.icoon0, el.icoon1].forEach((keuzelijst, i) => {
-    Object.keys(TEMPLATES.iconen).forEach((naam) => {
+    icoonnamen().forEach((naam) => {
       const optie = document.createElement('option');
       optie.value = naam;
       optie.textContent = naam;

@@ -175,8 +175,13 @@ niemand de huisstijl veranderen, ook een toegelaten redacteur niet.
   gestippelde plaatshouder: liever een leeg vak dat zegt dat er iets hoort te
   staan, dan een tekstlogo dat voor het echte kan doorgaan.
 - **Iconenset**: drie pictogrammen komen uit de toolkit (wereld, gesprek,
-  megafoon). De rest zijn eenvoudige eigen tekeningen. In de posts op het
-  account staan er meer, zoals het Nederlandkaartje en de brancard.
+  megafoon). De overige zeventien zijn eenvoudige eigen tekeningen in dezelfde
+  lijnstijl — placeholders, net als de vijf die er al stonden. Twee dingen uit
+  de posts op het account zitten er nog niet bij: het Nederlandkaartje met het
+  hoofd en de brancard. Die zijn met de hand niet goed na te maken; een
+  Nederlandsilhouet dat net niet klopt is erger dan geen silhouet. Voor
+  "Nederland" staat er nu een vlaggetje en voor medische hulp een ziekenhuis.
+  De keuzelijsten staan op alfabet.
 - **Controle** door communicatie of de export echt aan de huisstijl voldoet.
 
 ### Een pictogram toevoegen
