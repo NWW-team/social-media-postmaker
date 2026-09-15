@@ -1,11 +1,16 @@
 /*
  * app.js — foto inpassen, huisstijl eroverheen, PNG eruit.
  *
- * Alles gebeurt in de browser van de redacteur. De foto wordt nooit verstuurd,
- * niet opgeslagen en niet gelogd: er is geen server om hem heen te sturen.
+ * De foto wordt nooit verstuurd, niet opgeslagen en niet gelogd. Alle
+ * beeldbewerking gebeurt in de browser van de redacteur; er gaat geen enkele
+ * pixel naar Supabase. Een bewaard concept bevat alleen instellingen en tekst.
  *
- * De opmaak zelf staat in templates.js, niet hier. Dit bestand tekent alleen
- * wat daar beschreven staat.
+ * De opmaak zelf staat niet hier, maar in Supabase (tabel public.huisstijl).
+ * auth.js haalt hem op zodra vaststaat dat de gebruiker toegang heeft, en zet
+ * hem in TEMPLATES. Dit bestand tekent alleen wat daar beschreven staat.
+ *
+ * Zonder toegestaan account blijft TEMPLATES leeg en start deze app niet: de
+ * database geeft dan geen enkele regel vrij.
  *
  * De toolkit schrijft voor: hou je aan de korpsgrootte en aan het maximum
  * aantal regels per tekstvak. Daarom verkleint de tekst hier niet stiekem —
@@ -32,9 +37,26 @@ const el = {};
 const icoonCache = {};
 let laatsteWaarschuwingen = [];
 
+/*
+ * De huisstijl uit Supabase. Blijft null tot auth.js hem heeft opgehaald —
+ * en dat lukt alleen met een account dat op de allowlist staat.
+ */
+let TEMPLATES = null;
+let appGestart = false;
+
 /* ---------------------------------------------------------------- opstarten */
 
-document.addEventListener('DOMContentLoaded', () => {
+/*
+ * Wordt door auth.js aangeroepen, en alleen daar: pas als er een geldige
+ * sessie is én de database daadwerkelijk huisstijlregels heeft teruggegeven.
+ * Er hangt met opzet geen DOMContentLoaded aan: de app hoort niet te starten
+ * omdat de pagina geladen is, maar omdat er toegang is.
+ */
+function startApp() {
+  if (appGestart) return;
+  if (!TEMPLATES) throw new Error('startApp() aangeroepen zonder huisstijl.');
+  appGestart = true;
+
   [
     'canvas', 'dropzone', 'bestandsknop', 'bestandsinvoer', 'voorbeeldknop',
     'kop', 'sub', 'kopregels', 'subregels', 'zoom', 'zoomrij', 'resetknop',
@@ -44,6 +66,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   el.ctx = el.canvas.getContext('2d');
 
+  // De standaardiconen staan in state hardgecodeerd; komt de set uit Supabase
+  // ooit anders terug, dan pakken we gewoon de eerste twee die er wel zijn.
+  const beschikbaar = Object.keys(TEMPLATES.iconen);
+  state.iconen = state.iconen.map(
+    (naam, i) => (beschikbaar.includes(naam) ? naam : beschikbaar[i] || beschikbaar[0])
+  );
+
+  // Hetzelfde voor de standaardkeuzes. De huisstijl komt uit de database en
+  // hoeft niet dezelfde namen te gebruiken als toen deze code geschreven werd;
+  // een hernoemde stijl mag geen lege pagina opleveren.
+  if (!TEMPLATES.stijlen[state.stijl]) state.stijl = Object.keys(TEMPLATES.stijlen)[0];
+  if (!TEMPLATES.platforms[state.platform]) state.platform = Object.keys(TEMPLATES.platforms)[0];
+  if (!TEMPLATES.formats[state.format]) state.format = Object.keys(TEMPLATES.formats)[0];
+
   laadIconen();
   bouwStijlknoppen();
   bouwIcoonkeuze();
@@ -52,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
   koppelSlepen();
   werkbijUI();
   teken();
-});
+}
 
 /* De stijlknoppen komen uit templates.js, zodat een stijl toevoegen daar
    genoeg is. */
@@ -679,4 +715,73 @@ function toonMelding(tekst, soort) {
 function klem(waarde, laag, hoog) {
   if (laag > hoog) return (laag + hoog) / 2;   // foto kleiner dan het vlak
   return Math.min(hoog, Math.max(laag, waarde));
+}
+
+/* -------------------------------------------------------------- concepten */
+
+/*
+ * Wat er in een bewaard concept gaat — en vooral: wat niet.
+ *
+ * De foto zit hier bewust niet in. Die zou als base64 in de database belanden
+ * en daarmee de belofte breken dat beeld de computer van de redacteur niet
+ * verlaat. Een concept is dus een recept, geen plaatje: je opent het en sleept
+ * je foto er opnieuw in.
+ */
+function leesConcept() {
+  return {
+    platform: state.platform,
+    format: state.format,
+    stijl: state.stijl,
+    kop: state.kop,
+    sub: state.sub,
+    decoratie: state.decoratie,
+    iconen: state.iconen.slice(),
+    zoom: state.zoom,
+    brandpunt: { x: state.brandpunt.x, y: state.brandpunt.y },
+  };
+}
+
+/*
+ * Een concept terugzetten. Alles wordt getoetst voordat het in state landt:
+ * de inhoud komt uit de database en hoeft niet te kloppen met de huisstijl
+ * zoals die er nu uitziet. Is een stijl inmiddels hernoemd of een icoon
+ * verdwenen, dan houden we gewoon de huidige waarde aan.
+ */
+function pasConceptToe(inhoud) {
+  if (!inhoud || typeof inhoud !== 'object') return;
+
+  if (TEMPLATES.platforms[inhoud.platform]) state.platform = inhoud.platform;
+  if (TEMPLATES.formats[inhoud.format]) state.format = inhoud.format;
+  if (TEMPLATES.stijlen[inhoud.stijl]) state.stijl = inhoud.stijl;
+
+  state.kop = typeof inhoud.kop === 'string' ? inhoud.kop : '';
+  state.sub = typeof inhoud.sub === 'string' ? inhoud.sub : '';
+  state.decoratie = Boolean(inhoud.decoratie);
+
+  if (Array.isArray(inhoud.iconen)) {
+    state.iconen = state.iconen.map((huidig, i) =>
+      (typeof inhoud.iconen[i] === 'string' && TEMPLATES.iconen[inhoud.iconen[i]])
+        ? inhoud.iconen[i]
+        : huidig);
+  }
+
+  const zoom = Number(inhoud.zoom);
+  state.zoom = Number.isFinite(zoom) ? klem(zoom, 1, 3) : 1;
+
+  const bp = inhoud.brandpunt || {};
+  state.brandpunt = {
+    x: Number.isFinite(Number(bp.x)) ? klem(Number(bp.x), 0, 1) : 0.5,
+    y: Number.isFinite(Number(bp.y)) ? klem(Number(bp.y), 0, 1) : 0.5,
+  };
+
+  el.kop.value = state.kop;
+  el.sub.value = state.sub;
+  el.zoom.value = String(state.zoom);
+  el.decoratieAan.checked = state.decoratie;
+  el.icoonrij.hidden = !state.decoratie;
+  el.icoon0.value = state.iconen[0];
+  el.icoon1.value = state.iconen[1];
+
+  werkbijUI();
+  teken();
 }

@@ -219,13 +219,55 @@
     font-size: 13px;
     color: var(--grijs);
   }
+
+  /* ------------------------------------------------- inloggen en uitloggen */
+
+  .kopbalk-rij {
+    max-width: 1120px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .sessie { font-size: 14px; text-align: right; flex-shrink: 0; }
+  .sessie .adres { display: block; opacity: 0.85; margin-bottom: 6px; word-break: break-all; }
+  .sessie .knop { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.5); }
+  .sessie .knop:hover { background: rgba(255,255,255,0.22); }
+
+  .poort {
+    max-width: 440px;
+    margin: 48px auto;
+    padding: 0 24px;
+  }
+  .poort h2 { margin: 0 0 6px; font-size: 20px; color: var(--donkerblauw); }
+  .poort p.hulp { margin-top: 0; }
+  .poort label { display: block; font-weight: 600; margin: 14px 0 4px; font-size: 14px; }
+  .poort input {
+    width: 100%;
+    padding: 9px 10px;
+    font: inherit;
+    border: 1px solid var(--rand);
+    border-radius: 4px;
+  }
+  .poort input:focus-visible { outline: 3px solid var(--blauw); outline-offset: 1px; }
+  .poort button { margin-top: 18px; width: 100%; }
+  .poort .melding { max-width: none; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Social Media Opmaaktool</h1>
-  <p>Zet een foto in de huisstijl en download hem op de juiste maat voor Instagram of Facebook.</p>
+  <div class="kopbalk-rij">
+    <div>
+      <h1>Social Media Opmaaktool</h1>
+      <p>Zet een foto in de huisstijl en download hem op de juiste maat voor Instagram of Facebook.</p>
+    </div>
+    <div class="sessie" id="sessiebalk" hidden>
+      <span class="adres" id="sessieadres"></span>
+      <button type="button" class="knop" id="uitlogknop">Uitloggen</button>
+    </div>
+  </div>
 </header>
 
 <p class="waarschuwing">
@@ -235,7 +277,51 @@
   zie de README. Laat een export controleren voordat je hiermee publiceert.
 </p>
 
-<main>
+<!--
+  Het inlogscherm hieronder is een SCHERM, geen slot. Wie dit blok met de
+  ontwikkelaarsconsole weghaalt, ziet de app-onderdelen — maar krijgt geen
+  enkele huisstijlregel en geen enkel concept te zien, want die komen uit
+  Supabase en daar beslissen de RLS-policies. Zonder toegestaan account
+  blijft er een leeg canvas over.
+-->
+<section class="poort" id="poort" hidden>
+  <h2>Inloggen</h2>
+  <p class="hulp">
+    Deze tool is voor vooraf toegelaten redacteuren. Zelf een account aanmaken
+    kan niet; registratie staat uit op de server. Heb je toegang nodig, vraag
+    dan de beheerder je toe te voegen.
+  </p>
+
+  <form id="inlogformulier" autocomplete="on">
+    <label for="inlogEmail">E-mailadres</label>
+    <input type="email" id="inlogEmail" name="email" autocomplete="username" required>
+
+    <label for="inlogWachtwoord">Wachtwoord</label>
+    <input type="password" id="inlogWachtwoord" name="password" autocomplete="current-password" required>
+
+    <button type="submit" class="knop primair" id="inlogknop">Inloggen</button>
+  </form>
+
+  <p class="melding fout" id="inlogmelding" hidden></p>
+</section>
+
+<!-- Ingelogd, maar niet op de allowlist. -->
+<section class="poort" id="geentoegang" hidden>
+  <h2>Geen toegang</h2>
+  <p class="melding fout">
+    Je bent ingelogd als <strong id="geentoegangAdres"></strong>, maar dit account
+    staat niet op de lijst met toegelaten gebruikers. De database geeft daarom
+    geen gegevens vrij.
+  </p>
+  <p class="hulp">
+    Dat is geen foutmelding in de app: de toegangsregels in Supabase laten dit
+    account niets zien. Vraag de beheerder om je toe te voegen.
+  </p>
+</section>
+
+<p class="melding fout" id="startfout" hidden style="max-width:440px;margin:48px auto"></p>
+
+<main id="werkblad" hidden>
   <div>
     <fieldset>
       <legend>1. Waar plaats je de post?</legend>
@@ -309,6 +395,30 @@
       </p>
     </fieldset>
 
+    <fieldset>
+      <legend>6. Concepten</legend>
+      <p class="hulp" style="margin-top:0">
+        Bewaart je instellingen en tekst, zodat je later verder kunt. De foto
+        gaat bewust niet mee: die blijft op je eigen computer.
+      </p>
+
+      <label class="veld" for="conceptTitel">Naam</label>
+      <div class="knoprij">
+        <input type="text" id="conceptTitel" maxlength="120" placeholder="Bijvoorbeeld: Souvenirs juli"
+               style="flex:1;min-width:160px;padding:8px 10px;font:inherit;border:1px solid var(--rand);border-radius:4px">
+        <button type="button" class="knop" id="conceptBewaren">Bewaren</button>
+      </div>
+
+      <label class="veld" for="conceptlijst" style="margin-top:14px">Bewaarde concepten</label>
+      <select id="conceptlijst" style="width:100%;padding:8px 10px;font:inherit;border:1px solid var(--rand);border-radius:4px"></select>
+      <div class="knoprij" style="margin-top:8px">
+        <button type="button" class="knop" id="conceptOpenen">Openen</button>
+        <button type="button" class="knop" id="conceptVerwijderen">Verwijderen</button>
+      </div>
+
+      <p class="melding" id="conceptmelding" hidden></p>
+    </fieldset>
+
     <button type="button" class="knop primair" id="downloadknop" disabled>PNG downloaden</button>
   </div>
 
@@ -320,11 +430,19 @@
 </main>
 
 <footer>
-  De foto blijft op je eigen computer: er is geen server, niets wordt geüpload of opgeslagen.
-  Sluit je het tabblad, dan is alles weg.
+  <strong>Je foto blijft op je eigen computer.</strong> Het inpassen, bijsnijden en
+  exporteren gebeurt volledig in je browser; de foto wordt niet geüpload en niet
+  opgeslagen. Naar Supabase gaan alleen je inloggegevens, de huisstijl die je
+  ophaalt en — als je op Bewaren klikt — de naam, tekst en instellingen van een
+  concept.
 </footer>
 
-<script src="templates.js"></script>
+<!-- De officiële Supabase-client. Levert het inloggen en de datatoegang;
+     we bouwen zelf geen wachtwoordopslag en geen eigen tokens. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<script src="config.js"></script>
 <script src="app.js"></script>
+<script src="auth.js"></script>
 </body>
 </html>
