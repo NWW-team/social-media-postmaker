@@ -32,7 +32,24 @@ const state = {
   decoratie: true,
   decoratiepositie: 'linksonder',
   iconen: ['Wereld (toolkit)', 'Gesprek (toolkit)'],
+  opmaak: {
+    kop: { korps: null, gewicht: null, schuin: false },
+    sub: { korps: null, gewicht: null, schuin: false },
+  },
 };
+
+/*
+ * De gewichten die er werkelijk zijn.
+ *
+ * Fira Sans staat in vendor/ met 400, 600 en 700 en RijksSansVF heeft ze ook.
+ * Een keuze voor 800 zou de browser terugbrengen naar 700 en dan lijkt de knop
+ * stuk: je klikt en er verandert niets. Daarom precies deze drie.
+ */
+const GEWICHTEN = [
+  { waarde: 400, label: 'Normaal' },
+  { waarde: 600, label: 'Halfvet' },
+  { waarde: 700, label: 'Vet' },
+];
 
 /*
  * Waar de cirkels en de badges staan.
@@ -87,6 +104,10 @@ function opdrachtMet(wijziging) {
   return Object.assign({}, state, {
     brandpunt: { x: state.brandpunt.x, y: state.brandpunt.y },
     iconen: state.iconen.slice(),
+    opmaak: {
+      kop: Object.assign({}, state.opmaak.kop),
+      sub: Object.assign({}, state.opmaak.sub),
+    },
   }, wijziging || {});
 }
 
@@ -115,7 +136,8 @@ function startApp() {
     'kop', 'sub', 'kopregels', 'subregels', 'zoom', 'zoomrij', 'resetknop',
     'downloadknop', 'maatlabel', 'stijlbron', 'melding', 'fotonaam', 'formaatnoot',
     'decoratieAan', 'decoratiepositie', 'icoon0', 'icoon1', 'icoonrij',
-    'miniatuur', 'stijlvoorbeeldnoot',
+    'miniatuur', 'stijlvoorbeeldnoot', 'opmaakterug',
+    'kopKorps', 'kopGewicht', 'kopSchuin', 'subKorps', 'subGewicht', 'subSchuin',
   ].forEach((id) => { el[id] = document.getElementById(id); });
 
   el.ctx = el.canvas.getContext('2d');
@@ -135,6 +157,7 @@ function startApp() {
   if (!TEMPLATES.formats[state.format]) state.format = Object.keys(TEMPLATES.formats)[0];
 
   laadIconen();
+  bouwOpmaakkeuze();
   bouwFormaatkaarten();
   bouwStijlknoppen();
   bouwIcoonkeuze();
@@ -343,6 +366,69 @@ function laadIconen() {
  */
 function icoonnamen() {
   return Object.keys(TEMPLATES.iconen).sort((a, b) => a.localeCompare(b, 'nl'));
+}
+
+/*
+ * De keuzelijsten voor de letter.
+ *
+ * "Volgens de stijl" is niet hetzelfde als de maat die de stijl nu toevallig
+ * heeft: kies je die maat met de hand en wissel je daarna van stijl, dan blijf
+ * je eraan vastzitten. Daarom is de lege waarde een echte keuze, geen kopie.
+ */
+function bouwOpmaakkeuze() {
+  const velden = [
+    { naam: 'kop', korps: el.kopKorps, gewicht: el.kopGewicht, schuin: el.kopSchuin },
+    { naam: 'sub', korps: el.subKorps, gewicht: el.subGewicht, schuin: el.subSchuin },
+  ];
+
+  const optie = (lijst, waarde, label) => {
+    const o = document.createElement('option');
+    o.value = waarde;
+    o.textContent = label;
+    lijst.appendChild(o);
+  };
+
+  velden.forEach((veld) => {
+    optie(veld.korps, '', 'Uit de stijl');
+    korpsladder().forEach((sport) => optie(veld.korps, sport.sleutel, korpslabel(sport.sleutel)));
+
+    optie(veld.gewicht, '', 'Uit de stijl');
+    GEWICHTEN.forEach((g) => optie(veld.gewicht, String(g.waarde), g.label));
+
+    veld.korps.addEventListener('change', () => {
+      state.opmaak[veld.naam].korps = veld.korps.value || null;
+      teken();
+    });
+    veld.gewicht.addEventListener('change', () => {
+      state.opmaak[veld.naam].gewicht = veld.gewicht.value ? Number(veld.gewicht.value) : null;
+      teken();
+    });
+    veld.schuin.addEventListener('change', () => {
+      state.opmaak[veld.naam].schuin = veld.schuin.checked;
+      teken();
+    });
+  });
+
+  el.opmaakterug.addEventListener('click', () => {
+    state.opmaak = {
+      kop: { korps: null, gewicht: null, schuin: false },
+      sub: { korps: null, gewicht: null, schuin: false },
+    };
+    toonOpmaak();
+    teken();
+  });
+
+  toonOpmaak();
+}
+
+/* Zet de keuzelijsten op wat er in state staat. */
+function toonOpmaak() {
+  el.kopKorps.value = state.opmaak.kop.korps || '';
+  el.kopGewicht.value = state.opmaak.kop.gewicht ? String(state.opmaak.kop.gewicht) : '';
+  el.kopSchuin.checked = state.opmaak.kop.schuin;
+  el.subKorps.value = state.opmaak.sub.korps || '';
+  el.subGewicht.value = state.opmaak.sub.gewicht ? String(state.opmaak.sub.gewicht) : '';
+  el.subSchuin.checked = state.opmaak.sub.schuin;
 }
 
 function bouwIcoonkeuze() {
@@ -641,19 +727,105 @@ function tekstHoogte(breed, stijl, tekst) {
 }
 
 /*
- * Regels afbreken op de vaste korpsgrootte uit de toolkit. Past het niet
- * binnen het toegestane aantal regels, dan kappen we af en melden we het.
- * Verkleinen doen we niet: de toolkit schrijft de korpsgrootte voor.
+ * De korpsladder uit de toolkit, van klein naar groot.
+ *
+ * De vijf korpsgroottes staan als losse sleutels in de huisstijl (pt24 tot en
+ * met pt66) en een object heeft geen betrouwbare volgorde, dus sorteren we op
+ * de waarde zelf. Zo blijft een keuzelijst kloppen als er ooit een korps bij
+ * komt of af gaat.
+ */
+function korpsladder() {
+  return Object.keys(TEMPLATES.korps)
+    .map((sleutel) => ({ sleutel, deel: TEMPLATES.korps[sleutel] }))
+    .sort((a, b) => a.deel - b.deel);
+}
+
+function korpslabel(sleutel) {
+  const punten = /^pt(\d+)$/.exec(sleutel);
+  return punten ? punten[1] + ' pt' : sleutel;
+}
+
+/*
+ * De opmaak waarmee een tekstveld werkelijk getekend wordt: die van de stijl,
+ * met daaroverheen wat de redacteur zelf heeft gekozen.
+ *
+ * Meten en tekenen halen hun opmaak allebei hiervandaan. Zou het tekenen zijn
+ * eigen korpsgrootte samenstellen, dan breekt de tekst af op de ene maat en
+ * staat hij er in de andere: regels die over het vlak heen lopen, of een vlak
+ * met lucht eronder. Eén bron dus, en alleen hier staat wat "afwijken" betekent.
+ */
+function tekstSpec(opdracht, veldnaam) {
+  const spec = TEMPLATES.stijlen[opdracht.stijl][veldnaam];
+  const keuze = (opdracht.opmaak && opdracht.opmaak[veldnaam]) || {};
+
+  const korps = (keuze.korps && TEMPLATES.korps[keuze.korps] !== undefined)
+    ? TEMPLATES.korps[keuze.korps]
+    : spec.grootte;
+  const gewicht = GEWICHTEN.some((g) => g.waarde === keuze.gewicht)
+    ? keuze.gewicht
+    : spec.gewicht;
+
+  return Object.assign({}, spec, {
+    grootte: korps,
+    gewicht,
+    schuin: Boolean(keuze.schuin),
+    // Wat hiervan afwijkt van de stijl, zodat de melding het kan benoemen.
+    afwijking: {
+      korps: korps !== spec.grootte ? korps : null,
+      eigenKorps: spec.grootte,
+      gewicht: gewicht !== spec.gewicht ? gewicht : null,
+      schuin: Boolean(keuze.schuin),
+    },
+  });
+}
+
+/* De fontregel voor canvas. Schuin bestaat niet als eigen letter in Fira Sans;
+   de browser maakt er dan zelf een schuine van. Dat is precies wat er gebeurt
+   en het staat zo ook in de melding. */
+function fontVan(spec, grootte) {
+  return (spec.schuin ? 'italic ' : '') + spec.gewicht + ' ' +
+         grootte.toFixed(1) + 'px ' + TEMPLATES.lettertype;
+}
+
+/* Zegt in gewone taal waarin een veld van de toolkit afwijkt, of niets. */
+function afwijkingsmelding(spec, naam) {
+  const a = spec.afwijking;
+  const stukken = [];
+  if (a.korps) {
+    const noem = (deel) => {
+      const sport = korpsladder().find((k) => k.deel === deel);
+      return sport ? korpslabel(sport.sleutel) : Math.round(deel * 1000) / 10 + '%';
+    };
+    stukken.push(noem(a.korps) + ' in plaats van ' + noem(a.eigenKorps));
+  }
+  if (a.gewicht) {
+    const g = GEWICHTEN.find((w) => w.waarde === a.gewicht);
+    stukken.push((g ? g.label.toLowerCase() : a.gewicht) + ' in plaats van het gewicht van de stijl');
+  }
+  if (a.schuin) stukken.push('schuin');
+  if (!stukken.length) return null;
+  return naam + ' wijkt af van de toolkit: ' + stukken.join(', ') + '.';
+}
+
+/*
+ * Regels afbreken op de gekozen korpsgrootte. Past het niet binnen het
+ * toegestane aantal regels, dan kappen we af en melden we het. Automatisch
+ * verkleinen doen we nog steeds niet: de toolkit schrijft de korpsgrootte voor
+ * en een grotere letter kiezen is een keuze, geen ongeluk.
  */
 function tekstMeting(breed, tekstBreedte, opdracht) {
   const ctx = meetCtx;
-  const stijl = TEMPLATES.stijlen[opdracht.stijl];
   const waarschuwingen = [];
 
-  function veld(tekst, spec, naam) {
+  function veld(tekst, veldnaam, naam) {
+    const spec = tekstSpec(opdracht, veldnaam);
     const grootte = breed * spec.grootte;
-    if (!tekst.trim()) return { regels: [], grootte };
-    ctx.font = spec.gewicht + ' ' + grootte.toFixed(1) + 'px ' + TEMPLATES.lettertype;
+
+    const afwijking = afwijkingsmelding(spec, naam);
+    if (afwijking && tekst.trim()) waarschuwingen.push(afwijking);
+
+    if (!tekst.trim()) return { regels: [], grootte, spec };
+    ctx.font = fontVan(spec, grootte);
     let regels = breekAf(ctx, tekst.trim(), tekstBreedte);
     if (regels.length > spec.maxRegels) {
       waarschuwingen.push(
@@ -662,11 +834,11 @@ function tekstMeting(breed, tekstBreedte, opdracht) {
       regels = regels.slice(0, spec.maxRegels);
       regels[regels.length - 1] = kortAf(ctx, regels[regels.length - 1], tekstBreedte);
     }
-    return { regels, grootte };
+    return { regels, grootte, spec };
   }
 
-  const kop = veld(opdracht.kop, stijl.kop, 'De kop');
-  const sub = veld(opdracht.sub, stijl.sub, 'De subkop');
+  const kop = veld(opdracht.kop, 'kop', 'De kop');
+  const sub = veld(opdracht.sub, 'sub', 'De subkop');
 
   // Niet hier opslaan: een stijlkaartje meet ook, en zijn waarschuwingen horen
   // niet in de melding onder het grote canvas terecht te komen. teken() pakt ze
@@ -972,17 +1144,18 @@ function tekenTekst(ctx, breed, indel) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
 
-  y = tekenRegels(ctx, tekst.kop, stijl.kop, TEMPLATES.regelhoogte.kop, x, y);
+  y = tekenRegels(ctx, tekst.kop, TEMPLATES.regelhoogte.kop, x, y);
   if (tekst.sub.regels.length) {
     if (tekst.kop.regels.length) y += breed * str.tussenKopEnSub;
-    tekenRegels(ctx, tekst.sub, stijl.sub, TEMPLATES.regelhoogte.sub, x, y);
+    tekenRegels(ctx, tekst.sub, TEMPLATES.regelhoogte.sub, x, y);
   }
 }
 
-function tekenRegels(ctx, veld, spec, regelhoogte, x, y) {
+/* De opmaak komt uit het veld zelf: precies waarop de regels zijn afgebroken. */
+function tekenRegels(ctx, veld, regelhoogte, x, y) {
   if (!veld.regels.length) return y;
-  ctx.fillStyle = spec.kleur;
-  ctx.font = spec.gewicht + ' ' + veld.grootte.toFixed(1) + 'px ' + TEMPLATES.lettertype;
+  ctx.fillStyle = veld.spec.kleur;
+  ctx.font = fontVan(veld.spec, veld.grootte);
   veld.regels.forEach((regel) => {
     ctx.fillText(regel, x, y + veld.grootte * 0.82);
     y += veld.grootte * regelhoogte;
@@ -1111,6 +1284,10 @@ function leesConcept() {
     decoratie: state.decoratie,
     decoratiepositie: state.decoratiepositie,
     iconen: state.iconen.slice(),
+    opmaak: {
+      kop: Object.assign({}, state.opmaak.kop),
+      sub: Object.assign({}, state.opmaak.sub),
+    },
     zoom: state.zoom,
     brandpunt: { x: state.brandpunt.x, y: state.brandpunt.y },
   };
@@ -1139,6 +1316,18 @@ function pasConceptToe(inhoud) {
     ? inhoud.decoratiepositie
     : 'linksonder';
 
+  // Ook hier geldt: de inhoud komt uit de database en hoeft niet te kloppen met
+  // de huisstijl van nu. Een korps dat niet meer bestaat valt terug op de stijl.
+  state.opmaak = { kop: null, sub: null };
+  ['kop', 'sub'].forEach((veldnaam) => {
+    const bewaard = (inhoud.opmaak && inhoud.opmaak[veldnaam]) || {};
+    state.opmaak[veldnaam] = {
+      korps: TEMPLATES.korps[bewaard.korps] !== undefined ? bewaard.korps : null,
+      gewicht: GEWICHTEN.some((g) => g.waarde === bewaard.gewicht) ? bewaard.gewicht : null,
+      schuin: Boolean(bewaard.schuin),
+    };
+  });
+
   if (Array.isArray(inhoud.iconen)) {
     state.iconen = state.iconen.map((huidig, i) =>
       (typeof inhoud.iconen[i] === 'string' && TEMPLATES.iconen[inhoud.iconen[i]])
@@ -1161,6 +1350,7 @@ function pasConceptToe(inhoud) {
   el.decoratieAan.checked = state.decoratie;
   el.icoonrij.hidden = !state.decoratie;
   el.decoratiepositie.value = state.decoratiepositie;
+  toonOpmaak();
   el.icoon0.value = state.iconen[0];
   el.icoon1.value = state.iconen[1];
 
