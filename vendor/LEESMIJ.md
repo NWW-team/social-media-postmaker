@@ -23,3 +23,10 @@ Vervang het bestand door een nieuwe versie van dezelfde URL, pas het
 versienummer hierboven aan, en draai `node tests/poort.test.js`.
 
 Niet met de hand bewerken.
+
+## rijkshuisstijl/
+
+De Rijkshuisstijl Community: design tokens, componenten-CSS en het lettertype,
+onveranderd uit npm. Om dezelfde reden hier en niet van een CDN. Zie
+[rijkshuisstijl/LEESMIJ.md](rijkshuisstijl/LEESMIJ.md) voor versies, herkomst en
+— belangrijk — de licenties, want die verschillen per pakket.

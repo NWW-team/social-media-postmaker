@@ -6,9 +6,10 @@ Facebook — zonder tussenkomst van het social mediabureau.
 Bedoeld voor redacteuren die zelf hun posts bedenken, maar voor de opmaak nu nog
 moeten wachten. Zie [STRATEGY.md](STRATEGY.md) voor het waarom.
 
-> **De schermopmaak gaat naar de Rijkshuisstijl.** Er liggen vijf mockups klaar
-> om uit te kiezen: [mockups/README.md](mockups/README.md). Zolang er nog geen
-> keuze is gemaakt, staat het scherm hieronder nog op de eigen CSS.
+Het scherm staat in de **Rijkshuisstijl**: kleuren, letters, afstanden, knoppen
+en velden komen uit
+[nl-design-system/rijkshuisstijl-community](https://github.com/nl-design-system/rijkshuisstijl-community),
+onveranderd uit npm. Zie [De Rijkshuisstijl](#de-rijkshuisstijl) hieronder.
 
 > **Prototype.** Kleuren, korpsgroottes, marges en hoekafronding komen uit de
 > officiële PowerPoint-toolkit (*NWW_PPT_template_Posten_toolkit_socials_v1*).
@@ -28,8 +29,10 @@ niet. Heb je toegang nodig, vraag dan de beheerder je toe te voegen — zie
 > Supabase niet meer: de huisstijl komt uit de database en daar moet de pagina
 > voor kunnen inloggen. Hetzelfde geldt voor offline werken.
 
-1. Kies platform en formaat.
-2. Kies een stijl.
+1. Kies een kaart: platform en formaat in één klik, met de vorm en de
+   exportmaat erop.
+2. Kies een stijl. Op elke stijlkaart staat **jouw** foto en **jouw** tekst in
+   die stijl — je vergelijkt de stijlen dus met je eigen post erin.
 3. Sleep een foto in het vak, plak met Ctrl+V, of klik **Bestand kiezen**.
    Geen foto bij de hand? Klik **Voorbeeldfoto**.
 4. Sleep de foto in het voorbeeld om de uitsnede te kiezen; zoom met de schuif
@@ -37,6 +40,10 @@ niet. Heb je toegang nodig, vraag dan de beheerder je toe te voegen — zie
 5. Typ de kop en de subtekst. Elke stijl heeft een maximum aantal regels uit
    de toolkit; ga je eroverheen, dan zie je dat meteen.
 6. Klik **PNG downloaden**.
+
+Stap 2 werkt pas echt als er een foto en tekst staan: dan laten de vijf kaarten
+zien wat elke stijl met jouw materiaal doet. Zonder foto tonen ze het lege
+sjabloon.
 
 ## Waar blijft mijn foto?
 
@@ -144,9 +151,13 @@ niemand de huisstijl veranderen, ook een toegelaten redacteur niet.
 
 - **Lettertype**: RijksSansVF is licentieplichtig en staat daarom niet in deze
   publieke repo. Staat hij geïnstalleerd op de werklaptop, dan pakt de browser
-  hem vanzelf — `LETTERTYPE` noemt hem als eerste keuze. Anders valt hij terug
-  op een vergelijkbare letter en wijkt de regelval iets af.
-- **Logo** ontbreekt nog.
+  hem vanzelf — de tokens noemen hem als eerste keuze. Anders valt hij terug op
+  Fira Sans, de open letter die de Rijkshuisstijl Community daar zelf voor
+  meelevert; die staat in `vendor/rijkshuisstijl/fonts/`. De regelval wijkt dan
+  iets af.
+- **Logo** ontbreekt nog. In het scherm staat op die plek een zichtbare
+  gestippelde plaatshouder: liever een leeg vak dat zegt dat er iets hoort te
+  staan, dan een tekstlogo dat voor het echte kan doorgaan.
 - **Iconenset**: drie pictogrammen komen uit de toolkit (wereld, gesprek,
   megafoon). De rest zijn eenvoudige eigen tekeningen. In de posts op het
   account staan er meer, zoals het Nederlandkaartje en de brancard.
@@ -167,6 +178,40 @@ vormen zijn toegestaan:
 
 De keuzelijsten in het scherm vullen zich vanzelf; er hoeft geen code aangepast
 te worden.
+
+## De Rijkshuisstijl
+
+Het scherm gebruikt de Rijkshuisstijl, het bouwt hem niet na. In
+`vendor/rijkshuisstijl/` staan de uitvoerbestanden van
+[nl-design-system/rijkshuisstijl-community](https://github.com/nl-design-system/rijkshuisstijl-community),
+onveranderd uit npm: de componenten-CSS en de design tokens. `index.html` bevat
+daarnaast alleen de indeling van dít scherm en een browserreset — de
+componenten-CSS is volledig klassegebonden en raakt kale elementen met opzet
+niet aan.
+
+Ze staan in de repo en komen bewust **niet** van een CDN, om dezelfde reden als
+`vendor/supabase-js.js`: werknetwerken blokkeren CDN's regelmatig, en dan staat
+er een pagina zonder opmaak. Versies, herkomst en licenties:
+[vendor/rijkshuisstijl/LEESMIJ.md](vendor/rijkshuisstijl/LEESMIJ.md).
+
+**Lintkleur: hemelblauw.** De toolkit gebruikt `#007BC7`, en van de zes
+lintkleuren in de Rijkshuisstijl ligt hemelblauw daar het dichtst bij. Een
+andere kiezen is twee regels: een ander tokenbestand in de `<link>` en een
+andere klasse op `<body>`. De tokens staan namelijk niet op `:root` maar op een
+klasse — zonder die klasse is elke `--rhc-`variabele leeg en valt de pagina
+terug op de kale browserstijl.
+
+**De indeling** is gekozen uit vijf voorstellen; zie
+[mockups/README.md](mockups/README.md). Het werd *Keuzekaarten*: platform en
+formaat als kaarten met de vorm erop, en de vijf stijlen als kaarten met een
+echt voorbeeld — geen tekening die erop lijkt, maar dezelfde tekencode als de
+export, met jouw foto en jouw tekst erin. Wat dat kostte, staat in die mockup
+ook beschreven: het is de langste pagina van de vijf.
+
+Let op bij hergebruik: `components-css` en het lettertype zijn EUPL-1.2, maar de
+**design tokens zijn niet open source**. Op het logo en de huisstijl rust
+auteursrecht; gebruik is voorbehouden aan de Rijksoverheid en aan partijen die
+voor de Rijksoverheid werken.
 
 ## Toegang
 
@@ -233,7 +278,7 @@ stap 6.
 
 | Bestand | Wat erin staat |
 | --- | --- |
-| `index.html` | Het scherm, het inlogscherm en alle opmaak van de pagina |
+| `index.html` | Het scherm, het inlogscherm en de indeling van de pagina |
 | `app.js` | Foto inpassen, slepen, zoomen, tekenen, exporteren |
 | `auth.js` | Inloggen, uitloggen, huisstijl en concepten ophalen |
 | `config.js` | De publieke Supabase-URL en publishable key |
@@ -242,16 +287,22 @@ stap 6.
 | `supabase/LEESMIJ.md` | Wat je zelf in het Supabase-dashboard doet |
 | `TESTEN.md` | Testdraaiboek voor de toegangscontrole |
 | `vendor/supabase-js.js` | De officiële Supabase-client, meegeleverd |
+| `vendor/rijkshuisstijl/` | De Rijkshuisstijl Community, meegeleverd: tokens, componenten-CSS, lettertype |
+| `mockups/` | De vijf indelingsvoorstellen waaruit dit scherm gekozen is |
 | `tests/poort.test.js` | Geautomatiseerde test van de poortlogica |
 | `STRATEGY.md` | Waarom dit product bestaat |
 
 Geen build, geen package.json, geen installatie.
 
-De Supabase-client staat in `vendor/` en komt bewust **niet** van een CDN.
+De Supabase-client en de Rijkshuisstijl staan in `vendor/` en komen bewust
+**niet** van een CDN.
 Werknetwerken blokkeren CDN's als `cdn.jsdelivr.net` regelmatig, en dan laadt
 de client niet en verschijnt er geen inlogscherm — dat is precies wat er
-gebeurde. Nu komt alles van hetzelfde domein als de pagina zelf. Zie
-[vendor/LEESMIJ.md](vendor/LEESMIJ.md) voor de versie en hoe je hem bijwerkt.
+gebeurde; zonder de huisstijl erbij zou hetzelfde gebeuren met de opmaak. Nu
+komt alles van hetzelfde domein als de pagina zelf. Zie
+[vendor/LEESMIJ.md](vendor/LEESMIJ.md) en
+[vendor/rijkshuisstijl/LEESMIJ.md](vendor/rijkshuisstijl/LEESMIJ.md) voor de
+versies en hoe je ze bijwerkt.
 
 Het enige verzoek dat nog naar buiten gaat, is naar je eigen Supabase-project.
 

@@ -2,15 +2,21 @@
 
 Deze map bevat de officiële, **ongewijzigde** uitvoerbestanden van
 [nl-design-system/rijkshuisstijl-community](https://github.com/nl-design-system/rijkshuisstijl-community).
-Ze staan hier zodat de mockups op elke laptop hetzelfde tonen, ook op een
-werknetwerk dat npm en CDN's blokkeert — dezelfde reden waarom
-`vendor/supabase-js.js` in deze repo staat.
+`index.html` en `mockups/index.html` laden ze rechtstreeks; de opmaak van het
+scherm wordt dus niet nagebouwd maar meegeleverd.
+
+Ze staan hier en niet op een CDN om dezelfde reden als `../supabase-js.js`:
+werknetwerken blokkeren CDN's regelmatig, en dan staat er een pagina zonder
+opmaak.
 
 | Bestand | Uit welk pakket | Versie |
 | --- | --- | --- |
 | `rhc-components.css` | `@rijkshuisstijl-community/components-css` → `dist/index.css` | 18.0.2 |
 | `rhc-tokens-hemelblauw.css` | `@rijkshuisstijl-community/design-tokens` → `dist/hemelblauw/index.css` | 18.0.1 |
 | `rhc-tokens-hemelblauw-dense.css` | `@rijkshuisstijl-community/design-tokens` → `dist/hemelblauw-information-dense/index.css` | 18.0.1 |
+
+`rhc-tokens-hemelblauw-dense.css` wordt alleen door mockup 5 gebruikt en staat
+er nog omdat die mockup blijft staan; de app laadt hem niet.
 | `fonts/fira-sans-latin*.woff2` | `@rijkshuisstijl-community/font` → `dist/files/` | 1.1.6 |
 | `font.css` | zelf geschreven, alleen de `@font-face`-regels voor die zes bestanden | — |
 
@@ -28,6 +34,11 @@ De toolkit gebruikt `#007BC7` als hoofdkleur. Van de zes lintkleuren in de
 Rijkshuisstijl (lintblauw, hemelblauw, groen, oranje, paars, robijnrood) ligt
 **hemelblauw** daar het dichtst bij. Een andere lintkleur kiezen is één klasse
 op `<body>` en één ander tokenbestand; de rest van de opmaak verandert niet.
+
+De tokens staan op een klasse (`.hemelblauw`) en niet op `:root`, juist zodat
+één pagina meer dan één lintkleur kan tonen. Vergeet je die klasse, dan is elke
+`--rhc-`variabele leeg en valt de pagina terug op de kale browserstijl — geen
+kleur, geen letter, geen knop.
 
 ## Licenties
 

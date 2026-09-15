@@ -35,7 +35,33 @@ const state = {
 
 const el = {};
 const icoonCache = {};
+const stijlkaartjes = [];
 let laatsteWaarschuwingen = [];
+
+/*
+ * Een losse context om alleen mee te MÉTEN, nooit om op te tekenen.
+ *
+ * tekstMeting() heeft een canvascontext nodig om measureText te kunnen doen.
+ * Daarvoor het echte exportcanvas gebruiken koppelt twee dingen die niets met
+ * elkaar te maken hebben: het meten van een stijlkaartje zou dan de font-stand
+ * van de export aanpassen. Deze context tekent niets en wordt nooit getoond.
+ */
+const meetCtx = document.createElement('canvas').getContext('2d');
+
+/*
+ * Een "opdracht" is alles wat je moet weten om één post te tekenen: welke
+ * stijl, welk formaat, welke foto, welke tekst. `state` is de opdracht van het
+ * grote canvas. De stijlkaartjes en het miniatuur in de kop geven een kopie mee
+ * met één veld anders, en komen zo langs exact dezelfde tekencode uit als de
+ * export. Wat je op een kaartje ziet, is dus geen indruk van die stijl maar die
+ * stijl, met jouw foto en jouw tekst.
+ */
+function opdrachtMet(wijziging) {
+  return Object.assign({}, state, {
+    brandpunt: { x: state.brandpunt.x, y: state.brandpunt.y },
+    iconen: state.iconen.slice(),
+  }, wijziging || {});
+}
 
 /*
  * De huisstijl uit Supabase. Blijft null tot auth.js hem heeft opgehaald —
@@ -61,7 +87,7 @@ function startApp() {
     'canvas', 'dropzone', 'bestandsknop', 'bestandsinvoer', 'voorbeeldknop',
     'kop', 'sub', 'kopregels', 'subregels', 'zoom', 'zoomrij', 'resetknop',
     'downloadknop', 'maatlabel', 'stijlbron', 'melding', 'fotonaam', 'formaatnoot',
-    'decoratieAan', 'icoon0', 'icoon1', 'icoonrij',
+    'decoratieAan', 'icoon0', 'icoon1', 'icoonrij', 'miniatuur',
   ].forEach((id) => { el[id] = document.getElementById(id); });
 
   el.ctx = el.canvas.getContext('2d');
@@ -81,6 +107,7 @@ function startApp() {
   if (!TEMPLATES.formats[state.format]) state.format = Object.keys(TEMPLATES.formats)[0];
 
   laadIconen();
+  bouwFormaatkaarten();
   bouwStijlknoppen();
   bouwIcoonkeuze();
   koppelKnoppen();
@@ -90,19 +117,147 @@ function startApp() {
   teken();
 }
 
-/* De stijlknoppen komen uit de huisstijl in Supabase, zodat een stijl
-   toevoegen daar genoeg is en hier niets hoeft te veranderen. */
-function bouwStijlknoppen() {
-  const rij = document.getElementById('stijlknoppen');
-  Object.keys(TEMPLATES.stijlen).forEach((naam) => {
-    const knop = document.createElement('button');
-    knop.type = 'button';
-    knop.className = 'keuze breed';
-    knop.dataset.stijl = naam;
-    knop.textContent = TEMPLATES.stijlen[naam].label;
-    knop.setAttribute('aria-pressed', 'false');
-    rij.appendChild(knop);
+/*
+ * De keuzekaarten voor platform en formaat: één kaart per combinatie, met de
+ * vorm en de exportmaat erop. Ze komen uit de huisstijl in Supabase, net als de
+ * stijlen, zodat een platform of formaat toevoegen daar genoeg is.
+ *
+ * Eén kaart draagt twee keuzes tegelijk — data-platform én data-format — want
+ * "Instagram staand" is voor de redacteur één ding, geen twee. koppelKnoppen()
+ * en werkbijUI() lopen per sleutel langs alle knoppen met dat attribuut, dus
+ * een kaart met allebei wordt vanzelf door allebei bediend.
+ */
+function bouwFormaatkaarten() {
+  const rooster = document.getElementById('formaatkaarten');
+
+  Object.keys(TEMPLATES.platforms).forEach((platform) => {
+    const p = TEMPLATES.platforms[platform];
+
+    Object.keys(TEMPLATES.formats).forEach((format) => {
+      const maat = p.maten[format];
+      if (!maat) return;     // niet elk platform hoeft elk formaat te hebben
+
+      const f = TEMPLATES.formats[format];
+      const kaart = document.createElement('button');
+      kaart.type = 'button';
+      kaart.className = 'kaart';
+      kaart.dataset.platform = platform;
+      kaart.dataset.format = format;
+      kaart.setAttribute('aria-pressed', 'false');
+
+      // De vorm van de export, met de afgeronde hoek rechtsonder uit de
+      // toolkit — zodat je de verhouding ziet in plaats van hem te lezen.
+      const doek = document.createElement('span');
+      doek.className = 'kaart__vorm';
+      const vel = document.createElement('span');
+      vel.style.aspectRatio = maat[0] + ' / ' + maat[1];
+      vel.style.borderEndEndRadius =
+        (TEMPLATES.stramien.hoekFactor * 100).toFixed(1) + '%';
+      doek.appendChild(vel);
+
+      const naam = document.createElement('span');
+      naam.className = 'kaart__naam';
+      naam.textContent = (p.label || platform) + ' · ' +
+                         (f.label || format).toLowerCase();
+
+      const maatregel = document.createElement('span');
+      maatregel.className = 'kaart__bij';
+      maatregel.textContent = maat[0] + ' × ' + maat[1] + ' px · ' + f.verhoudingLabel;
+
+      kaart.append(doek, naam, maatregel);
+      rooster.appendChild(kaart);
+    });
   });
+}
+
+/*
+ * De stijlkaarten komen uit de huisstijl in Supabase, zodat een stijl
+ * toevoegen daar genoeg is en hier niets hoeft te veranderen.
+ *
+ * Op elke kaart staat een canvas dat langs dezelfde tekencode komt als de
+ * export. Je vergelijkt de vijf stijlen dus met jouw foto en jouw tekst erin,
+ * niet met een plaatje dat ongeveer laat zien wat de bedoeling is.
+ */
+function bouwStijlknoppen() {
+  const rooster = document.getElementById('stijlknoppen');
+
+  Object.keys(TEMPLATES.stijlen).forEach((naam) => {
+    const stijl = TEMPLATES.stijlen[naam];
+
+    const kaart = document.createElement('button');
+    kaart.type = 'button';
+    kaart.className = 'kaart kaart--stijl';
+    kaart.dataset.stijl = naam;
+    kaart.setAttribute('aria-pressed', 'false');
+
+    const doek = document.createElement('span');
+    doek.className = 'kaart__vorm';
+    const canvas = document.createElement('canvas');
+    canvas.className = 'kaart__doek';
+    doek.appendChild(canvas);
+
+    const label = document.createElement('span');
+    label.className = 'kaart__naam';
+    label.textContent = stijl.label;
+
+    const regels = document.createElement('span');
+    regels.className = 'kaart__bij';
+    regels.textContent = regellimiet(stijl.kop.maxRegels, 'kop') + ', ' +
+                         regellimiet(stijl.sub.maxRegels, 'sub');
+
+    kaart.append(doek, label, regels);
+    rooster.appendChild(kaart);
+    stijlkaartjes.push({ canvas, stijl: naam });
+  });
+}
+
+function regellimiet(aantal, wat) {
+  return aantal + ' regel' + (aantal === 1 ? '' : 's') + ' ' + wat;
+}
+
+/* ------------------------------------------------------------- voorbeelden */
+
+/*
+ * De canvassen op de stijlkaarten en het miniatuur in de kop. Ze worden op het
+ * dubbele van hun getoonde breedte getekend, zodat ze scherp blijven op een
+ * scherm met een hoge pixeldichtheid.
+ */
+const KAARTBREEDTE = 440;
+const MINIATUURBREEDTE = 520;
+let kaartjesWacht = null;
+
+/*
+ * Bij elke toetsaanslag en elke sleepbeweging alle kaartjes opnieuw tekenen zou
+ * het werk ongeveer verdubbelen terwijl je aan het slepen bent. Ze lopen dus
+ * achter de hand aan: pas als je even niets doet, worden ze bijgewerkt.
+ */
+function vraagKaartjes() {
+  if (kaartjesWacht) clearTimeout(kaartjesWacht);
+  kaartjesWacht = setTimeout(tekenVoorbeelden, 120);
+}
+
+function tekenVoorbeelden() {
+  kaartjesWacht = null;
+  const [breed, hoog] = huidigeMaat(state);
+  const verhouding = hoog / breed;
+
+  stijlkaartjes.forEach((kaartje) => {
+    tekenKlein(kaartje.canvas, KAARTBREEDTE, Math.round(KAARTBREEDTE * verhouding),
+               opdrachtMet({ stijl: kaartje.stijl }));
+  });
+
+  if (el.miniatuur) {
+    tekenKlein(el.miniatuur, MINIATUURBREEDTE,
+               Math.round(MINIATUURBREEDTE * verhouding), opdrachtMet(null));
+  }
+}
+
+function tekenKlein(canvas, breed, hoog, opdracht) {
+  if (canvas.width !== breed || canvas.height !== hoog) {
+    canvas.width = breed;
+    canvas.height = hoog;
+  }
+  tekenOp(canvas.getContext('2d'), breed, hoog, opdracht);
 }
 
 /*
@@ -151,15 +306,17 @@ function bouwIcoonkeuze() {
 /* ------------------------------------------------------------------- invoer */
 
 function koppelKnoppen() {
-  ['platform', 'format', 'stijl'].forEach((sleutel) => {
-    document.querySelectorAll('[data-' + sleutel + ']').forEach((knop) => {
+  // Eén klik, één keer bijwerken — ook als de kaart twee keuzes tegelijk zet.
+  document.querySelectorAll('[data-platform], [data-format], [data-stijl]')
+    .forEach((knop) => {
       knop.addEventListener('click', () => {
-        state[sleutel] = knop.dataset[sleutel];
+        ['platform', 'format', 'stijl'].forEach((sleutel) => {
+          if (sleutel in knop.dataset) state[sleutel] = knop.dataset[sleutel];
+        });
         werkbijUI();
         teken();
       });
     });
-  });
 
   ['kop', 'sub'].forEach((sleutel) => {
     el[sleutel].addEventListener('input', () => {
@@ -343,8 +500,8 @@ function koppelSlepen() {
 /* Verschuif de foto met dx,dy canvaspixels. Het brandpunt is het punt van de
    foto dat in het midden van het kader staat; slepen verplaatst dat punt. */
 function verschuif(dx, dy) {
-  const [breed, hoog] = huidigeMaat();
-  const m = fotoMeting(indeling(breed, hoog).foto);
+  const [breed, hoog] = huidigeMaat(state);
+  const m = fotoMeting(indeling(breed, hoog, state).foto, state);
   state.brandpunt.x -= dx / m.tekenBreed;
   state.brandpunt.y -= dy / m.tekenHoog;
   teken();
@@ -352,8 +509,8 @@ function verschuif(dx, dy) {
 
 /* ----------------------------------------------------------------- indeling */
 
-function huidigeMaat() {
-  return TEMPLATES.platforms[state.platform].maten[state.format];
+function huidigeMaat(opdracht) {
+  return TEMPLATES.platforms[opdracht.platform].maten[opdracht.format];
 }
 
 /*
@@ -361,14 +518,14 @@ function huidigeMaat() {
  * toolkit en is uitgedrukt in de breedte, zodat het vlak bij vierkant even
  * hoog blijft en de foto de ruimte inlevert.
  */
-function indeling(breed, hoog) {
+function indeling(breed, hoog, opdracht) {
   const str = TEMPLATES.stramien;
-  const stijl = TEMPLATES.stijlen[state.stijl];
+  const stijl = TEMPLATES.stijlen[opdracht.stijl];
 
   const marge = breed * str.marge;
   const kaart = { x: marge, y: marge, b: breed - 2 * marge, h: hoog - 2 * marge };
 
-  const tekst = tekstMeting(breed, kaart.b - 2 * breed * str.paddingZij);
+  const tekst = tekstMeting(breed, kaart.b - 2 * breed * str.paddingZij, opdracht);
 
   // De toolkithoogte is het plafond; met vlakKrimpt volgt het vlak de tekst,
   // zoals in de posts op het account.
@@ -411,9 +568,9 @@ function tekstHoogte(breed, stijl, tekst) {
  * binnen het toegestane aantal regels, dan kappen we af en melden we het.
  * Verkleinen doen we niet: de toolkit schrijft de korpsgrootte voor.
  */
-function tekstMeting(breed, tekstBreedte) {
-  const ctx = el.ctx;
-  const stijl = TEMPLATES.stijlen[state.stijl];
+function tekstMeting(breed, tekstBreedte, opdracht) {
+  const ctx = meetCtx;
+  const stijl = TEMPLATES.stijlen[opdracht.stijl];
   const waarschuwingen = [];
 
   function veld(tekst, spec, naam) {
@@ -431,11 +588,13 @@ function tekstMeting(breed, tekstBreedte) {
     return { regels, grootte };
   }
 
-  const kop = veld(state.kop, stijl.kop, 'De kop');
-  const sub = veld(state.sub, stijl.sub, 'De subkop');
+  const kop = veld(opdracht.kop, stijl.kop, 'De kop');
+  const sub = veld(opdracht.sub, stijl.sub, 'De subkop');
 
-  laatsteWaarschuwingen = waarschuwingen;
-  return { kop, sub, tekstBreedte };
+  // Niet hier opslaan: een stijlkaartje meet ook, en zijn waarschuwingen horen
+  // niet in de melding onder het grote canvas terecht te komen. teken() pakt ze
+  // op voor de opdracht die er wél toe doet.
+  return { kop, sub, tekstBreedte, waarschuwingen };
 }
 
 function kortAf(ctx, regel, maxBreedte) {
@@ -466,31 +625,33 @@ function breekAf(ctx, tekst, maxBreedte) {
 
 /* Hoe de foto het fotovlak vult, en hoever je hem mag verschuiven voordat er
    een gat zou ontstaan. */
-function fotoMeting(vlak) {
-  const basis = Math.max(vlak.b / state.foto.naturalWidth,
-                         vlak.h / state.foto.naturalHeight);
-  const schaal = basis * state.zoom;
-  const tekenBreed = state.foto.naturalWidth * schaal;
-  const tekenHoog = state.foto.naturalHeight * schaal;
+function fotoMeting(vlak, opdracht) {
+  const basis = Math.max(vlak.b / opdracht.foto.naturalWidth,
+                         vlak.h / opdracht.foto.naturalHeight);
+  const schaal = basis * opdracht.zoom;
+  const tekenBreed = opdracht.foto.naturalWidth * schaal;
+  const tekenHoog = opdracht.foto.naturalHeight * schaal;
 
-  // Buiten [marge, 1 - marge] zou de foto het vlak loslaten.
-  state.brandpunt.x = klem(state.brandpunt.x,
-                           vlak.b / (2 * tekenBreed), 1 - vlak.b / (2 * tekenBreed));
-  state.brandpunt.y = klem(state.brandpunt.y,
-                           vlak.h / (2 * tekenHoog), 1 - vlak.h / (2 * tekenHoog));
+  // Buiten [marge, 1 - marge] zou de foto het vlak loslaten. Dit schrijft in de
+  // opdracht, niet in state: een stijlkaartje met een ander vlak mag de
+  // uitsnede van het grote canvas niet verschuiven.
+  opdracht.brandpunt.x = klem(opdracht.brandpunt.x,
+                              vlak.b / (2 * tekenBreed), 1 - vlak.b / (2 * tekenBreed));
+  opdracht.brandpunt.y = klem(opdracht.brandpunt.y,
+                              vlak.h / (2 * tekenHoog), 1 - vlak.h / (2 * tekenHoog));
 
   return {
     tekenBreed,
     tekenHoog,
-    x: vlak.x + vlak.b / 2 - state.brandpunt.x * tekenBreed,
-    y: vlak.y + vlak.h / 2 - state.brandpunt.y * tekenHoog,
+    x: vlak.x + vlak.b / 2 - opdracht.brandpunt.x * tekenBreed,
+    y: vlak.y + vlak.h / 2 - opdracht.brandpunt.y * tekenHoog,
   };
 }
 
 /* ------------------------------------------------------------------ tekenen */
 
 function teken() {
-  const [breed, hoog] = huidigeMaat();
+  const [breed, hoog] = huidigeMaat(state);
 
   // Het canvas staat op de exacte exportmaat en wordt met CSS kleiner getoond.
   // Zo is wat je ziet per definitie wat je downloadt.
@@ -499,21 +660,36 @@ function teken() {
     el.canvas.height = hoog;
   }
 
-  const ctx = el.ctx;
-  const indel = indeling(breed, hoog);
+  const indel = tekenOp(el.ctx, breed, hoog, state);
+
+  laatsteWaarschuwingen = indel.tekst.waarschuwingen;
+  toonWaarschuwingen();
+  vraagKaartjes();
+}
+
+/*
+ * Eén post tekenen op een willekeurige context, op een willekeurige maat.
+ *
+ * Alles is uitgedrukt in verhoudingen van de breedte, dus dit is net zo goed
+ * de export van 1080 px als het kaartje van 216 px: hetzelfde sjabloon, alleen
+ * een andere schaal. Daarom kan een stijlkaartje de echte stijl laten zien in
+ * plaats van een tekening die erop lijkt.
+ */
+function tekenOp(ctx, breed, hoog, opdracht) {
+  const indel = indeling(breed, hoog, opdracht);
 
   ctx.clearRect(0, 0, breed, hoog);
   ctx.fillStyle = TEMPLATES.papier;
   ctx.fillRect(0, 0, breed, hoog);
 
-  tekenFoto(ctx, breed, indel);
+  tekenFoto(ctx, breed, indel, opdracht);
   tekenVlak(ctx, breed, indel);
   tekenTekst(ctx, breed, indel);
 
-  toonWaarschuwingen();
+  return indel;
 }
 
-function tekenFoto(ctx, breed, indel) {
+function tekenFoto(ctx, breed, indel, opdracht) {
   const vlak = indel.foto;
   if (vlak.h <= 0) return;
 
@@ -521,11 +697,11 @@ function tekenFoto(ctx, breed, indel) {
   pad(ctx, vlak, indel.onderste === 'foto' ? straal(vlak) : 0);
   ctx.clip();
 
-  if (state.foto) {
-    const m = fotoMeting(vlak);
+  if (opdracht.foto) {
+    const m = fotoMeting(vlak, opdracht);
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(state.foto, m.x, m.y, m.tekenBreed, m.tekenHoog);
-    tekenDecoratie(ctx, vlak);
+    ctx.drawImage(opdracht.foto, m.x, m.y, m.tekenBreed, m.tekenHoog);
+    tekenDecoratie(ctx, vlak, opdracht);
   } else {
     ctx.fillStyle = '#e6eef4';
     ctx.fillRect(vlak.x, vlak.y, vlak.b, vlak.h);
@@ -545,9 +721,9 @@ function tekenFoto(ctx, breed, indel) {
  * formaat en elke stijl dezelfde verhouding houdt. Het staat binnen de clip van
  * de foto, dus het loopt nooit over het tekstvlak heen.
  */
-function tekenDecoratie(ctx, foto) {
+function tekenDecoratie(ctx, foto, opdracht) {
   const d = TEMPLATES.decoratie;
-  if (!d.aan || !state.decoratie) return;
+  if (!d.aan || !opdracht.decoratie) return;
 
   const eenheid = foto.b;
   const ox = foto.x;
@@ -575,7 +751,7 @@ function tekenDecoratie(ctx, foto) {
     ctx.fillStyle = d.badgeKleur;
     ctx.fill();
 
-    const icoon = icoonCache[state.iconen[i]];
+    const icoon = icoonCache[opdracht.iconen[i]];
     if (icoon && icoon.complete && icoon.naturalWidth) {
       const maat = straal * 2 * d.icoonDeel;
       ctx.drawImage(icoon, cx - maat / 2, cy - maat / 2, maat, maat);
@@ -650,7 +826,7 @@ function download() {
     return;
   }
 
-  const [breed, hoog] = huidigeMaat();
+  const [breed, hoog] = huidigeMaat(state);
   el.canvas.toBlob((blob) => {
     if (!blob) {
       toonMelding('De download is niet gelukt. Probeer het opnieuw.', 'fout');
@@ -671,15 +847,22 @@ function download() {
 /* ---------------------------------------------------------------------- UI */
 
 function werkbijUI() {
-  ['platform', 'format', 'stijl'].forEach((sleutel) => {
-    document.querySelectorAll('[data-' + sleutel + ']').forEach((knop) => {
-      const actief = knop.dataset[sleutel] === state[sleutel];
+  /*
+   * Een formaatkaart draagt twee keuzes tegelijk (platform én formaat), dus
+   * "is deze knop actief" is: kloppen ál zijn keuzes met de huidige stand.
+   * Per sleutel los kijken zou de kaart voor Instagram-vierkant aanzetten
+   * zodra je Facebook-vierkant kiest.
+   */
+  document.querySelectorAll('[data-platform], [data-format], [data-stijl]')
+    .forEach((knop) => {
+      const sleutels = ['platform', 'format', 'stijl']
+        .filter((sleutel) => sleutel in knop.dataset);
+      const actief = sleutels.every((sleutel) => knop.dataset[sleutel] === state[sleutel]);
       knop.classList.toggle('actief', actief);
       knop.setAttribute('aria-pressed', String(actief));
     });
-  });
 
-  const [breed, hoog] = huidigeMaat();
+  const [breed, hoog] = huidigeMaat(state);
   const formaat = TEMPLATES.formats[state.format];
   el.maatlabel.textContent = breed + ' × ' + hoog + ' px · ' + formaat.verhoudingLabel;
   el.formaatnoot.hidden = formaat.uitToolkit;

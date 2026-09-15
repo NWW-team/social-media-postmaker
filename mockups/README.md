@@ -1,7 +1,10 @@
 # Vijf mockups — de tool in de Rijkshuisstijl
 
-Open **[`index.html`](index.html)** en klik door de vijf indelingen. Kies er één;
-die wordt daarna in `../index.html` gebouwd.
+> **Gekozen: nummer 4, Keuzekaarten.** Die is gebouwd; zie `../index.html`.
+> Deze map blijft staan als vastlegging van de keuze — wat er naast lag, en wat
+> elke indeling zou kosten.
+
+Open **[`index.html`](index.html)** en klik door de vijf indelingen.
 
 Dubbelklikken werkt: deze map laadt niets van buiten en heeft geen Supabase,
 geen inlog en geen server nodig.
@@ -27,7 +30,7 @@ hem te bouwen. Met **Telefoon** bekijk je dezelfde mockup op 400 px breed.
 
 De mockups gebruiken de componenten-CSS en de design tokens van
 [nl-design-system/rijkshuisstijl-community](https://github.com/nl-design-system/rijkshuisstijl-community),
-onveranderd uit npm. Zie [vendor/LEESMIJ.md](vendor/LEESMIJ.md) voor de
+onveranderd uit npm. Zie [../vendor/rijkshuisstijl/LEESMIJ.md](../vendor/rijkshuisstijl/LEESMIJ.md) voor de
 versies, de herkomst en de licenties.
 
 Gekozen lintkleur: **hemelblauw** — van de zes lintkleuren ligt die het dichtst
@@ -49,9 +52,22 @@ marge echt 3,54 % van de breedte, de afgeronde hoek echt 9,492 % — rechtsonder
 en alleen daar. De "foto" is een paar verlopen over elkaar, want deze pagina
 laadt met opzet geen enkel bestand van buiten.
 
-## Wat hierna gebeurt
+## Wat er van 4 is gebouwd
 
-De gekozen indeling wordt in `../index.html` gebouwd, met deze vendor-bestanden.
-Aan `app.js`, `auth.js` en de Supabase-kant verandert daarbij niets: dat is
-opmaak, geen gedrag. De vijf stijlen, de exportmaten en de regellimieten blijven
-uit de database komen.
+Bijna alles, met twee verschillen die het bouwen aan het licht bracht:
+
+- **De stijlkaarten zijn echt geworden.** In de mockup stond er een
+  nagetekend voorbeeldje op; in de app tekent elke kaart langs dezelfde code
+  als de export, met jouw foto en jouw tekst. Daar is `app.js` voor opgeschoond:
+  de tekencode werkt nu op een losse "opdracht" in plaats van rechtstreeks op de
+  toestand van het grote canvas.
+- **De formaatkaarten komen uit de database**, niet uit `index.html`. Ze zijn
+  platform × formaat, dus een platform toevoegen in Supabase levert vanzelf
+  nieuwe kaarten op — net als bij de stijlen.
+
+Het voorbeeld naast de tekstvelden staat bovendien *sticky*, wat precies de
+zwakke kant van deze indeling verzacht: veel scrollen, met het voorbeeld ver
+van de invoer.
+
+Aan de Supabase-kant is niets veranderd: de stijlen, de exportmaten en de
+regellimieten komen nog steeds uit de database.

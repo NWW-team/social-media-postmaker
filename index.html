@@ -4,287 +4,346 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Social Media Opmaaktool</title>
+
+<!--
+  De Rijkshuisstijl Community, onveranderd uit npm: de componenten-CSS en de
+  design tokens. De opmaak van dit scherm wordt dus niet nagebouwd maar
+  meegeleverd. Zie vendor/rijkshuisstijl/LEESMIJ.md voor versies en licenties.
+
+  Net als de Supabase-client komt dit bewust NIET van een CDN: werknetwerken
+  blokkeren die regelmatig, en dan staat er een pagina zonder opmaak.
+-->
+<link rel="stylesheet" href="vendor/rijkshuisstijl/font.css">
+<link rel="stylesheet" href="vendor/rijkshuisstijl/rhc-tokens-hemelblauw.css">
+<link rel="stylesheet" href="vendor/rijkshuisstijl/rhc-components.css">
+
 <style>
-  :root {
-    --blauw: #007BC7;
-    --donkerblauw: #154173;
-    --lichtblauw: #C7E5F3;
-    --rand: #d4dae1;
-    --grijs: #5b6b7b;
-    --vlak: #f4f7fa;
-  }
+/* ===================================================================== *
+ * De Rijkshuisstijl levert kleuren, letters, afstanden en componenten.
+ * Hieronder staat alleen wat zij niet levert: de indeling van dit scherm,
+ * en een browserreset — components-css is volledig klassegebonden en raakt
+ * kale elementen met opzet niet aan.
+ * ===================================================================== */
 
-  * { box-sizing: border-box; }
+* { box-sizing: border-box; }
 
-  /*
-   * Het hidden-attribuut zet display:none via de stijl van de browser zelf,
-   * en die verliest van elke eigen display-regel. `main` staat hieronder op
-   * display:grid en `.knoprij` op display:flex, dus `main hidden` en
-   * `#icoonrij hidden` deden niets: het werkblad bleef onder het inlogscherm
-   * staan. Deze regel geeft hidden het laatste woord, voor de hele pagina.
-   */
-  [hidden] { display: none !important; }
+/*
+ * Het hidden-attribuut zet display:none via de stijl van de browser zelf, en
+ * die verliest van elke eigen display-regel. `main` staat hieronder op
+ * display:block en `#icoonrij` op display:flex, dus `main hidden` deed niets:
+ * het werkblad bleef onder het inlogscherm staan. Deze regel geeft hidden het
+ * laatste woord, voor de hele pagina.
+ */
+[hidden] { display: none !important; }
 
-  body {
-    margin: 0;
-    font: 16px/1.5 "RijksSansVF", "Segoe UI", system-ui, -apple-system,
-          Helvetica, Arial, sans-serif;
-    color: #1a1a1a;
-    background: #fff;
-  }
+body {
+  margin: 0;
+  background: #fff;
+  color: var(--rhc-color-foreground-default);
+  font-family: var(--rhc-text-font-family-default);
+  font-size: var(--rhc-text-font-size-sm);
+  line-height: var(--rhc-text-line-height-md);
+}
 
-  header {
-    background: var(--donkerblauw);
-    color: #fff;
-    padding: 20px 24px;
-  }
-  header h1 { margin: 0; font-size: 20px; }
-  header p { margin: 4px 0 0; font-size: 14px; opacity: 0.85; }
+h1, h2, h3, p, ul, ol, figure, legend { margin: 0; padding: 0; }
+fieldset { border: 0; margin: 0; padding: 0; min-inline-size: 0; }
+button, input, select, textarea { font: inherit; }
+img { max-inline-size: 100%; }
 
-  .waarschuwing {
-    background: var(--lichtblauw);
-    padding: 10px 24px;
-    margin: 0;
-    font-size: 14px;
-  }
+.werkgebied {
+  max-inline-size: 1240px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 3vw, 32px);
+}
 
-  main {
-    display: grid;
-    grid-template-columns: minmax(320px, 430px) 1fr;
-    gap: 32px;
-    padding: 24px;
-    max-width: 1120px;
-    margin: 0 auto;
-    align-items: start;
-  }
-  @media (max-width: 860px) {
-    main { grid-template-columns: 1fr; }
-    .voorbeeld { position: static !important; }
-  }
+.hulptekst {
+  font-size: 0.875rem;
+  color: var(--rhc-color-foreground-subtle);
+}
+.streep { border: 0; border-block-start: 1px solid var(--rhc-color-border-subtle); }
+.knoprij { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 
-  fieldset {
-    border: 1px solid var(--rand);
-    border-radius: 6px;
-    padding: 14px 16px 16px;
-    margin: 0 0 18px;
-  }
-  legend { font-weight: 600; font-size: 14px; padding: 0 6px; }
+/* ---------------------------------------------------------- kop en sessie */
 
-  .knoprij { display: flex; gap: 8px; flex-wrap: wrap; }
+.kopbalk {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding-block: 14px;
+}
 
-  .keuze {
-    flex: 1 1 auto;
-    min-width: 110px;
-    padding: 9px 12px;
-    border: 1px solid var(--rand);
-    border-radius: 4px;
-    background: #fff;
-    font: inherit;
-    font-size: 15px;
-    text-align: left;
-    cursor: pointer;
-  }
-  .keuze.breed { flex: 1 1 100%; }
-  .keuze:hover { border-color: var(--blauw); }
-  .keuze.actief {
-    background: var(--blauw);
-    border-color: var(--blauw);
-    color: #fff;
-    font-weight: 600;
-  }
+/*
+ * Het beeldmerk staat nog niet in deze repo; zie README.md, "Nog te doen".
+ * Tot die tijd een zichtbare plaatshouder: liever een leeg vakje dat zegt dat
+ * er iets hoort te staan, dan een tekstlogo dat voor het echte kan doorgaan.
+ */
+.merk { display: flex; align-items: center; gap: 12px; }
+.merk__plek {
+  inline-size: 40px;
+  block-size: 46px;
+  border: 2px dashed var(--rhc-color-border-default);
+  border-radius: 3px;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rhc-color-foreground-subtle);
+  flex-shrink: 0;
+}
+.merk__naam { font-weight: 600; line-height: 1.25; }
+.merk__naam span { display: block; font-weight: 400; font-size: 0.875rem; color: var(--rhc-color-foreground-subtle); }
 
-  .maat, .hulp {
-    margin: 10px 0 0;
-    font-size: 13px;
-    color: var(--grijs);
-  }
+.sessie {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-inline-start: auto;
+  font-size: 0.875rem;
+}
+.sessie .adres { color: var(--rhc-color-foreground-subtle); word-break: break-all; }
 
-  #dropzone {
-    border: 2px dashed var(--rand);
-    border-radius: 6px;
-    padding: 18px 16px;
-    text-align: center;
-    background: var(--vlak);
-  }
-  #dropzone.actief { border-color: var(--blauw); background: var(--lichtblauw); }
-  #dropzone p { margin: 0 0 10px; font-size: 14px; color: var(--grijs); }
+/* ------------------------------------------------------------------- hero */
 
-  .knop {
-    padding: 9px 16px;
-    border: 1px solid var(--blauw);
-    border-radius: 4px;
-    background: #fff;
-    color: var(--blauw);
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .knop:hover { background: var(--lichtblauw); }
-  .knop.primair {
-    background: var(--blauw);
-    color: #fff;
-    width: 100%;
-    padding: 12px;
-    font-size: 16px;
-  }
-  .knop.primair:hover { background: #01689B; }
-  .knop:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-    background: #fff;
-    color: var(--grijs);
-    border-color: var(--rand);
-  }
+.hero {
+  position: relative;
+  background: var(--rhc-color-primary-500);
+  color: #fff;
+  overflow: hidden;
+  border-end-start-radius: var(--rhc-rounded-corner-lg-border-radius, 6rem);
+}
+.hero__inhoud {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 40px;
+  align-items: center;
+  padding-block: 52px 58px;
+}
+/* De weggesneden hoek uit de huisstijl, in het wit van de pagina erboven. */
+.hero__hoek {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  inline-size: 190px;
+  block-size: 190px;
+  background: #fff;
+  border-end-start-radius: 100%;
+}
+.hero h1 { font-size: var(--rhc-text-font-size-2xl); text-wrap: balance; }
+.hero__lead { font-size: var(--rhc-text-font-size-md); max-inline-size: 50ch; }
+.hero__merk {
+  display: inline-block;
+  background: #fff;
+  color: var(--rhc-color-primary-500);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+#miniatuur {
+  display: block;
+  inline-size: 250px;
+  max-inline-size: 100%;
+  block-size: auto;
+  border-end-end-radius: 2px;
+}
 
-  #fotonaam {
-    display: block;
-    margin-top: 8px;
-    font-size: 13px;
-    color: var(--grijs);
-    word-break: break-all;
-  }
+/* ------------------------------------------------------------------ stappen */
 
-  label.veld {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 6px;
-  }
-  label.veld span { font-weight: 400; font-size: 13px; color: var(--grijs); }
+.stap { padding-block: 40px; }
+.stap + .stap { border-block-start: 1px solid var(--rhc-color-border-subtle); }
+.stap__kop { margin-block-end: 18px; }
+.stap__kop h2 { font-size: var(--rhc-text-font-size-lg); }
 
-  textarea {
-    width: 100%;
-    padding: 9px;
-    border: 1px solid var(--rand);
-    border-radius: 4px;
-    font: inherit;
-    resize: vertical;
-  }
+/* ------------------------------------------------------------------ kaarten */
 
-  .aanvink {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 15px;
-    cursor: pointer;
-  }
-  .aanvink input { width: 18px; height: 18px; }
+/*
+ * auto-fit met een lage ondergrens: op een laptop staan de vijf stijlen naast
+ * elkaar, op een telefoon twee per rij. Eén per rij zou de stijlsectie ruim
+ * twee schermen lang maken, en juist naast elkaar zien is de hele reden dat
+ * dit kaarten zijn.
+ */
+.kaarten {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
 
-  label.veld.kolom {
-    flex: 1 1 140px;
-    display: block;
-    font-weight: 600;
-    font-size: 14px;
-  }
-  label.veld.kolom select {
-    display: block;
-    width: 100%;
-    margin-top: 5px;
-    padding: 8px;
-    border: 1px solid var(--rand);
-    border-radius: 4px;
-    font: inherit;
-    font-weight: 400;
-    background: #fff;
-  }
+.kaart {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  text-align: start;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid var(--rhc-color-border-subtle);
+  border-radius: var(--rhc-border-radius-md);
+  padding: 14px;
+  color: inherit;
+}
+.kaart:hover { border-color: var(--rhc-color-primary-500); }
+.kaart:focus-visible {
+  outline: var(--rhc-focus-outline-width) solid var(--rhc-focus-outline-color);
+  outline-offset: var(--rhc-focus-outline-offset);
+}
+/* .actief wordt door app.js gezet, samen met aria-pressed. */
+.kaart.actief {
+  border-color: var(--rhc-color-primary-500);
+  box-shadow: inset 0 0 0 1px var(--rhc-color-primary-500);
+  background: var(--rhc-color-primary-50);
+}
+.kaart__vorm {
+  display: grid;
+  place-items: center;
+  background: var(--rhc-color-cool-grey-50);
+  border-radius: 3px;
+  padding: 10px;
+  min-block-size: 114px;
+}
+.kaart.actief .kaart__vorm { background: #fff; }
+/* Het velletje in een formaatkaart: de vorm van de export, op maat, met de
+   afgeronde hoek rechtsonder die ook op de echte post staat. */
+/* Vaste breedte, hoogte uit de verhouding: dan is staand ook zíchtbaar hoger
+   dan vierkant, in plaats van alleen smaller. */
+.kaart__vorm > span {
+  display: block;
+  inline-size: 74px;
+  background: #fff;
+  border: 1px solid var(--rhc-color-border-default);
+}
+.kaart__doek { display: block; inline-size: 100%; block-size: auto; }
+.kaart__naam { font-weight: 700; }
+.kaart__bij { font-size: 0.875rem; color: var(--rhc-color-foreground-subtle); }
 
-  #zoomrij { margin-top: 12px; }
-  #zoom { width: 100%; }
+/* --------------------------------------------------------------- werkvlak */
 
-  .voorbeeld { position: sticky; top: 24px; }
+/* De laatste stap is één vlak: links wat je invult, rechts wat eruit komt. */
+/*
+ * Niet breder dan 1000 px. De Rijkshuisstijl kapt invoervelden op 25rem af —
+ * een tekstveld van een halve meter leest niet — dus een kolom die veel breder
+ * is dan dat levert alleen lege ruimte naast elk veld op.
+ */
+.werkvlak {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 40px;
+  align-items: start;
+  max-inline-size: 1000px;
+  background: var(--rhc-color-primary-50);
+  border-start-start-radius: 3rem;
+  padding: 36px;
+}
+.werkvlak__uit { position: sticky; inset-block-start: 20px; }
 
-  #canvas {
-    width: 100%;
-    max-width: 420px;
-    height: auto;
-    display: block;
-    border: 1px solid var(--rand);
-    border-radius: 4px;
-    cursor: grab;
-    touch-action: none;
-    background: var(--vlak);
-  }
-  #canvas.sleept { cursor: grabbing; }
-  #canvas:focus-visible { outline: 3px solid var(--blauw); outline-offset: 2px; }
+#dropzone {
+  border: 2px dashed var(--rhc-color-primary-300);
+  border-radius: var(--rhc-border-radius-md);
+  background: #fff;
+  padding: 26px 20px;
+  text-align: center;
+}
+#dropzone.actief { border-color: var(--rhc-color-primary-500); background: var(--rhc-color-primary-100); }
+#dropzone.gevuld { padding: 16px 20px; }
+#fotonaam {
+  display: block;
+  margin-block-start: 10px;
+  font-size: 0.875rem;
+  color: var(--rhc-color-foreground-subtle);
+  word-break: break-all;
+}
 
-  .melding {
-    margin: 12px 0 0;
-    padding: 9px 12px;
-    border-radius: 4px;
-    font-size: 14px;
-    max-width: 420px;
-  }
-  .melding.fout { background: #fde8e8; border: 1px solid #f0b4b4; }
-  .melding.goed { background: #e6f4ea; border: 1px solid #a9d7b8; }
-  .melding.let  { background: #fff4d6; border: 1px solid #e8d9a8; }
+.veld { display: block; margin-block-end: 6px; font-weight: 600; }
+.veld--rij { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.veld--rij span { font-weight: 400; font-size: 0.875rem; color: var(--rhc-color-foreground-subtle); }
+textarea, input[type="text"], input[type="email"], input[type="password"], select { inline-size: 100%; }
+input[type="range"] { inline-size: 100%; }
 
-  footer {
-    max-width: 1120px;
-    margin: 0 auto;
-    padding: 8px 24px 40px;
-    font-size: 13px;
-    color: var(--grijs);
-  }
+.aanvink { display: flex; align-items: center; gap: 10px; }
 
-  /* ------------------------------------------------- inloggen en uitloggen */
+#canvas {
+  display: block;
+  inline-size: 360px;
+  max-inline-size: 100%;
+  block-size: auto;
+  background: #fff;
+  border: 1px solid var(--rhc-color-border-subtle);
+  cursor: grab;
+  touch-action: none;
+}
+#canvas.sleept { cursor: grabbing; }
+#canvas:focus-visible {
+  outline: var(--rhc-focus-outline-width) solid var(--rhc-focus-outline-color);
+  outline-offset: var(--rhc-focus-outline-offset);
+}
 
-  .kopbalk-rij {
-    max-width: 1120px;
-    margin: 0 auto;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-  }
-  .sessie { font-size: 14px; text-align: right; flex-shrink: 0; }
-  .sessie .adres { display: block; opacity: 0.85; margin-bottom: 6px; word-break: break-all; }
-  .sessie .knop { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.5); }
-  .sessie .knop:hover { background: rgba(255,255,255,0.22); }
+.melding {
+  margin-block-start: 12px;
+  padding: 10px 13px;
+  border: 1px solid transparent;
+  border-radius: var(--rhc-border-radius-md);
+  font-size: 0.875rem;
+  max-inline-size: 42ch;
+}
+/* De drie soorten melding op de kleuren van de huisstijl zelf, niet op eigen
+   hexcodes. app.js zet hier alleen `melding fout|goed|let` neer. */
+.melding.fout { background: var(--rhc-color-negative-50); border-color: var(--rhc-color-negative-500); }
+.melding.goed { background: var(--rhc-color-positive-50); border-color: var(--rhc-color-positive-500); }
+.melding.let  { background: var(--rhc-color-warning-50);  border-color: var(--rhc-color-warning-500); }
 
-  .poort {
-    max-width: 440px;
-    margin: 48px auto;
-    padding: 0 24px;
-  }
-  .poort h2 { margin: 0 0 6px; font-size: 20px; color: var(--donkerblauw); }
-  .poort p.hulp { margin-top: 0; }
-  .poort label { display: block; font-weight: 600; margin: 14px 0 4px; font-size: 14px; }
-  .poort input {
-    width: 100%;
-    padding: 9px 10px;
-    font: inherit;
-    border: 1px solid var(--rand);
-    border-radius: 4px;
-  }
-  .poort input:focus-visible { outline: 3px solid var(--blauw); outline-offset: 1px; }
-  .poort button { margin-top: 18px; width: 100%; }
-  .poort .melding { max-width: none; }
+/* ------------------------------------------------------ poort en voettekst */
+
+.poort { max-inline-size: 460px; margin-block: 56px; }
+.poort label { display: block; font-weight: 600; margin-block: 16px 5px; }
+.poort .melding { max-inline-size: none; }
+
+.voet {
+  background: var(--rhc-color-cool-grey-900);
+  color: #fff;
+  padding-block: 28px;
+  margin-block-start: 56px;
+  font-size: 0.875rem;
+}
+
+/* ------------------------------------------------------------------- smal */
+
+@media (max-width: 900px) {
+  .hero__inhoud, .werkvlak { grid-template-columns: minmax(0, 1fr); }
+  .hero__hoek { display: none; }
+  .werkvlak { padding: 24px; border-start-start-radius: 1.5rem; }
+  .werkvlak__uit { position: static; }
+  #miniatuur { inline-size: 200px; }
+}
 </style>
 </head>
-<body>
 
-<header>
-  <div class="kopbalk-rij">
-    <div>
-      <h1>Social Media Opmaaktool</h1>
-      <p>Zet een foto in de huisstijl en download hem op de juiste maat voor Instagram of Facebook.</p>
+<!--
+  De klasse `hemelblauw` zet de design tokens aan. Zonder haar is elke
+  --rhc-…-variabele leeg en valt de hele pagina terug op de kale
+  browserstijl: geen kleur, geen letter, geen knop. De tokens staan namelijk
+  niet op :root maar op een klasse, juist zodat één pagina meer dan één
+  lintkleur kan tonen.
+
+  Een andere lintkleur kiezen is dus: hier een andere naam, en hierboven een
+  ander tokenbestand. Zie vendor/rijkshuisstijl/LEESMIJ.md.
+-->
+<body class="hemelblauw">
+
+<div class="werkgebied">
+  <div class="kopbalk">
+    <div class="merk">
+      <span class="merk__plek" aria-hidden="true">logo</span>
+      <span class="merk__naam">
+        Social Media Opmaaktool
+        <span>Plaats voor het beeldmerk van de organisatie</span>
+      </span>
     </div>
     <div class="sessie" id="sessiebalk" hidden>
       <span class="adres" id="sessieadres"></span>
-      <button type="button" class="knop" id="uitlogknop">Uitloggen</button>
+      <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button" id="uitlogknop">Uitloggen</button>
     </div>
   </div>
-</header>
-
-<p class="waarschuwing">
-  <strong>Prototype.</strong>
-  Kleuren, korpsgroottes en maatvoering komen uit de PowerPoint-toolkit
-  (<em>Posten toolkit socials v1</em>). Het huisstijllettertype zit er niet in —
-  zie de README. Laat een export controleren voordat je hiermee publiceert.
-</p>
+</div>
 
 <!--
   Het inlogscherm hieronder is een SCHERM, geen slot. Wie dit blok met de
@@ -293,158 +352,235 @@
   Supabase en daar beslissen de RLS-policies. Zonder toegestaan account
   blijft er een leeg canvas over.
 -->
-<section class="poort" id="poort" hidden>
-  <h2>Inloggen</h2>
-  <p class="hulp">
-    Deze tool is voor vooraf toegelaten redacteuren. Zelf een account aanmaken
-    kan niet; registratie staat uit op de server. Heb je toegang nodig, vraag
-    dan de beheerder je toe te voegen.
-  </p>
+<div class="werkgebied">
+  <section class="poort" id="poort" hidden>
+    <h1 class="nl-heading nl-heading--level-1 rhc-heading" style="font-size:var(--rhc-text-font-size-xl)">Inloggen</h1>
+    <p class="nl-paragraph rhc-paragraph hulptekst" style="margin-block-start:8px">
+      Deze tool is voor vooraf toegelaten redacteuren. Zelf een account aanmaken
+      kan niet; registratie staat uit op de server. Heb je toegang nodig, vraag
+      dan de beheerder je toe te voegen.
+    </p>
 
-  <form id="inlogformulier" autocomplete="on">
-    <label for="inlogEmail">E-mailadres</label>
-    <input type="email" id="inlogEmail" name="email" autocomplete="username" required>
+    <form id="inlogformulier" autocomplete="on">
+      <label class="utrecht-form-label" for="inlogEmail">E-mailadres</label>
+      <input type="email" id="inlogEmail" name="email" class="utrecht-textbox rhc-text-input" autocomplete="username" required>
 
-    <label for="inlogWachtwoord">Wachtwoord</label>
-    <input type="password" id="inlogWachtwoord" name="password" autocomplete="current-password" required>
+      <label class="utrecht-form-label" for="inlogWachtwoord">Wachtwoord</label>
+      <input type="password" id="inlogWachtwoord" name="password" class="utrecht-textbox rhc-text-input" autocomplete="current-password" required>
 
-    <button type="submit" class="knop primair" id="inlogknop">Inloggen</button>
-  </form>
+      <p style="margin-block-start:22px">
+        <button type="submit" class="utrecht-button utrecht-button--primary-action rhc-button" id="inlogknop">Inloggen</button>
+      </p>
+    </form>
 
-  <p class="melding fout" id="inlogmelding" hidden></p>
-</section>
+    <p class="melding fout" id="inlogmelding" hidden></p>
+  </section>
 
-<!-- Ingelogd, maar niet op de allowlist. -->
-<section class="poort" id="geentoegang" hidden>
-  <h2>Geen toegang</h2>
-  <p class="melding fout">
-    Je bent ingelogd als <strong id="geentoegangAdres"></strong>, maar dit account
-    staat niet op de lijst met toegelaten gebruikers. De database geeft daarom
-    geen gegevens vrij.
-  </p>
-  <p class="hulp">
-    Dat is geen foutmelding in de app: de toegangsregels in Supabase laten dit
-    account niets zien. Vraag de beheerder om je toe te voegen.
-  </p>
-</section>
+  <!-- Ingelogd, maar niet op de allowlist. -->
+  <section class="poort" id="geentoegang" hidden>
+    <h1 class="nl-heading nl-heading--level-1 rhc-heading" style="font-size:var(--rhc-text-font-size-xl)">Geen toegang</h1>
+    <p class="melding fout" style="margin-block-start:14px">
+      Je bent ingelogd als <strong id="geentoegangAdres"></strong>, maar dit account
+      staat niet op de lijst met toegelaten gebruikers. De database geeft daarom
+      geen gegevens vrij.
+    </p>
+    <p class="hulptekst" style="margin-block-start:14px">
+      Dat is geen foutmelding in de app: de toegangsregels in Supabase laten dit
+      account niets zien. Vraag de beheerder om je toe te voegen.
+    </p>
+  </section>
 
-<p class="melding fout" id="startfout" hidden style="max-width:440px;margin:48px auto"></p>
+  <p class="melding fout" id="startfout" hidden style="max-inline-size:460px;margin-block:56px"></p>
+</div>
 
 <main id="werkblad" hidden>
-  <div>
-    <fieldset>
-      <legend>1. Waar plaats je de post?</legend>
-      <div class="knoprij" role="group" aria-label="Platform">
-        <button type="button" class="keuze" data-platform="instagram" aria-pressed="false">Instagram</button>
-        <button type="button" class="keuze" data-platform="facebook" aria-pressed="false">Facebook</button>
+
+  <header class="hero">
+    <span class="hero__hoek" aria-hidden="true"></span>
+    <div class="werkgebied">
+      <div class="hero__inhoud">
+        <div style="display:grid;gap:14px;justify-items:start">
+          <h1 class="nl-heading nl-heading--level-1 rhc-heading" style="color:#fff">
+            Maak zelf een post in de huisstijl
+          </h1>
+          <p class="nl-paragraph nl-paragraph--lead rhc-paragraph hero__lead" style="color:#fff">
+            Kies een formaat, een stijl en een foto. De opmaak klopt daarna
+            vanzelf — je hoeft er niet meer op te wachten.
+          </p>
+          <p class="hero__merk">Prototype — laat een export controleren voor je publiceert</p>
+        </div>
+
+        <!-- Hetzelfde sjabloon als de export, alleen kleiner getekend. -->
+        <canvas id="miniatuur" width="520" height="650"
+                aria-label="Klein voorbeeld van de post die je nu maakt."></canvas>
       </div>
-      <div class="knoprij" role="group" aria-label="Formaat" style="margin-top:8px">
-        <button type="button" class="keuze" data-format="staand" aria-pressed="false">Staand</button>
-        <button type="button" class="keuze" data-format="vierkant" aria-pressed="false">Vierkant</button>
+    </div>
+  </header>
+
+  <div class="werkgebied">
+
+    <section class="stap">
+      <div class="stap__kop">
+        <h2 class="nl-heading nl-heading--level-2 rhc-heading">1. Waar plaats je de post?</h2>
+        <p class="hulptekst" style="margin-block-start:4px">
+          De vorm hangt aan het formaat, de pixelmaat aan het platform.
+        </p>
       </div>
-      <p class="maat">Exportmaat: <strong id="maatlabel">—</strong></p>
-      <p class="hulp" id="formaatnoot" hidden>
+      <!-- De kaarten komen uit de huisstijl in Supabase; zie app.js. -->
+      <div class="kaarten" id="formaatkaarten" role="group" aria-label="Platform en formaat"></div>
+      <p class="maat hulptekst" style="margin-block-start:14px">
+        Exportmaat: <strong id="maatlabel">—</strong>
+      </p>
+      <p class="hulptekst" id="formaatnoot" hidden>
         De toolkit beschrijft alleen 4:5. Bij vierkant blijft het tekstvlak even
         hoog en levert de foto de ruimte in.
       </p>
-    </fieldset>
+    </section>
 
-    <fieldset>
-      <legend>2. Kies een stijl</legend>
-      <div class="knoprij" role="group" aria-label="Stijl" id="stijlknoppen"></div>
-      <p class="hulp" id="stijlbron">—</p>
-    </fieldset>
-
-    <fieldset>
-      <legend>3. Kies een foto</legend>
-      <div id="dropzone">
-        <p>Sleep een foto hierheen, plak met Ctrl+V, of:</p>
-        <button type="button" class="knop" id="bestandsknop">Bestand kiezen</button>
-        <button type="button" class="knop" id="voorbeeldknop">Voorbeeldfoto</button>
-        <input type="file" id="bestandsinvoer" accept="image/*" hidden>
-        <span id="fotonaam"></span>
+    <section class="stap">
+      <div class="stap__kop">
+        <h2 class="nl-heading nl-heading--level-2 rhc-heading">2. Kies een stijl</h2>
+        <p class="hulptekst" style="margin-block-start:4px">
+          Op elke kaart staat jouw foto en jouw tekst, in die stijl — getekend
+          met dezelfde code als de download.
+        </p>
       </div>
-      <div id="zoomrij" hidden>
-        <label class="veld" for="zoom">Inzoomen</label>
-        <input type="range" id="zoom" min="1" max="3" step="0.01" value="1">
-        <p class="hulp">Sleep de foto in het voorbeeld om de uitsnede te kiezen.</p>
-        <button type="button" class="knop" id="resetknop">Uitsnede terugzetten</button>
-      </div>
-    </fieldset>
+      <div class="kaarten" id="stijlknoppen" role="group" aria-label="Stijl"></div>
+      <p class="hulptekst" id="stijlbron" style="margin-block-start:14px">—</p>
+    </section>
 
-    <fieldset>
-      <legend>4. Cirkels en icoontjes</legend>
-      <label class="aanvink">
-        <input type="checkbox" id="decoratieAan">
-        Witte cirkellijnen met icoonbadges over de foto
-      </label>
-      <div id="icoonrij" class="knoprij" style="margin-top:10px">
-        <label class="veld kolom" for="icoon0">Grote badge
-          <select id="icoon0"></select>
-        </label>
-        <label class="veld kolom" for="icoon1">Kleine badge
-          <select id="icoon1"></select>
-        </label>
-      </div>
-      <p class="hulp">
-        De pictogrammen zijn plaatshouders. De officiële iconenset kan erin;
-        zie de README.
-      </p>
-    </fieldset>
-
-    <fieldset>
-      <legend>5. Tekst</legend>
-      <label class="veld" for="kop">Kop <span id="kopregels"></span></label>
-      <textarea id="kop" rows="2" placeholder="Bijvoorbeeld: Souvenirs meenemen uit het buitenland?"></textarea>
-      <label class="veld" for="sub" style="margin-top:12px">Subtekst <span id="subregels"></span></label>
-      <textarea id="sub" rows="2" placeholder="Bijvoorbeeld: Dit zijn de regels."></textarea>
-      <p class="hulp">
-        De korpsgrootte ligt vast in de toolkit. Past je tekst niet binnen het
-        maximum aantal regels, dan wordt hij afgekapt en zie je een melding.
-      </p>
-    </fieldset>
-
-    <fieldset>
-      <legend>6. Concepten</legend>
-      <p class="hulp" style="margin-top:0">
-        Bewaart je instellingen en tekst, zodat je later verder kunt. De foto
-        gaat bewust niet mee: die blijft op je eigen computer.
-      </p>
-
-      <label class="veld" for="conceptTitel">Naam</label>
-      <div class="knoprij">
-        <input type="text" id="conceptTitel" maxlength="120" placeholder="Bijvoorbeeld: Souvenirs juli"
-               style="flex:1;min-width:160px;padding:8px 10px;font:inherit;border:1px solid var(--rand);border-radius:4px">
-        <button type="button" class="knop" id="conceptBewaren">Bewaren</button>
+    <section class="stap">
+      <div class="stap__kop">
+        <h2 class="nl-heading nl-heading--level-2 rhc-heading">3. Foto en tekst</h2>
+        <p class="hulptekst" style="margin-block-start:4px">
+          Je foto blijft op je eigen computer.
+        </p>
       </div>
 
-      <label class="veld" for="conceptlijst" style="margin-top:14px">Bewaarde concepten</label>
-      <select id="conceptlijst" style="width:100%;padding:8px 10px;font:inherit;border:1px solid var(--rand);border-radius:4px"></select>
-      <div class="knoprij" style="margin-top:8px">
-        <button type="button" class="knop" id="conceptOpenen">Openen</button>
-        <button type="button" class="knop" id="conceptVerwijderen">Verwijderen</button>
+      <div class="werkvlak">
+        <div>
+          <fieldset>
+            <legend class="veld">Foto</legend>
+            <div id="dropzone">
+              <p class="hulptekst" style="margin-block-end:12px">
+                Sleep een foto hierheen, plak met <kbd>Ctrl</kbd>&nbsp;+&nbsp;<kbd>V</kbd>, of:
+              </p>
+              <div class="knoprij" style="justify-content:center">
+                <button type="button" class="utrecht-button utrecht-button--primary-action rhc-button" id="bestandsknop">Bestand kiezen</button>
+                <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button" id="voorbeeldknop">Voorbeeldfoto</button>
+              </div>
+              <input type="file" id="bestandsinvoer" accept="image/*" hidden>
+              <span id="fotonaam"></span>
+            </div>
+
+            <div id="zoomrij" hidden style="margin-block-start:16px">
+              <label class="veld" for="zoom">Inzoomen</label>
+              <input type="range" id="zoom" min="1" max="3" step="0.01" value="1">
+              <div class="knoprij" style="margin-block-start:10px">
+                <p class="hulptekst" style="flex:1 1 200px">Sleep de foto in het voorbeeld om de uitsnede te kiezen.</p>
+                <button type="button" class="utrecht-button utrecht-button--subtle rhc-button" id="resetknop">Uitsnede terugzetten</button>
+              </div>
+            </div>
+          </fieldset>
+
+          <hr class="streep" style="margin-block:24px">
+
+          <fieldset>
+            <legend class="veld">Tekst</legend>
+            <label class="veld veld--rij" for="kop">Kop <span id="kopregels"></span></label>
+            <textarea id="kop" rows="2" class="utrecht-textarea rhc-textarea rhc-textarea--html-textarea"
+                      placeholder="Bijvoorbeeld: Souvenirs meenemen uit het buitenland?"></textarea>
+
+            <label class="veld veld--rij" for="sub" style="margin-block-start:16px">Subtekst <span id="subregels"></span></label>
+            <textarea id="sub" rows="2" class="utrecht-textarea rhc-textarea rhc-textarea--html-textarea"
+                      placeholder="Bijvoorbeeld: Dit zijn de regels."></textarea>
+
+            <p class="hulptekst" style="margin-block-start:10px">
+              De korpsgrootte ligt vast in de toolkit. Past je tekst niet binnen
+              het maximum aantal regels, dan wordt hij afgekapt en zie je een melding.
+            </p>
+          </fieldset>
+
+          <hr class="streep" style="margin-block:24px">
+
+          <fieldset>
+            <legend class="veld">Cirkels en icoontjes</legend>
+            <div class="aanvink">
+              <input type="checkbox" id="decoratieAan" class="utrecht-checkbox rhc-checkbox">
+              <label class="utrecht-form-label utrecht-form-label--checkbox" for="decoratieAan">
+                Witte cirkellijnen met icoonbadges over de foto
+              </label>
+            </div>
+            <div id="icoonrij" class="knoprij" style="margin-block-start:14px">
+              <label class="veld" for="icoon0" style="flex:1 1 150px">Grote badge
+                <select id="icoon0" class="utrecht-select rhc-form-field-select" style="margin-block-start:5px;font-weight:400"></select>
+              </label>
+              <label class="veld" for="icoon1" style="flex:1 1 150px">Kleine badge
+                <select id="icoon1" class="utrecht-select rhc-form-field-select" style="margin-block-start:5px;font-weight:400"></select>
+              </label>
+            </div>
+            <p class="hulptekst" style="margin-block-start:12px">
+              De pictogrammen zijn plaatshouders. De officiële iconenset kan erin;
+              zie de README.
+            </p>
+          </fieldset>
+        </div>
+
+        <div class="werkvlak__uit">
+          <p class="veld">Voorbeeld</p>
+          <canvas id="canvas" width="1080" height="1350" tabindex="0"
+                  aria-label="Voorbeeld van de post. Sleep of gebruik de pijltjestoetsen om de foto te verschuiven."></canvas>
+          <p class="melding" id="melding" hidden></p>
+          <p style="margin-block-start:16px">
+            <button type="button" class="utrecht-button utrecht-button--primary-action rhc-button" id="downloadknop" disabled>PNG downloaden</button>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="stap">
+      <div class="stap__kop">
+        <h2 class="nl-heading nl-heading--level-2 rhc-heading">4. Concepten</h2>
+        <p class="hulptekst" style="margin-block-start:4px">
+          Bewaart je instellingen en tekst, zodat je later verder kunt. De foto
+          gaat bewust niet mee: die blijft op je eigen computer.
+        </p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;max-inline-size:820px">
+        <div>
+          <label class="veld" for="conceptTitel">Dit concept bewaren als</label>
+          <div class="knoprij">
+            <input type="text" id="conceptTitel" maxlength="120" class="utrecht-textbox rhc-text-input"
+                   placeholder="Bijvoorbeeld: Souvenirs juli" style="flex:1 1 160px">
+            <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button" id="conceptBewaren">Bewaren</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="veld" for="conceptlijst">Bewaarde concepten</label>
+          <select id="conceptlijst" class="utrecht-select rhc-form-field-select"></select>
+          <div class="knoprij" style="margin-block-start:10px">
+            <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button" id="conceptOpenen">Openen</button>
+            <button type="button" class="utrecht-button utrecht-button--subtle rhc-button" id="conceptVerwijderen">Verwijderen</button>
+          </div>
+        </div>
       </div>
 
       <p class="melding" id="conceptmelding" hidden></p>
-    </fieldset>
-
-    <button type="button" class="knop primair" id="downloadknop" disabled>PNG downloaden</button>
+    </section>
   </div>
 
-  <div class="voorbeeld">
-    <canvas id="canvas" width="1080" height="1350" tabindex="0"
-            aria-label="Voorbeeld van de post. Sleep of gebruik de pijltjestoetsen om de foto te verschuiven."></canvas>
-    <p class="melding" id="melding" hidden></p>
-  </div>
+  <footer class="voet">
+    <div class="werkgebied">
+      <strong>Je foto blijft op je eigen computer.</strong> Het inpassen, bijsnijden en
+      exporteren gebeurt volledig in je browser; de foto wordt niet geüpload en niet
+      opgeslagen. Naar Supabase gaan alleen je inloggegevens, de huisstijl die je
+      ophaalt en — als je op Bewaren klikt — de naam, tekst en instellingen van een
+      concept.
+    </div>
+  </footer>
 </main>
-
-<footer>
-  <strong>Je foto blijft op je eigen computer.</strong> Het inpassen, bijsnijden en
-  exporteren gebeurt volledig in je browser; de foto wordt niet geüpload en niet
-  opgeslagen. Naar Supabase gaan alleen je inloggegevens, de huisstijl die je
-  ophaalt en — als je op Bewaren klikt — de naam, tekst en instellingen van een
-  concept.
-</footer>
 
 <!--
   De officiële Supabase-client. Levert het inloggen en de datatoegang; we
