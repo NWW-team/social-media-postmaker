@@ -14,12 +14,40 @@ API — ze kunnen alleen via het dashboard.
 | --- | --- | --- |
 | 1 | Tabellen, RLS en policies | Gedaan |
 | 2 | Huisstijl gevuld (11 sleutels, 8 iconen) | Gedaan, md5 gecontroleerd |
-| 3 | Registratie uitzetten | **NOG TE DOEN — alleen jij** |
-| 4 | Twee testaccounts aanmaken | **NOG TE DOEN — alleen jij** |
-| 5 | `redacteur@example.org` op de allowlist | Gedaan |
+| 3 | Registratie uitzetten | Gedaan, geverifieerd: `signup_disabled` |
+| 4 | Testaccounts aanmaken | Eén account: `test@test.nl`. **Tweede nog nodig** |
+| 5 | Allowlist | `test@test.nl` staat erop |
 | 6 | URL en publishable key opgehaald | Gedaan |
 | 7 | `config.js` ingevuld | Gedaan |
 | 8 | Controle en RLS-test | Gedaan, 12 van 12 goed |
+
+### Directe links voor dit project
+
+| Wat | Link |
+| --- | --- |
+| Sign In / Providers | <https://supabase.com/dashboard/project/bsaltminmhvdsdkaqkag/auth/providers> |
+| Users | <https://supabase.com/dashboard/project/bsaltminmhvdsdkaqkag/auth/users> |
+| SQL Editor | <https://supabase.com/dashboard/project/bsaltminmhvdsdkaqkag/sql/new> |
+| API Keys | <https://supabase.com/dashboard/project/bsaltminmhvdsdkaqkag/settings/api-keys> |
+
+Vind je een instelling niet: `Ctrl+K` in het dashboard en typ de naam van de
+instelling. De namen zijn stabieler dan de menu-indeling.
+
+### Wat er nog ontbreekt voor de volledige test
+
+Er is nu één account, en dat staat op de allowlist. Voor test 3 uit
+`TESTEN.md` — het niet-toegestane account — is een **tweede** account nodig
+dat je níét op de allowlist zet. Maak het aan via Users -> Add user ->
+Create new user, met **Auto Confirm User** aan, bijvoorbeeld
+`buitenstaander@example.org`. Voeg het daarna nergens aan toe.
+
+`redacteur@example.org` staat nog wel op de allowlist maar heeft geen
+account. Dat is ongevaarlijk — een allowlist-rij zonder account kan niet
+inloggen — maar je kunt hem opruimen:
+
+```sql
+delete from public.toegestane_gebruikers where email = 'redacteur@example.org';
+```
 
 ---
 
@@ -66,10 +94,10 @@ het niet terug in GitHub.
 
 ---
 
-## Stap 3 — Registratie uitzetten — **NOG TE DOEN**
+## Stap 3 — Registratie uitzetten *(gedaan)*
 
-> Dit kan ik niet voor je doen: de Supabase-connector heeft geen tool om de
-> auth-instellingen te wijzigen. Het is een paar klikken.
+Geverifieerd met een registratiepoging van buitenaf: die geeft nu
+`signup_disabled`. Hieronder staat hoe je het zou herhalen.
 
 Dit is de echte grendel op "geen vrije registratie". Niet een verborgen knop in
 de frontend, maar een serverinstelling: Supabase weigert daarna elk
@@ -87,12 +115,14 @@ in stap 4 lossen we de bevestigingsmail anders op.
 
 ---
 
-## Stap 4 — De twee testaccounts aanmaken — **NOG TE DOEN**
+## Stap 4 — De testaccounts aanmaken *(deels gedaan)*
 
-> Ook dit kan ik niet voor je doen. Accounts rechtstreeks in `auth.users`
+> Dit kan alleen via het dashboard. Accounts rechtstreeks in `auth.users`
 > schrijven met SQL is een bekende maar broze truc — je omzeilt dan de
 > wachtwoordafhandeling van Supabase Auth en loopt kans op half werkende
-> accounts. Twee klikken in het dashboard is veiliger.
+> accounts.
+
+Eén account bestaat. Het tweede — het niet-toegestane — moet nog.
 
 Handmatig aangemaakte accounts kun je meteen bevestigen. Zo heb je geen
 bevestigingsmail nodig en hoef je de e-mailinstellingen van het project niet te

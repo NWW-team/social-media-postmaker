@@ -39,7 +39,7 @@ canvas, geen concepten.
 
 ## Test 2 — Toegestaan account
 
-1. Log in als `redacteur@example.org`.
+1. Log in als `test@test.nl`.
 
 **Verwacht:** het werkblad verschijnt, met vijf stijlknoppen en een getekend
 canvas. Rechtsboven staat je e-mailadres met een uitlogknop.
@@ -174,7 +174,7 @@ Controleer daarna in **Authentication → Users** dat `indringer@example.org`
 
 ### 6d — Jezelf op de allowlist zetten
 
-Als `redacteur@example.org` (dus mét toegang), in de console:
+Als `test@test.nl` (dus mét toegang), in de console:
 
 ```js
 sb.from('toegestane_gebruikers')
@@ -191,7 +191,7 @@ gekomen en kan elke toegelaten gebruiker collega's binnenlaten. Meld dat.
 
 ## Test 7 — Opnieuw proberen na uitloggen
 
-1. Log in als `redacteur@example.org`, bewaar een concept.
+1. Log in als `test@test.nl`, bewaar een concept.
 2. Klik **Uitloggen**.
 
 **Verwacht:** je bent terug op het inlogscherm; de pagina is herladen.
@@ -210,15 +210,19 @@ gekomen en kan elke toegelaten gebruiker collega's binnenlaten. Meld dat.
 
 ---
 
-## Al uitgevoerd vanuit de database
+## Al geverifieerd — hoef je niet over te doen
 
-De policies zijn al beproefd met `supabase/04_rls_test.sql`, dat expliciet naar
-de rollen `anon` en `authenticated` schakelt: 12 van de 12 goed. Dat toetst hoe
-Postgres de policies evalueert.
+| Test | Hoe geverifieerd | Uitslag |
+| --- | --- | --- |
+| Policies in Postgres | `supabase/04_rls_test.sql`, als rol `anon` en `authenticated` | 12 van 12 goed |
+| **6a** direct verzoek, uitgelogd | HTTP-verzoek op alle drie de tabellen met de publishable key | 3× `401 permission denied` |
+| **6c** zelf registreren | `POST /auth/v1/signup` van buitenaf | `signup_disabled` |
 
-Test 6 hieronder toetst de schakel die dáár niet in zit: of PostgREST een
-publishable key op de rol `anon` afbeeldt en een ingelogd token op
-`authenticated`. Die moet je vanuit de browser doen.
+Test 6a is daarmee ook echt door PostgREST heen getoetst: de publishable key
+wordt op de rol `anon` afgebeeld, en die komt er niet in.
+
+Wat nog openstaat is alles waarvoor een ingelogde sessie nodig is: test 1 tot
+en met 5, test 6b, 6d en 7. Die moet je in de browser doen.
 
 ## Wat deze tests niet aantonen
 
