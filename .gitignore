@@ -1,0 +1,8 @@
+# De gevulde huisstijl-config hoort niet in deze publieke repo: hij staat
+# juist in Supabase achter de allowlist. Zie supabase/LEESMIJ.md.
+supabase/02_huisstijl_vullen.sql
+
+# Nooit committen. Staat hier als vangnet, niet als toestemming.
+.env
+.env.*
+*.key
