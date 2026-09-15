@@ -41,9 +41,9 @@ niet. Heb je toegang nodig, vraag dan de beheerder je toe te voegen — zie
    de toolkit; ga je eroverheen, dan zie je dat meteen.
 6. Kies waar de cirkels met de icoonbadges staan: in een van de vier hoeken,
    of onderaan of bovenaan het midden.
-7. Wil je een grotere, zwaardere of schuine letter, stel hem dan bij onder
-   **Letter bijstellen**. Je ziet dan onder het voorbeeld waarin je van de
-   stijl afwijkt.
+7. Wil je een woord uitlichten, selecteer het dan en klik in de werkbalk boven
+   het veld op een korpsgrootte, **B** of **I**. Je ziet onder het voorbeeld
+   waarin je van de stijl afwijkt; **Uit de stijl** haalt het weer weg.
 8. Klik **PNG downloaden**.
 
 Stap 2 laat de vijf kaarten zien wat elke stijl met jouw materiaal doet. Heb je
@@ -129,17 +129,22 @@ het. Drie bewuste afwijkingen:
   exact de toolkithoogte.
 - **Vierkant (1:1) staat niet in de toolkit.** Daar houdt het tekstvlak dezelfde
   hoogte in pixels en levert de foto de ruimte in.
-- **De letter is bij te stellen** onder *Letter bijstellen*: per tekstveld een
-  andere korpsgrootte, een ander gewicht en schuin aan of uit. De keuzes blijven
-  binnen de toolkit — de maten zijn de vijf korpsgroottes hierboven en de
-  gewichten zijn de drie snedes die de huisstijlletter heeft — maar je wijkt af
-  van de stijl, en dat staat dan met zoveel woorden onder het voorbeeld. De knop
-  **Terug naar de stijl** zet alles weer zoals de stijl het voorschrijft.
+- **De letter is per stuk tekst bij te stellen.** Boven elk tekstveld staat een
+  werkbalk: selecteer een woord en kies een korpsgrootte, **B** of **I**. De
+  maten zijn de vijf korpsgroottes hierboven, dus je blijft met de maat binnen
+  de toolkit — maar je wijkt af van de stijl, en dat staat dan met zoveel
+  woorden onder het voorbeeld. **Uit de stijl** haalt de opmaak van de selectie
+  weer weg.
 
-  Wat de tool hier wél bewaakt: de regel waarop de tekst wordt afgebroken is
-  dezelfde waarmee hij wordt getekend, en het maximum aantal regels blijft
-  gelden. Een grotere letter betekent dus eerder een afkapmelding, niet tekst
-  die over de rand loopt.
+  **B is een schakelaar, geen "maak vetter".** In de meeste stijlen is de kop al
+  vet; daar haalt B het vet er dus af. De knop laat met zijn ingedrukte stand
+  zien wat er staat.
+
+  Wat de tool hier bewaakt: de regel waarop de tekst wordt afgebroken is
+  dezelfde waarmee hij wordt getekend, een woord dat half is opgemaakt blijft
+  één woord, de regelhoogte volgt het grootste stuk in die regel, en het maximum
+  aantal regels blijft gelden. Een grotere letter betekent dus eerder een
+  afkapmelding, niet tekst die over de rand loopt.
 
   Schuin heeft de huisstijlletter niet als eigen snede; de browser maakt er zelf
   een schuine van. Voor een echte cursieve letter is een schuine snede van
@@ -150,6 +155,30 @@ het. Drie bewuste afwijkingen:
 De huisstijl stond in `templates.js`. Die staat er niet meer: hij zit nu in
 Supabase, in de tabel `public.huisstijl`, achter de allowlist. Aanpassen doe je
 in het dashboard, niet in deze repo.
+
+### Tekst is een reeks stukken
+
+Sinds de werkbalk is de tekst van een veld geen string meer maar een reeks
+**stukken**: aaneengesloten lappen tekst met dezelfde opmaak.
+
+```js
+[ { tekst: 'Hoe kan ik een ', korps: null,   gewicht: null, schuin: false },
+  { tekst: 'nieuw paspoort',  korps: 'pt66', gewicht: 700,  schuin: true  } ]
+```
+
+`korps` en `gewicht` zijn `null` als het stuk de stijl volgt — iets anders dan
+"toevallig dezelfde maat als de stijl". Wissel je van stijl, dan schuift een
+stuk met `null` mee en een stuk met `pt66` niet.
+
+Het tekstveld is een weergave van dat model, niet andersom. De DOM van een
+`contenteditable` zit vol knopen die de browser er zelf in legt; die zouden
+anders allemaal ook op het canvas moeten kloppen. Bij het typen leest de app de
+DOM uit zonder het veld opnieuw op te bouwen — dat zou de cursor verplaatsen —
+en alleen na een klik op de werkbalk wordt het veld opnieuw opgebouwd, met de
+selectie terug op dezelfde tekens.
+
+Een bewaard concept van vóór de werkbalk bevat een gewone string. Die wordt bij
+het openen één stuk zonder opmaak, precies zoals hij bewaard is.
 
 Elke rij is één sleutel met een stuk JSON:
 

@@ -245,6 +245,91 @@ input[type="range"] { inline-size: 100%; }
 
 .aanvink { display: flex; align-items: center; gap: 10px; }
 
+/* ----------------------------------------------------------- teksteditor */
+
+/*
+ * Werkbalk en veld horen als één ding te lezen, dus de randen sluiten op
+ * elkaar aan: de balk heeft alleen bovenhoeken, het veld alleen onderhoeken.
+ */
+.editor { display: block; }
+
+.werkbalk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 7px;
+  border: 1px solid var(--rhc-color-border-default);
+  border-block-end: 0;
+  border-start-start-radius: var(--rhc-border-radius-md);
+  border-start-end-radius: var(--rhc-border-radius-md);
+  background: var(--rhc-color-cool-grey-50);
+}
+.werkbalk__spatie { flex: 1 1 8px; }
+/* De pagina zet elke select op 100 %, wat klopt voor een veld onder een label
+   maar niet voor een knop in een werkbalk: dan valt de rest naar de volgende
+   regel. Hier dus zo breed als hij nodig heeft. */
+.werkbalk__lijst {
+  inline-size: auto;
+  flex: 0 0 auto;
+  border: 1px solid var(--rhc-color-border-default);
+  border-radius: var(--rhc-border-radius-md);
+  background: #fff;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+/* Bewust geen utrecht-button: dit is een schakelaar die aan of uit staat, geen
+   knop die iets in gang zet. Vandaar aria-pressed in plaats van een klasse. */
+.werkbalk__knop {
+  appearance: none;
+  min-inline-size: 34px;
+  block-size: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--rhc-color-border-default);
+  border-radius: var(--rhc-border-radius-md);
+  background: #fff;
+  color: var(--rhc-color-foreground-default);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+.werkbalk__knop:hover { border-color: var(--rhc-color-primary-500); }
+.werkbalk__knop[aria-pressed="true"] {
+  background: var(--rhc-color-primary-500);
+  border-color: var(--rhc-color-primary-500);
+  color: #fff;
+}
+.werkbalk__knop--vet { font-weight: 700; }
+.werkbalk__knop--schuin { font-style: italic; font-family: Georgia, "Times New Roman", serif; }
+.werkbalk__knop--tekst { font-size: 0.8125rem; font-weight: 400; }
+
+.rijkveld {
+  min-block-size: 78px;
+  padding: 10px 12px;
+  border: 1px solid var(--rhc-color-border-default);
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+  border-end-start-radius: var(--rhc-border-radius-md);
+  border-end-end-radius: var(--rhc-border-radius-md);
+  background: #fff;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.4;
+  cursor: text;
+  overflow-wrap: anywhere;
+}
+.rijkveld--sub { min-block-size: 54px; }
+
+/* Een contenteditable kent geen placeholder, dus die staat in data-leeg en komt
+   er alleen uit zolang het veld helemaal leeg is. */
+.rijkveld:empty::before {
+  content: attr(data-leeg);
+  color: var(--rhc-color-foreground-subtle);
+}
+
 #canvas {
   display: block;
   inline-size: 360px;
@@ -469,68 +554,43 @@ input[type="range"] { inline-size: 100%; }
 
           <fieldset>
             <legend class="veld">Tekst</legend>
-            <label class="veld veld--rij" for="kop">Kop <span id="kopregels"></span></label>
-            <textarea id="kop" rows="2" class="utrecht-textarea rhc-textarea rhc-textarea--html-textarea"
-                      placeholder="Bijvoorbeeld: Souvenirs meenemen uit het buitenland?"></textarea>
 
-            <label class="veld veld--rij" for="sub" style="margin-block-start:16px">Subtekst <span id="subregels"></span></label>
-            <textarea id="sub" rows="2" class="utrecht-textarea rhc-textarea rhc-textarea--html-textarea"
-                      placeholder="Bijvoorbeeld: Dit zijn de regels."></textarea>
+            <span class="veld veld--rij" id="koplabel">Kop <span id="kopregels"></span></span>
+            <div class="editor">
+              <div class="werkbalk" id="kopbalk" role="toolbar" aria-label="Opmaak van de kop">
+                <select data-rol="korps" class="werkbalk__lijst" aria-label="Korpsgrootte van de selectie"></select>
+                <button type="button" class="werkbalk__knop werkbalk__knop--vet" data-rol="vet" aria-pressed="false" aria-label="Vet">B</button>
+                <button type="button" class="werkbalk__knop werkbalk__knop--schuin" data-rol="schuin" aria-pressed="false" aria-label="Schuin">I</button>
+                <span class="werkbalk__spatie"></span>
+                <button type="button" class="werkbalk__knop werkbalk__knop--tekst" data-rol="terug">Uit de stijl</button>
+              </div>
+              <div id="kop" class="rijkveld" contenteditable="true" role="textbox"
+                   aria-multiline="true" aria-labelledby="koplabel"
+                   data-leeg="Bijvoorbeeld: Souvenirs meenemen uit het buitenland?"></div>
+            </div>
+
+            <span class="veld veld--rij" id="sublabel" style="margin-block-start:16px">Subtekst <span id="subregels"></span></span>
+            <div class="editor">
+              <div class="werkbalk" id="subbalk" role="toolbar" aria-label="Opmaak van de subtekst">
+                <select data-rol="korps" class="werkbalk__lijst" aria-label="Korpsgrootte van de selectie"></select>
+                <button type="button" class="werkbalk__knop werkbalk__knop--vet" data-rol="vet" aria-pressed="false" aria-label="Vet">B</button>
+                <button type="button" class="werkbalk__knop werkbalk__knop--schuin" data-rol="schuin" aria-pressed="false" aria-label="Schuin">I</button>
+                <span class="werkbalk__spatie"></span>
+                <button type="button" class="werkbalk__knop werkbalk__knop--tekst" data-rol="terug">Uit de stijl</button>
+              </div>
+              <div id="sub" class="rijkveld rijkveld--sub" contenteditable="true" role="textbox"
+                   aria-multiline="true" aria-labelledby="sublabel"
+                   data-leeg="Bijvoorbeeld: Dit zijn de regels."></div>
+            </div>
 
             <p class="hulptekst" style="margin-block-start:10px">
-              De korpsgrootte komt uit de toolkit. Past je tekst niet binnen
-              het maximum aantal regels, dan wordt hij afgekapt en zie je een melding.
+              Selecteer een stuk tekst en klik op een knop: de opmaak geldt voor
+              dat stuk. De maten zijn de korpsgroottes uit de toolkit; wijk je
+              van de stijl af, dan zie je dat onder het voorbeeld staan.
+              <strong>Uit de stijl</strong> haalt de opmaak van de selectie weer weg.
             </p>
           </fieldset>
 
-          <hr class="streep" style="margin-block:24px">
-
-          <fieldset>
-            <legend class="veld">Letter bijstellen</legend>
-            <p class="hulptekst" style="margin-block-end:14px">
-              De stijl bepaalt de letter. Stel je hem bij, dan blijf je met de
-              maten en de gewichten binnen de toolkit — maar je wijkt af van de
-              stijl, en dat zie je onder het voorbeeld staan.
-            </p>
-
-            <p class="veld" style="margin-block-end:8px">Kop</p>
-            <div class="knoprij">
-              <label class="veld" for="kopKorps" style="flex:1 1 120px">Grootte
-                <select id="kopKorps" class="utrecht-select rhc-form-field-select" style="margin-block-start:5px;font-weight:400"></select>
-              </label>
-              <label class="veld" for="kopGewicht" style="flex:1 1 120px">Gewicht
-                <select id="kopGewicht" class="utrecht-select rhc-form-field-select" style="margin-block-start:5px;font-weight:400"></select>
-              </label>
-              <div class="aanvink" style="flex:1 1 140px;align-self:flex-end;padding-block-end:9px">
-                <input type="checkbox" id="kopSchuin" class="utrecht-checkbox rhc-checkbox">
-                <label class="utrecht-form-label utrecht-form-label--checkbox" for="kopSchuin">Schuin</label>
-              </div>
-            </div>
-
-            <p class="veld" style="margin-block:18px 8px">Subtekst</p>
-            <div class="knoprij">
-              <label class="veld" for="subKorps" style="flex:1 1 120px">Grootte
-                <select id="subKorps" class="utrecht-select rhc-form-field-select" style="margin-block-start:5px;font-weight:400"></select>
-              </label>
-              <label class="veld" for="subGewicht" style="flex:1 1 120px">Gewicht
-                <select id="subGewicht" class="utrecht-select rhc-form-field-select" style="margin-block-start:5px;font-weight:400"></select>
-              </label>
-              <div class="aanvink" style="flex:1 1 140px;align-self:flex-end;padding-block-end:9px">
-                <input type="checkbox" id="subSchuin" class="utrecht-checkbox rhc-checkbox">
-                <label class="utrecht-form-label utrecht-form-label--checkbox" for="subSchuin">Schuin</label>
-              </div>
-            </div>
-
-            <p class="knoprij" style="margin-block-start:16px">
-              <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button" id="opmaakterug">Terug naar de stijl</button>
-            </p>
-
-            <p class="hulptekst" style="margin-block-start:12px">
-              Schuin heeft de huisstijlletter niet als eigen snede; de browser
-              maakt er dan zelf een schuine van. Voor een echte cursieve letter
-              is een schuine snede van RijksSansVF nodig.
-            </p>
-          </fieldset>
 
           <hr class="streep" style="margin-block:24px">
 

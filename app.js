@@ -27,29 +27,110 @@ const state = {
   fotonaam: '',
   zoom: 1,                        // 1 = precies vullend
   brandpunt: { x: 0.5, y: 0.5 },  // welk punt van de foto in het midden staat
-  kop: '',
-  sub: '',
+  kop: [],                        // reeks stukken, zie hieronder
+  sub: [],
   decoratie: true,
   decoratiepositie: 'linksonder',
   iconen: ['Wereld (toolkit)', 'Gesprek (toolkit)'],
-  opmaak: {
-    kop: { korps: null, gewicht: null, schuin: false },
-    sub: { korps: null, gewicht: null, schuin: false },
-  },
 };
 
 /*
- * De gewichten die er werkelijk zijn.
+ * Tekst is geen string maar een reeks STUKKEN.
  *
- * Fira Sans staat in vendor/ met 400, 600 en 700 en RijksSansVF heeft ze ook.
- * Een keuze voor 800 zou de browser terugbrengen naar 700 en dan lijkt de knop
- * stuk: je klikt en er verandert niets. Daarom precies deze drie.
+ * Een stuk is een aaneengesloten lap tekst met dezelfde opmaak:
+ *
+ *     { tekst: 'nieuw paspoort', korps: 'pt66', gewicht: 700, schuin: false }
+ *
+ * korps en gewicht zijn null als het stuk de stijl volgt; dat is iets anders
+ * dan "toevallig dezelfde maat als de stijl". Wissel je van stijl, dan schuift
+ * een stuk met null mee en een stuk met pt66 niet.
+ *
+ * Waarom niet gewoon een string met opmaak ernaast: omdat de redacteur één
+ * woord moet kunnen uitlichten. Zodra opmaak per stuk kan, kan één regel
+ * meerdere korpsgroottes bevatten, en dan moet de regelval, de regelhoogte en
+ * het tekenen daar allemaal rekening mee houden. Dat loopt door dit hele
+ * bestand heen — vandaar dat het model hier bovenaan staat en niet verstopt
+ * zit in het tekstveld.
  */
-const GEWICHTEN = [
-  { waarde: 400, label: 'Normaal' },
-  { waarde: 600, label: 'Halfvet' },
-  { waarde: 700, label: 'Vet' },
-];
+const KAAL = { korps: null, gewicht: null, schuin: false };
+
+/* De gewichten die de letter werkelijk heeft: Fira Sans staat in vendor/ met
+   400, 600 en 700, RijksSansVF heeft ze ook. */
+const NORMAAL = 400;
+const VET = 700;
+
+function stukkenUit(tekst) {
+  return tekst ? [Object.assign({ tekst }, KAAL)] : [];
+}
+
+function platteTekst(stukken) {
+  return stukken.map((stuk) => stuk.tekst).join('');
+}
+
+function zelfdeOpmaak(a, b) {
+  return a.korps === b.korps && a.gewicht === b.gewicht && a.schuin === b.schuin;
+}
+
+/* Lege stukken eruit, buren met dezelfde opmaak samen. Zonder dit groeit de
+   reeks bij elke klik: los klikken en weer terugzetten zou tien stukken
+   opleveren waar er één hoort te staan. */
+function normaliseer(stukken) {
+  const uit = [];
+  stukken.forEach((stuk) => {
+    if (!stuk.tekst) return;
+    const vorige = uit[uit.length - 1];
+    if (vorige && zelfdeOpmaak(vorige, stuk)) vorige.tekst += stuk.tekst;
+    else uit.push(Object.assign({}, stuk));
+  });
+  return uit;
+}
+
+function kopieerStukken(stukken) {
+  return stukken.map((stuk) => Object.assign({}, stuk));
+}
+
+/* De stukjes tekst in het bereik [start, eind), met hun opmaak. */
+function stukjesIn(stukken, start, eind) {
+  const uit = [];
+  let plek = 0;
+  stukken.forEach((stuk) => {
+    const begin = plek;
+    const einde = plek + stuk.tekst.length;
+    plek = einde;
+    const van = Math.max(begin, start);
+    const tot = Math.min(einde, eind);
+    if (tot > van) {
+      uit.push(Object.assign({}, stuk, { tekst: stuk.tekst.slice(van - begin, tot - begin) }));
+    }
+  });
+  return uit;
+}
+
+/*
+ * Opmaak op een bereik zetten. Stukken die het bereik doorsnijden worden
+ * gesplitst; wat erbuiten valt blijft letterlijk wat het was.
+ */
+function zetOpmaak(stukken, start, eind, wijziging) {
+  if (eind <= start) return stukken;
+  const uit = [];
+  let plek = 0;
+  stukken.forEach((stuk) => {
+    const begin = plek;
+    const einde = plek + stuk.tekst.length;
+    plek = einde;
+    const a = Math.min(Math.max(start, begin), einde);
+    const b = Math.min(Math.max(eind, begin), einde);
+    const deel = (van, tot, raak) => {
+      if (tot <= van) return;
+      const nieuw = Object.assign({}, stuk, { tekst: stuk.tekst.slice(van - begin, tot - begin) });
+      uit.push(raak ? Object.assign(nieuw, wijziging) : nieuw);
+    };
+    deel(begin, a, false);
+    deel(a, b, true);
+    deel(b, einde, false);
+  });
+  return normaliseer(uit);
+}
 
 /*
  * Waar de cirkels en de badges staan.
@@ -104,10 +185,8 @@ function opdrachtMet(wijziging) {
   return Object.assign({}, state, {
     brandpunt: { x: state.brandpunt.x, y: state.brandpunt.y },
     iconen: state.iconen.slice(),
-    opmaak: {
-      kop: Object.assign({}, state.opmaak.kop),
-      sub: Object.assign({}, state.opmaak.sub),
-    },
+    kop: kopieerStukken(state.kop),
+    sub: kopieerStukken(state.sub),
   }, wijziging || {});
 }
 
@@ -136,8 +215,7 @@ function startApp() {
     'kop', 'sub', 'kopregels', 'subregels', 'zoom', 'zoomrij', 'resetknop',
     'downloadknop', 'maatlabel', 'stijlbron', 'melding', 'fotonaam', 'formaatnoot',
     'decoratieAan', 'decoratiepositie', 'icoon0', 'icoon1', 'icoonrij',
-    'miniatuur', 'stijlvoorbeeldnoot', 'opmaakterug',
-    'kopKorps', 'kopGewicht', 'kopSchuin', 'subKorps', 'subGewicht', 'subSchuin',
+    'miniatuur', 'stijlvoorbeeldnoot', 'kopbalk', 'subbalk',
   ].forEach((id) => { el[id] = document.getElementById(id); });
 
   el.ctx = el.canvas.getContext('2d');
@@ -157,7 +235,7 @@ function startApp() {
   if (!TEMPLATES.formats[state.format]) state.format = Object.keys(TEMPLATES.formats)[0];
 
   laadIconen();
-  bouwOpmaakkeuze();
+  bouwTekstvelden();
   bouwFormaatkaarten();
   bouwStijlknoppen();
   bouwIcoonkeuze();
@@ -287,8 +365,8 @@ function regellimiet(aantal, wat) {
  * invult, staat overal je eigen tekst.
  */
 const VOORBEELDTEKST = {
-  kop: 'Souvenirs meenemen uit het buitenland?',
-  sub: 'Dit zijn de regels.',
+  kop: stukkenUit('Souvenirs meenemen uit het buitenland?'),
+  sub: stukkenUit('Dit zijn de regels.'),
 };
 
 const KAARTBREEDTE = 440;
@@ -311,7 +389,7 @@ function tekenVoorbeelden() {
   const verhouding = hoog / breed;
 
   // Eén ingevuld veld is genoeg om overal je eigen tekst te laten zien.
-  const eigenTekst = Boolean(state.kop.trim() || state.sub.trim());
+  const eigenTekst = Boolean(platteTekst(state.kop).trim() || platteTekst(state.sub).trim());
   const invulling = eigenTekst ? {} : VOORBEELDTEKST;
 
   stijlkaartjes.forEach((kaartje) => {
@@ -368,67 +446,298 @@ function icoonnamen() {
   return Object.keys(TEMPLATES.iconen).sort((a, b) => a.localeCompare(b, 'nl'));
 }
 
+/* ============================================================== teksteditor */
+
 /*
- * De keuzelijsten voor de letter.
+ * De tekstvelden zijn contenteditable, geen textarea, want in een textarea kan
+ * één woord niet vet zijn.
  *
- * "Volgens de stijl" is niet hetzelfde als de maat die de stijl nu toevallig
- * heeft: kies je die maat met de hand en wissel je daarna van stijl, dan blijf
- * je eraan vastzitten. Daarom is de lege waarde een echte keuze, geen kopie.
+ * Het model is de bron, niet de DOM: state.kop is de reeks stukken en het veld
+ * is daar een weergave van. Dat is met opzet zo. Zou de DOM de waarheid zijn,
+ * dan moest elke rare knoop die contenteditable achterlaat — een <font>, een
+ * geneste <b>, een leeg <span> — ook op het canvas kloppen, en dat is precies
+ * het soort bug dat zich pas in de export laat zien.
+ *
+ * Tijdens typen lezen we de DOM uit zonder opnieuw te tekenen: opnieuw
+ * opbouwen zou de cursor naar het begin gooien bij elke aanslag. Alleen na een
+ * klik op de werkbalk bouwen we het veld opnieuw op, en dan zetten we de
+ * selectie terug op dezelfde tekens.
  */
-function bouwOpmaakkeuze() {
-  const velden = [
-    { naam: 'kop', korps: el.kopKorps, gewicht: el.kopGewicht, schuin: el.kopSchuin },
-    { naam: 'sub', korps: el.subKorps, gewicht: el.subGewicht, schuin: el.subSchuin },
-  ];
 
-  const optie = (lijst, waarde, label) => {
-    const o = document.createElement('option');
-    o.value = waarde;
-    o.textContent = label;
-    lijst.appendChild(o);
-  };
+const VELDEN = [
+  { naam: 'kop', host: 'kop', balk: 'kopbalk' },
+  { naam: 'sub', host: 'sub', balk: 'subbalk' },
+];
 
-  velden.forEach((veld) => {
-    optie(veld.korps, '', 'Uit de stijl');
-    korpsladder().forEach((sport) => optie(veld.korps, sport.sleutel, korpslabel(sport.sleutel)));
+/* --------------------------------------------------------------- DOM lezen */
 
-    optie(veld.gewicht, '', 'Uit de stijl');
-    GEWICHTEN.forEach((g) => optie(veld.gewicht, String(g.waarde), g.label));
-
-    veld.korps.addEventListener('change', () => {
-      state.opmaak[veld.naam].korps = veld.korps.value || null;
-      teken();
-    });
-    veld.gewicht.addEventListener('change', () => {
-      state.opmaak[veld.naam].gewicht = veld.gewicht.value ? Number(veld.gewicht.value) : null;
-      teken();
-    });
-    veld.schuin.addEventListener('change', () => {
-      state.opmaak[veld.naam].schuin = veld.schuin.checked;
-      teken();
-    });
+/* Platte tekst van een knoop, met <br> en blokken als regelovergang. */
+function platDom(knoop) {
+  let uit = '';
+  knoop.childNodes.forEach((kind) => {
+    if (kind.nodeType === Node.TEXT_NODE) uit += kind.nodeValue;
+    else if (kind.nodeName === 'BR') uit += '\n';
+    else {
+      if (blokachtig(kind) && uit && !uit.endsWith('\n')) uit += '\n';
+      uit += platDom(kind);
+    }
   });
-
-  el.opmaakterug.addEventListener('click', () => {
-    state.opmaak = {
-      kop: { korps: null, gewicht: null, schuin: false },
-      sub: { korps: null, gewicht: null, schuin: false },
-    };
-    toonOpmaak();
-    teken();
-  });
-
-  toonOpmaak();
+  return uit;
 }
 
-/* Zet de keuzelijsten op wat er in state staat. */
-function toonOpmaak() {
-  el.kopKorps.value = state.opmaak.kop.korps || '';
-  el.kopGewicht.value = state.opmaak.kop.gewicht ? String(state.opmaak.kop.gewicht) : '';
-  el.kopSchuin.checked = state.opmaak.kop.schuin;
-  el.subKorps.value = state.opmaak.sub.korps || '';
-  el.subGewicht.value = state.opmaak.sub.gewicht ? String(state.opmaak.sub.gewicht) : '';
-  el.subSchuin.checked = state.opmaak.sub.schuin;
+function blokachtig(knoop) {
+  return ['DIV', 'P', 'LI'].includes(knoop.nodeName);
+}
+
+function opmaakVanSpan(knoop, erboven) {
+  if (!knoop.dataset || !knoop.dataset.op) return erboven;
+  return {
+    korps: knoop.dataset.korps || null,
+    gewicht: knoop.dataset.gewicht ? Number(knoop.dataset.gewicht) : null,
+    schuin: knoop.dataset.schuin === '1',
+  };
+}
+
+/*
+ * De stukken uit het veld lezen. Een harde spatie (\u00a0) wordt een gewone
+ * spatie: contenteditable zet die er zelf tussen, en op het canvas zou hij een
+ * regel net niet laten afbreken waar hij dat wel hoort te doen.
+ */
+function stukkenUitDom(host) {
+  const uit = [];
+  const loop = (knoop, opmaak) => {
+    knoop.childNodes.forEach((kind) => {
+      if (kind.nodeType === Node.TEXT_NODE) {
+        uit.push(Object.assign({}, opmaak, { tekst: kind.nodeValue.replace(/\u00a0/g, ' ') }));
+      } else if (kind.nodeName === 'BR') {
+        uit.push(Object.assign({}, opmaak, { tekst: '\n' }));
+      } else {
+        if (blokachtig(kind) && uit.length) uit.push(Object.assign({}, opmaak, { tekst: '\n' }));
+        loop(kind, opmaakVanSpan(kind, opmaak));
+      }
+    });
+  };
+  loop(host, KAAL);
+  return normaliseer(uit);
+}
+
+/* -------------------------------------------------------------- DOM zetten */
+
+/*
+ * Hoe groot een stuk in het VELD getoond wordt. Het veld is geen post: de
+ * korpsgroottes uit de toolkit zijn daar in verhouding tot elkaar zinvol, niet
+ * in absolute pixels. Vandaar de verhouding tot de maat van de stijl, geknepen
+ * tot iets dat in een invoerveld leesbaar blijft.
+ */
+function toonmaat(stuk, veldnaam) {
+  if (!stuk.korps || !TEMPLATES.korps[stuk.korps]) return null;
+  const stijlspec = TEMPLATES.stijlen[state.stijl][veldnaam];
+  const keer = TEMPLATES.korps[stuk.korps] / stijlspec.grootte;
+  return klem(keer, 0.7, 1.7).toFixed(2);
+}
+
+function domUitStukken(host, stukken, veldnaam) {
+  host.textContent = '';
+  stukken.forEach((stuk) => {
+    stuk.tekst.split('\n').forEach((deel, i) => {
+      if (i) host.appendChild(document.createElement('br'));
+      if (!deel) return;
+      if (zelfdeOpmaak(stuk, KAAL)) {
+        host.appendChild(document.createTextNode(deel));
+        return;
+      }
+      const span = document.createElement('span');
+      span.dataset.op = '1';
+      if (stuk.korps) span.dataset.korps = stuk.korps;
+      if (stuk.gewicht) span.dataset.gewicht = String(stuk.gewicht);
+      if (stuk.schuin) span.dataset.schuin = '1';
+
+      const maat = toonmaat(stuk, veldnaam);
+      if (maat) span.style.fontSize = maat + 'em';
+      if (stuk.gewicht) span.style.fontWeight = String(stuk.gewicht);
+      if (stuk.schuin) span.style.fontStyle = 'italic';
+
+      span.textContent = deel;
+      host.appendChild(span);
+    });
+  });
+}
+
+/* ---------------------------------------------------------------- selectie */
+
+/* Hoeveel tekens er vóór dit punt staan, in dezelfde telling als het model. */
+function tekenIndex(host, knoop, verschuiving) {
+  const bereik = document.createRange();
+  bereik.selectNodeContents(host);
+  bereik.setEnd(knoop, verschuiving);
+  const hulp = document.createElement('div');
+  hulp.appendChild(bereik.cloneContents());
+  return platDom(hulp).length;
+}
+
+function selectieIn(host) {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return null;
+  const bereik = sel.getRangeAt(0);
+  if (!host.contains(bereik.commonAncestorContainer)) return null;
+  return {
+    start: tekenIndex(host, bereik.startContainer, bereik.startOffset),
+    eind: tekenIndex(host, bereik.endContainer, bereik.endOffset),
+  };
+}
+
+/* Het omgekeerde: tekenpositie terug naar een plek in de DOM. */
+function plekVoor(host, doel) {
+  let geteld = 0;
+  const loop = document.createTreeWalker(host, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+  let knoop;
+  while ((knoop = loop.nextNode())) {
+    if (knoop.nodeType === Node.TEXT_NODE) {
+      const lengte = knoop.nodeValue.length;
+      if (geteld + lengte >= doel) return { knoop, verschuiving: doel - geteld };
+      geteld += lengte;
+    } else if (knoop.nodeName === 'BR') {
+      if (geteld + 1 > doel) return { knoop: knoop.parentNode, verschuiving: 0 };
+      geteld += 1;
+    }
+  }
+  return { knoop: host, verschuiving: host.childNodes.length };
+}
+
+function zetSelectie(host, start, eind) {
+  const van = plekVoor(host, start);
+  const tot = plekVoor(host, eind);
+  const bereik = document.createRange();
+  try {
+    bereik.setStart(van.knoop, van.verschuiving);
+    bereik.setEnd(tot.knoop, tot.verschuiving);
+  } catch (e) {
+    return;                       // knoop is verdwenen: laat de cursor met rust
+  }
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(bereik);
+}
+
+/* ---------------------------------------------------------------- werkbalk */
+
+/*
+ * De werkbalk werkt op de selectie. Staat de cursor ergens zonder iets te
+ * selecteren, dan valt er niets op te maken — dan zegt de knop dat, in plaats
+ * van stilletjes niets te doen of stiekem het hele veld te pakken.
+ */
+function pasWerkbalkToe(veld, wijziging) {
+  const host = el[veld.host];
+  const plek = selectieIn(host);
+  if (!plek || plek.eind <= plek.start) {
+    toonMelding('Selecteer eerst een stuk tekst: de knoppen in de werkbalk ' +
+                'gelden voor wat je geselecteerd hebt.', 'let');
+    host.focus();
+    return;
+  }
+
+  const stukken = stukkenUitDom(host);
+  const nieuw = zetOpmaak(stukken, plek.start, plek.eind,
+                          wijziging(stukjesIn(stukken, plek.start, plek.eind)));
+  state[veld.naam] = nieuw;
+  domUitStukken(host, nieuw, veld.naam);
+  zetSelectie(host, plek.start, plek.eind);
+  werkbijWerkbalken();
+  teken();
+}
+
+/* Een schakelaar kijkt naar wat er staat: is het er overal al, dan gaat het uit. */
+function allemaal(stukjes, toets) {
+  return stukjes.length > 0 && stukjes.every(toets);
+}
+
+function werkbijWerkbalken() {
+  VELDEN.forEach((veld) => {
+    const host = el[veld.host];
+    const plek = selectieIn(host);
+    const stukjes = plek ? stukjesIn(stukkenUitDom(host), plek.start, plek.eind) : [];
+    const stijlspec = TEMPLATES.stijlen[state.stijl][veld.naam];
+
+    const balk = el[veld.balk];
+    const vet = balk.querySelector('[data-rol="vet"]');
+    const schuin = balk.querySelector('[data-rol="schuin"]');
+    const korps = balk.querySelector('[data-rol="korps"]');
+
+    vet.setAttribute('aria-pressed',
+      String(allemaal(stukjes, (s) => (s.gewicht || stijlspec.gewicht) >= VET)));
+    schuin.setAttribute('aria-pressed', String(allemaal(stukjes, (s) => s.schuin)));
+
+    // Eén maat in de hele selectie: toon die. Anders niets, want er ís er geen.
+    const maten = [...new Set(stukjes.map((s) => s.korps || ''))];
+    korps.value = maten.length === 1 ? maten[0] : '';
+  });
+}
+
+function bouwTekstvelden() {
+  VELDEN.forEach((veld) => {
+    const host = el[veld.host];
+    const balk = el[veld.balk];
+
+    const korps = balk.querySelector('[data-rol="korps"]');
+    const leeg = document.createElement('option');
+    leeg.value = '';
+    leeg.textContent = 'Grootte…';
+    korps.appendChild(leeg);
+    korpsladder().forEach((sport) => {
+      const optie = document.createElement('option');
+      optie.value = sport.sleutel;
+      optie.textContent = korpslabel(sport.sleutel);
+      korps.appendChild(optie);
+    });
+
+    korps.addEventListener('change', () => {
+      const gekozen = korps.value;
+      korps.value = '';
+      if (gekozen) pasWerkbalkToe(veld, () => ({ korps: gekozen }));
+    });
+
+    balk.querySelector('[data-rol="vet"]').addEventListener('click', () => {
+      const stijlspec = TEMPLATES.stijlen[state.stijl][veld.naam];
+      pasWerkbalkToe(veld, (stukjes) => ({
+        gewicht: allemaal(stukjes, (s) => (s.gewicht || stijlspec.gewicht) >= VET) ? NORMAAL : VET,
+      }));
+    });
+
+    balk.querySelector('[data-rol="schuin"]').addEventListener('click', () => {
+      pasWerkbalkToe(veld, (stukjes) => ({ schuin: !allemaal(stukjes, (s) => s.schuin) }));
+    });
+
+    balk.querySelector('[data-rol="terug"]').addEventListener('click', () => {
+      pasWerkbalkToe(veld, () => Object.assign({}, KAAL));
+    });
+
+    // Typen: het model bijwerken zonder het veld opnieuw op te bouwen, anders
+    // springt de cursor. De opmaak van het stuk waarin je typt erft vanzelf mee.
+    host.addEventListener('input', () => {
+      state[veld.naam] = stukkenUitDom(host);
+      teken();
+    });
+
+    // Plakken komt binnen als platte tekst. Opgemaakte HTML uit een andere
+    // pagina overnemen zou opmaak binnenhalen die de huisstijl niet kent.
+    host.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const tekst = (e.clipboardData || window.clipboardData).getData('text/plain');
+      document.execCommand('insertText', false, tekst);
+    });
+
+    ['keyup', 'mouseup', 'focus'].forEach((soort) => {
+      host.addEventListener(soort, werkbijWerkbalken);
+    });
+  });
+
+  document.addEventListener('selectionchange', werkbijWerkbalken);
+}
+
+/* Het veld opnieuw opbouwen uit het model — na een concept of een stijlwissel. */
+function toonTekstvelden() {
+  VELDEN.forEach((veld) => domUitStukken(el[veld.host], state[veld.naam], veld.naam));
+  werkbijWerkbalken();
 }
 
 function bouwIcoonkeuze() {
@@ -480,13 +789,6 @@ function koppelKnoppen() {
         teken();
       });
     });
-
-  ['kop', 'sub'].forEach((sleutel) => {
-    el[sleutel].addEventListener('input', () => {
-      state[sleutel] = el[sleutel].value;
-      teken();
-    });
-  });
 
   el.zoom.addEventListener('input', () => {
     state.zoom = Number(el.zoom.value);
@@ -716,11 +1018,21 @@ function indeling(breed, hoog, opdracht) {
   return { kaart, foto, vlak, stijl, onderste, tekst };
 }
 
-/* Hoeveel hoogte de tekst nodig heeft, inclusief de padding van het vlak. */
+/*
+ * Hoeveel hoogte de tekst nodig heeft, inclusief de padding van het vlak.
+ *
+ * Per regel, niet per veld: staat er één woord op 66 pt in een regel van 40 pt,
+ * dan is die regel zo hoog als dat woord. Optellen van regels is dus het enige
+ * dat klopt zodra opmaak per stuk kan.
+ */
+function regelsHoogte(regels, regelhoogte) {
+  return regels.reduce((totaal, regel) => totaal + regel.grootte * regelhoogte, 0);
+}
+
 function tekstHoogte(breed, stijl, tekst) {
   const rh = TEMPLATES.regelhoogte;
-  const kopH = tekst.kop.regels.length * tekst.kop.grootte * rh.kop;
-  const subH = tekst.sub.regels.length * tekst.sub.grootte * rh.sub;
+  const kopH = regelsHoogte(tekst.kop.regels, rh.kop);
+  const subH = regelsHoogte(tekst.sub.regels, rh.sub);
   if (!kopH && !subH) return 0;
   const tussen = (kopH && subH) ? breed * TEMPLATES.stramien.tussenKopEnSub : 0;
   return breed * (stijl.paddingBoven + stijl.paddingOnder) + kopH + tussen + subH;
@@ -746,65 +1058,58 @@ function korpslabel(sleutel) {
 }
 
 /*
- * De opmaak waarmee een tekstveld werkelijk getekend wordt: die van de stijl,
- * met daaroverheen wat de redacteur zelf heeft gekozen.
+ * De opmaak van één stuk: die van de stijl, met daaroverheen wat op dat stuk is
+ * gezet. grootte komt er in pixels uit, want alleen hier is de canvasbreedte
+ * bekend.
  *
  * Meten en tekenen halen hun opmaak allebei hiervandaan. Zou het tekenen zijn
  * eigen korpsgrootte samenstellen, dan breekt de tekst af op de ene maat en
  * staat hij er in de andere: regels die over het vlak heen lopen, of een vlak
- * met lucht eronder. Eén bron dus, en alleen hier staat wat "afwijken" betekent.
+ * met lucht eronder.
  */
-function tekstSpec(opdracht, veldnaam) {
-  const spec = TEMPLATES.stijlen[opdracht.stijl][veldnaam];
-  const keuze = (opdracht.opmaak && opdracht.opmaak[veldnaam]) || {};
-
-  const korps = (keuze.korps && TEMPLATES.korps[keuze.korps] !== undefined)
-    ? TEMPLATES.korps[keuze.korps]
-    : spec.grootte;
-  const gewicht = GEWICHTEN.some((g) => g.waarde === keuze.gewicht)
-    ? keuze.gewicht
-    : spec.gewicht;
-
-  return Object.assign({}, spec, {
-    grootte: korps,
-    gewicht,
-    schuin: Boolean(keuze.schuin),
-    // Wat hiervan afwijkt van de stijl, zodat de melding het kan benoemen.
-    afwijking: {
-      korps: korps !== spec.grootte ? korps : null,
-      eigenKorps: spec.grootte,
-      gewicht: gewicht !== spec.gewicht ? gewicht : null,
-      schuin: Boolean(keuze.schuin),
-    },
-  });
+function stukSpec(stijlspec, stuk, breed) {
+  const deel = (stuk.korps && TEMPLATES.korps[stuk.korps] !== undefined)
+    ? TEMPLATES.korps[stuk.korps]
+    : stijlspec.grootte;
+  return {
+    kleur: stijlspec.kleur,
+    gewicht: stuk.gewicht || stijlspec.gewicht,
+    schuin: Boolean(stuk.schuin),
+    grootte: breed * deel,
+  };
 }
 
-/* De fontregel voor canvas. Schuin bestaat niet als eigen letter in Fira Sans;
-   de browser maakt er dan zelf een schuine van. Dat is precies wat er gebeurt
-   en het staat zo ook in de melding. */
-function fontVan(spec, grootte) {
+/* De fontregel voor canvas. Schuin bestaat niet als eigen snede in Fira Sans;
+   de browser maakt er dan zelf een schuine van. */
+function fontVan(spec) {
   return (spec.schuin ? 'italic ' : '') + spec.gewicht + ' ' +
-         grootte.toFixed(1) + 'px ' + TEMPLATES.lettertype;
+         spec.grootte.toFixed(1) + 'px ' + TEMPLATES.lettertype;
 }
 
-/* Zegt in gewone taal waarin een veld van de toolkit afwijkt, of niets. */
-function afwijkingsmelding(spec, naam) {
-  const a = spec.afwijking;
-  const stukken = [];
-  if (a.korps) {
-    const noem = (deel) => {
-      const sport = korpsladder().find((k) => k.deel === deel);
-      return sport ? korpslabel(sport.sleutel) : Math.round(deel * 1000) / 10 + '%';
-    };
-    stukken.push(noem(a.korps) + ' in plaats van ' + noem(a.eigenKorps));
-  }
-  if (a.gewicht) {
-    const g = GEWICHTEN.find((w) => w.waarde === a.gewicht);
-    stukken.push((g ? g.label.toLowerCase() : a.gewicht) + ' in plaats van het gewicht van de stijl');
-  }
-  if (a.schuin) stukken.push('schuin');
-  if (!stukken.length) return null;
-  return naam + ' wijkt af van de toolkit: ' + stukken.join(', ') + '.';
+function gewichtlabel(gewicht) {
+  return gewicht === VET ? 'vet' : gewicht === NORMAAL ? 'normaal' : String(gewicht);
+}
+
+/*
+ * Waarin dit veld van zijn stijl afwijkt — als één regel, hoe veel stukken er
+ * ook zijn. Per stuk melden zou bij een uitgelichte kop een lijstje van vijf
+ * regels opleveren; wat de redacteur moet weten is wélke afwijkingen erin
+ * zitten, niet hoe vaak.
+ */
+function afwijkingsmelding(stukken, stijlspec, naam) {
+  const soorten = [];
+  const noem = (tekst) => { if (!soorten.includes(tekst)) soorten.push(tekst); };
+
+  stukken.forEach((stuk) => {
+    if (stuk.korps && TEMPLATES.korps[stuk.korps] !== stijlspec.grootte) {
+      noem(korpslabel(stuk.korps));
+    }
+    if (stuk.gewicht && stuk.gewicht !== stijlspec.gewicht) noem(gewichtlabel(stuk.gewicht));
+    if (stuk.schuin) noem('schuin');
+  });
+
+  if (!soorten.length) return null;
+  return naam + ' wijkt af van de toolkit: ' + soorten.join(', ') + '.';
 }
 
 /*
@@ -817,24 +1122,27 @@ function tekstMeting(breed, tekstBreedte, opdracht) {
   const ctx = meetCtx;
   const waarschuwingen = [];
 
-  function veld(tekst, veldnaam, naam) {
-    const spec = tekstSpec(opdracht, veldnaam);
-    const grootte = breed * spec.grootte;
+  function veld(stukken, veldnaam, naam) {
+    const stijlspec = TEMPLATES.stijlen[opdracht.stijl][veldnaam];
+    const specVan = (stuk) => stukSpec(stijlspec, stuk, breed);
+    const leeg = !platteTekst(stukken).trim();
 
-    const afwijking = afwijkingsmelding(spec, naam);
-    if (afwijking && tekst.trim()) waarschuwingen.push(afwijking);
+    const afwijking = afwijkingsmelding(stukken, stijlspec, naam);
+    if (afwijking && !leeg) waarschuwingen.push(afwijking);
 
-    if (!tekst.trim()) return { regels: [], grootte, spec };
-    ctx.font = fontVan(spec, grootte);
-    let regels = breekAf(ctx, tekst.trim(), tekstBreedte);
-    if (regels.length > spec.maxRegels) {
+    // Zonder tekst is er geen regel, maar wel een hoogte nodig voor het lege
+    // veld: de stijlmaat, zodat een leeg veld niets aan het vlak toevoegt.
+    if (leeg) return { regels: [], grootte: breed * stijlspec.grootte };
+
+    let regels = breekAfStukken(ctx, stukken, tekstBreedte, specVan);
+    if (regels.length > stijlspec.maxRegels) {
       waarschuwingen.push(
         naam + ' is te lang: ' + regels.length + ' regels, maximaal ' +
-        spec.maxRegels + ' volgens de toolkit.');
-      regels = regels.slice(0, spec.maxRegels);
+        stijlspec.maxRegels + ' volgens de toolkit.');
+      regels = regels.slice(0, stijlspec.maxRegels);
       regels[regels.length - 1] = kortAf(ctx, regels[regels.length - 1], tekstBreedte);
     }
-    return { regels, grootte, spec };
+    return { regels, grootte: regels.length ? regels[0].grootte : breed * stijlspec.grootte };
   }
 
   const kop = veld(opdracht.kop, 'kop', 'De kop');
@@ -846,30 +1154,107 @@ function tekstMeting(breed, tekstBreedte, opdracht) {
   return { kop, sub, tekstBreedte, waarschuwingen };
 }
 
-function kortAf(ctx, regel, maxBreedte) {
-  let tekst = regel;
-  while (tekst.length > 1 && ctx.measureText(tekst + '…').width > maxBreedte) {
-    tekst = tekst.slice(0, -1);
-  }
-  return tekst.replace(/\s+$/, '') + '…';
+/* De breedte van een rij stukjes, elk met zijn eigen letter. */
+function meetStukjes(ctx, stukjes) {
+  return stukjes.reduce((totaal, stukje) => {
+    ctx.font = fontVan(stukje.spec);
+    return totaal + ctx.measureText(stukje.tekst).width;
+  }, 0);
 }
 
-function breekAf(ctx, tekst, maxBreedte) {
-  const regels = [];
-  tekst.split('\n').forEach((alinea) => {
-    let regel = '';
-    alinea.split(/\s+/).filter(Boolean).forEach((woord) => {
-      const poging = regel ? regel + ' ' + woord : woord;
-      if (ctx.measureText(poging).width <= maxBreedte || !regel) {
-        regel = poging;
-      } else {
-        regels.push(regel);
-        regel = woord;
-      }
-    });
-    if (regel) regels.push(regel);
+/* Een regel is een rij stukjes plus de grootte van het grootste stukje erin:
+   die bepaalt de regelhoogte en de gedeelde basislijn. */
+function maakRegel(stukjes) {
+  return {
+    stukjes,
+    grootte: stukjes.reduce((grootst, stukje) => Math.max(grootst, stukje.spec.grootte), 0),
+  };
+}
+
+/* Achteraan toevoegen, en gelijk opgemaakte stukjes aan elkaar plakken zodat
+   measureText de spatiëring tussen letters niet per stukje afkapt. */
+function voegStukjesToe(rij, nieuwe) {
+  nieuwe.forEach((stukje) => {
+    const vorige = rij[rij.length - 1];
+    if (vorige && vorige.spec === stukje.spec) vorige.tekst += stukje.tekst;
+    else rij.push({ tekst: stukje.tekst, spec: stukje.spec });
   });
+}
+
+/*
+ * Regels afbreken over stukken heen.
+ *
+ * Het afbreken gebeurt op woorden, en een woord kan half vet zijn: "pas" in de
+ * ene opmaak en "poort" in de andere. Daarom eerst de platte tekst in woorden
+ * knippen, en dat bereik daarna over de stukken leggen — zo blijft een woord
+ * één woord, ook als het uit drie stukjes bestaat.
+ */
+function breekAfStukken(ctx, stukken, maxBreedte, specVan) {
+  const plat = platteTekst(stukken);
+  const metSpec = (van, tot) => stukjesIn(stukken, van, tot)
+    .map((stuk) => ({ tekst: stuk.tekst, spec: specVan(stuk) }));
+
+  const regels = [];
+  let rij = [];
+  let breedte = 0;
+  let spatie = null;
+
+  const sluitAf = () => {
+    if (rij.length) regels.push(maakRegel(rij));
+    rij = [];
+    breedte = 0;
+    spatie = null;
+  };
+
+  const woorden = /\n|[^\S\n]+|\S+/g;
+  let treffer;
+  while ((treffer = woorden.exec(plat)) !== null) {
+    const stuk = treffer[0];
+    if (stuk === '\n') { sluitAf(); continue; }
+    if (!stuk.trim()) { spatie = [treffer.index, treffer.index + stuk.length]; continue; }
+
+    const woord = metSpec(treffer.index, treffer.index + stuk.length);
+    const woordBreed = meetStukjes(ctx, woord);
+    const tussen = (spatie && rij.length) ? metSpec(spatie[0], spatie[1]) : [];
+    const tussenBreed = meetStukjes(ctx, tussen);
+
+    // Eén woord dat zelf al te breed is, krijgt toch zijn eigen regel: afkappen
+    // doet kortAf() later, met de puntjes erachter.
+    if (rij.length && breedte + tussenBreed + woordBreed > maxBreedte) {
+      sluitAf();
+      voegStukjesToe(rij, woord);
+      breedte = woordBreed;
+    } else {
+      voegStukjesToe(rij, tussen);
+      voegStukjesToe(rij, woord);
+      breedte += tussenBreed + woordBreed;
+    }
+    spatie = null;
+  }
+  sluitAf();
+
   return regels;
+}
+
+/*
+ * De laatste regel afkappen met een beletselteken. De puntjes krijgen de
+ * opmaak van het stukje waar ze achter komen te staan, zodat ze niet plots in
+ * een ander korps of gewicht staan dan het woord ervoor.
+ */
+function kortAf(ctx, regel, maxBreedte) {
+  const stukjes = regel.stukjes.map((stukje) => ({ tekst: stukje.tekst, spec: stukje.spec }));
+  const puntjes = { tekst: '…', spec: stukjes[stukjes.length - 1].spec };
+
+  while (stukjes.length && meetStukjes(ctx, stukjes.concat([puntjes])) > maxBreedte) {
+    const laatste = stukjes[stukjes.length - 1];
+    laatste.tekst = laatste.tekst.slice(0, -1);
+    if (!laatste.tekst) stukjes.pop();
+    if (stukjes.length) puntjes.spec = stukjes[stukjes.length - 1].spec;
+  }
+
+  const laatste = stukjes[stukjes.length - 1];
+  if (laatste) laatste.tekst = laatste.tekst.replace(/\s+$/, '');
+  return maakRegel(stukjes.filter((stukje) => stukje.tekst).concat([puntjes]));
 }
 
 /* Hoe de foto het fotovlak vult, en hoever je hem mag verschuiven voordat er
@@ -1151,14 +1536,25 @@ function tekenTekst(ctx, breed, indel) {
   }
 }
 
-/* De opmaak komt uit het veld zelf: precies waarop de regels zijn afgebroken. */
+/*
+ * Stukje voor stukje, op de plek waar het meten het heeft neergezet.
+ *
+ * Alle stukjes van een regel staan op dezelfde basislijn — die van het grootste
+ * stukje. Zouden ze elk hun eigen basislijn krijgen, dan zou een groot woord in
+ * een kleine regel omhoog of omlaag springen in plaats van in de regel te staan.
+ */
 function tekenRegels(ctx, veld, regelhoogte, x, y) {
   if (!veld.regels.length) return y;
-  ctx.fillStyle = veld.spec.kleur;
-  ctx.font = fontVan(veld.spec, veld.grootte);
   veld.regels.forEach((regel) => {
-    ctx.fillText(regel, x, y + veld.grootte * 0.82);
-    y += veld.grootte * regelhoogte;
+    const basislijn = y + regel.grootte * 0.82;
+    let plek = x;
+    regel.stukjes.forEach((stukje) => {
+      ctx.fillStyle = stukje.spec.kleur;
+      ctx.font = fontVan(stukje.spec);
+      ctx.fillText(stukje.tekst, plek, basislijn);
+      plek += ctx.measureText(stukje.tekst).width;
+    });
+    y += regel.grootte * regelhoogte;
   });
   return y;
 }
@@ -1279,18 +1675,36 @@ function leesConcept() {
     platform: state.platform,
     format: state.format,
     stijl: state.stijl,
-    kop: state.kop,
-    sub: state.sub,
+    kop: kopieerStukken(state.kop),
+    sub: kopieerStukken(state.sub),
     decoratie: state.decoratie,
     decoratiepositie: state.decoratiepositie,
     iconen: state.iconen.slice(),
-    opmaak: {
-      kop: Object.assign({}, state.opmaak.kop),
-      sub: Object.assign({}, state.opmaak.sub),
-    },
     zoom: state.zoom,
     brandpunt: { x: state.brandpunt.x, y: state.brandpunt.y },
   };
+}
+
+/*
+ * Tekst uit een bewaard concept.
+ *
+ * Een concept van voor de werkbalk bewaarde een gewone string. Die wordt één
+ * stuk zonder opmaak — precies hoe hij bewaard is. Verder wordt elk stuk
+ * getoetst: de inhoud komt uit de database en hoeft niet te kloppen met de
+ * huisstijl zoals die er nu uitziet, dus een korps dat niet meer bestaat valt
+ * terug op de stijl in plaats van een lege regel op te leveren.
+ */
+function stukkenUitConcept(bewaard) {
+  if (typeof bewaard === 'string') return stukkenUit(bewaard);
+  if (!Array.isArray(bewaard)) return [];
+  return normaliseer(bewaard
+    .filter((stuk) => stuk && typeof stuk.tekst === 'string')
+    .map((stuk) => ({
+      tekst: stuk.tekst,
+      korps: TEMPLATES.korps[stuk.korps] !== undefined ? stuk.korps : null,
+      gewicht: (stuk.gewicht === NORMAAL || stuk.gewicht === VET) ? stuk.gewicht : null,
+      schuin: Boolean(stuk.schuin),
+    })));
 }
 
 /*
@@ -1306,8 +1720,8 @@ function pasConceptToe(inhoud) {
   if (TEMPLATES.formats[inhoud.format]) state.format = inhoud.format;
   if (TEMPLATES.stijlen[inhoud.stijl]) state.stijl = inhoud.stijl;
 
-  state.kop = typeof inhoud.kop === 'string' ? inhoud.kop : '';
-  state.sub = typeof inhoud.sub === 'string' ? inhoud.sub : '';
+  state.kop = stukkenUitConcept(inhoud.kop);
+  state.sub = stukkenUitConcept(inhoud.sub);
   state.decoratie = Boolean(inhoud.decoratie);
 
   // Een concept van voor deze keuze kent de plek niet; die valt dan terug op
@@ -1315,18 +1729,6 @@ function pasConceptToe(inhoud) {
   state.decoratiepositie = DECORATIEPOSITIES[inhoud.decoratiepositie]
     ? inhoud.decoratiepositie
     : 'linksonder';
-
-  // Ook hier geldt: de inhoud komt uit de database en hoeft niet te kloppen met
-  // de huisstijl van nu. Een korps dat niet meer bestaat valt terug op de stijl.
-  state.opmaak = { kop: null, sub: null };
-  ['kop', 'sub'].forEach((veldnaam) => {
-    const bewaard = (inhoud.opmaak && inhoud.opmaak[veldnaam]) || {};
-    state.opmaak[veldnaam] = {
-      korps: TEMPLATES.korps[bewaard.korps] !== undefined ? bewaard.korps : null,
-      gewicht: GEWICHTEN.some((g) => g.waarde === bewaard.gewicht) ? bewaard.gewicht : null,
-      schuin: Boolean(bewaard.schuin),
-    };
-  });
 
   if (Array.isArray(inhoud.iconen)) {
     state.iconen = state.iconen.map((huidig, i) =>
@@ -1344,13 +1746,11 @@ function pasConceptToe(inhoud) {
     y: Number.isFinite(Number(bp.y)) ? klem(Number(bp.y), 0, 1) : 0.5,
   };
 
-  el.kop.value = state.kop;
-  el.sub.value = state.sub;
+  toonTekstvelden();
   el.zoom.value = String(state.zoom);
   el.decoratieAan.checked = state.decoratie;
   el.icoonrij.hidden = !state.decoratie;
   el.decoratiepositie.value = state.decoratiepositie;
-  toonOpmaak();
   el.icoon0.value = state.iconen[0];
   el.icoon1.value = state.iconen[1];
 
