@@ -16,6 +16,15 @@
 
   * { box-sizing: border-box; }
 
+  /*
+   * Het hidden-attribuut zet display:none via de stijl van de browser zelf,
+   * en die verliest van elke eigen display-regel. `main` staat hieronder op
+   * display:grid en `.knoprij` op display:flex, dus `main hidden` en
+   * `#icoonrij hidden` deden niets: het werkblad bleef onder het inlogscherm
+   * staan. Deze regel geeft hidden het laatste woord, voor de hele pagina.
+   */
+  [hidden] { display: none !important; }
+
   body {
     margin: 0;
     font: 16px/1.5 "RijksSansVF", "Segoe UI", system-ui, -apple-system,

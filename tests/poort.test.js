@@ -111,7 +111,21 @@ async function run(naam, scenario, controle) {
   return ok;
 }
 
-const zichtbaar = (page, id) => page.evaluate((i) => !document.getElementById(i).hidden, id);
+/*
+ * Kijk naar wat de bezoeker ZIET, niet naar het hidden-attribuut.
+ *
+ * Dit is precies waar de vorige versie van deze test de mist in ging: die
+ * vroeg `el.hidden` op en kreeg `true` terug, terwijl het element gewoon in
+ * beeld stond. Het attribuut zet display:none via de stijl van de browser
+ * zelf, en een eigen `main { display: grid }` wint daarvan.
+ */
+const zichtbaar = (page, id) => page.evaluate((i) => {
+  const el = document.getElementById(i);
+  if (!el) return false;
+  const st = getComputedStyle(el);
+  return st.display !== 'none' && st.visibility !== 'hidden'
+         && el.getClientRects().length > 0;
+}, id);
 
 (async () => {
   let alles = true;
