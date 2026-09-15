@@ -99,7 +99,7 @@ async function run(naam, scenario, controle) {
   const page = await browser.newPage();
   const fouten = [];
   page.on('pageerror', (e) => fouten.push(String(e)));
-  await page.route('**/supabase-js@2/**', (r) => r.fulfill({ contentType: 'application/javascript', body: stub(scenario) }));
+  await page.route('**/vendor/supabase-js.js', (r) => r.fulfill({ contentType: 'application/javascript', body: stub(scenario) }));
   await page.route('**/config.js', (r) => r.fulfill({ contentType: 'application/javascript', body: configStub }));
   await page.goto('file://' + ROOT + '/index.html');
   await page.waitForTimeout(700);

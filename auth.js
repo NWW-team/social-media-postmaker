@@ -42,11 +42,18 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
+  /*
+   * De client hoort uit vendor/supabase-js.js te komen, van hetzelfde domein
+   * als deze pagina. Lukt dat niet, dan is inloggen onmogelijk en heeft het
+   * tonen van een inlogformulier geen zin — vandaar dat het scherm hier wijkt
+   * voor een melding die zegt wat er aan de hand is.
+   */
   if (typeof window.supabase === 'undefined') {
     poort.hidden = true;
     toon(startfout,
-      'De Supabase-client kon niet geladen worden. Controleer je ' +
-      'internetverbinding en of cdn.jsdelivr.net bereikbaar is.');
+      'De inlogmodule (vendor/supabase-js.js) kon niet geladen worden, dus ' +
+      'inloggen kan nu niet. Ververs de pagina met Ctrl+F5. Blijft dit staan, ' +
+      'meld het dan bij de beheerder.');
     return;
   }
 

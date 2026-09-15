@@ -237,11 +237,19 @@ stap 6.
 | `supabase/03_controle.sql` | Nalopen of RLS op elke tabel aan staat |
 | `supabase/LEESMIJ.md` | Wat je zelf in het Supabase-dashboard doet |
 | `TESTEN.md` | Testdraaiboek voor de toegangscontrole |
+| `vendor/supabase-js.js` | De officiële Supabase-client, meegeleverd |
 | `tests/poort.test.js` | Geautomatiseerde test van de poortlogica |
 | `STRATEGY.md` | Waarom dit product bestaat |
 
-Eén afhankelijkheid: de Supabase-client, via een `<script>`-tag uit een CDN.
-Verder geen build, geen package.json, geen installatie.
+Geen build, geen package.json, geen installatie.
+
+De Supabase-client staat in `vendor/` en komt bewust **niet** van een CDN.
+Werknetwerken blokkeren CDN's als `cdn.jsdelivr.net` regelmatig, en dan laadt
+de client niet en verschijnt er geen inlogscherm — dat is precies wat er
+gebeurde. Nu komt alles van hetzelfde domein als de pagina zelf. Zie
+[vendor/LEESMIJ.md](vendor/LEESMIJ.md) voor de versie en hoe je hem bijwerkt.
+
+Het enige verzoek dat nog naar buiten gaat, is naar je eigen Supabase-project.
 
 `tests/poort.test.js` is optioneel en heeft Node en Playwright nodig. Je hebt
 het niet nodig om de app te gebruiken of aan te passen.

@@ -446,9 +446,15 @@
   concept.
 </footer>
 
-<!-- De officiële Supabase-client. Levert het inloggen en de datatoegang;
-     we bouwen zelf geen wachtwoordopslag en geen eigen tokens. -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!--
+  De officiële Supabase-client. Levert het inloggen en de datatoegang; we
+  bouwen zelf geen wachtwoordopslag en geen eigen tokens.
+
+  Hij staat in deze repo en komt bewust NIET van een CDN. Werknetwerken
+  blokkeren CDN's als cdn.jsdelivr.net regelmatig, en dan laadde de client
+  niet en was er geen inlogscherm. Zie vendor/LEESMIJ.md.
+-->
+<script src="vendor/supabase-js.js"></script>
 
 <script src="config.js"></script>
 <script src="app.js"></script>
