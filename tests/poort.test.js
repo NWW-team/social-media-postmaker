@@ -96,7 +96,7 @@ function configIsIngevuld() { return true; }`;
 const rijenToegestaan = {
   huisstijl: { data: Object.entries(huisstijl).map(([sleutel, waarde]) => ({ sleutel, waarde })), error: null },
   concepten: { data: [
-    { id: 'c1', titel: 'Souvenirs juli', inhoud: { platform:'facebook', format:'vierkant', stijl:'proefB', kop:'Test kop', sub:'Test sub', decoratie:true, decoratiepositie:'rechtsboven', iconen:['Proeficoon A','Proeficoon B'], zoom:1.4, brandpunt:{x:0.4,y:0.6} }, bijgewerkt_op: '2026-09-15T10:00:00Z' },
+    { id: 'c1', titel: 'Souvenirs juli', inhoud: { platform:'facebook', format:'vierkant', stijl:'proefB', kop:'Test kop', sub:'Test sub', decoratie:true, decoratiepositie:'rechtsboven', iconen:['Proeficoon A','Proeficoon B'], zoom:1.4, brandpunt:{x:0.4,y:0.6}, opmaak:{ kop:{korps:'pt66', gewicht:null, schuin:true}, sub:{korps:null, gewicht:600, schuin:false} } }, bijgewerkt_op: '2026-09-15T10:00:00Z' },
     /* Bewaard voordat de cirkels konden verhuizen: zonder de sleutel. */
     { id: 'c2', titel: 'Souvenirs juni', inhoud: { platform:'instagram', format:'staand', stijl:'proefA', kop:'Oud concept', sub:'', decoratie:true, iconen:['Proeficoon A','Proeficoon B'], zoom:1, brandpunt:{x:0.5,y:0.5} }, bijgewerkt_op: '2026-09-14T10:00:00Z' },
   ], error: null },
@@ -320,6 +320,102 @@ const zichtbaar = (page, id) => page.evaluate((i) => {
       const verwacht = ['Aanvraag', 'Proeficoon A', 'Proeficoon B', 'Zebra'];
       const goed = lijsten.every((lijst) => String(lijst) === String(verwacht));
       return { ok: goed, uitleg: goed ? verwacht.join(', ') : `kreeg ${lijsten[0]}` };
+    });
+
+  /*
+   * Meten en tekenen moeten dezelfde letter gebruiken. Zouden ze uiteenlopen,
+   * dan breekt de tekst af op de ene maat en staat hij er in de andere: regels
+   * over de rand, of een vlak met lucht eronder. Daarom toetst dit niet of er
+   * "iets" verandert maar of de fontregel van het veld meebeweegt, want dat is
+   * precies de regel waarmee breekAf() heeft gemeten.
+   */
+  alles &= await run('grotere, vette en schuine letter komen in de tekening terecht',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      const uit = await p.evaluate(() => {
+        const lees = () => {
+          const [breed, hoog] = huidigeMaat(state);
+          const indel = indeling(breed, hoog, state);
+          return {
+            kop: fontVan(indel.tekst.kop.spec, indel.tekst.kop.grootte),
+            sub: fontVan(indel.tekst.sub.spec, indel.tekst.sub.grootte),
+            vlak: Math.round(indel.vlak.h),
+          };
+        };
+        const zet = (o) => {
+          state.opmaak = {
+            kop: Object.assign({ korps: null, gewicht: null, schuin: false }, o.kop || {}),
+            sub: Object.assign({ korps: null, gewicht: null, schuin: false }, o.sub || {}),
+          };
+          teken();
+          return lees();
+        };
+        state.kop = 'Souvenirs meenemen uit het buitenland';
+        state.sub = 'Dit zijn de regels.';
+        state.stijl = 'proefA';
+        return {
+          standaard: zet({}),
+          groot: zet({ kop: { korps: 'pt66' } }),
+          klein: zet({ kop: { korps: 'pt24' } }),
+          schuin: zet({ kop: { schuin: true } }),
+          vet: zet({ sub: { gewicht: 700 } }),
+          melding: (() => { zet({ kop: { korps: 'pt66', schuin: true } });
+                            return document.getElementById('melding').textContent; })(),
+          terug: (() => { document.getElementById('opmaakterug').click();
+                          return { stand: lees(), leeg: JSON.stringify(state.opmaak) }; })(),
+        };
+      });
+
+      const maat = (font) => Number(/(\d+(?:\.\d+)?)px/.exec(font)[1]);
+      const fouten = [];
+      if (!(maat(uit.groot.kop) > maat(uit.standaard.kop))) fouten.push('66 pt is niet groter');
+      if (!(maat(uit.klein.kop) < maat(uit.standaard.kop))) fouten.push('24 pt is niet kleiner');
+      // Groter korps, meer regels, dus een hoger tekstvlak.
+      if (!(uit.groot.vlak > uit.standaard.vlak)) fouten.push('het tekstvlak groeit niet mee');
+      if (!uit.schuin.kop.startsWith('italic ')) fouten.push('schuin komt niet in de fontregel');
+      if (uit.standaard.kop.startsWith('italic ')) fouten.push('standaard is al schuin');
+      if (!uit.vet.sub.startsWith('700 ')) fouten.push('vet komt niet in de fontregel: ' + uit.vet.sub);
+      if (!/wijkt af van de toolkit/.test(uit.melding)) fouten.push('geen melding bij afwijken');
+      if (uit.terug.stand.kop !== uit.standaard.kop) fouten.push('"terug naar de stijl" herstelt niet');
+      if (/true|pt66|[67]00/.test(uit.terug.leeg)) fouten.push('state.opmaak niet leeg: ' + uit.terug.leeg);
+
+      return { ok: fouten.length === 0,
+               uitleg: fouten.length ? fouten.join('; ')
+                                     : `${uit.standaard.kop} -> ${uit.groot.kop} / ${uit.schuin.kop}` };
+    });
+
+  alles &= await run('concept bewaart en herstelt de letterinstellingen',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      await p.selectOption('#conceptlijst', 'c1');
+      await p.click('#conceptOpenen');
+      await p.waitForTimeout(200);
+      const na = await p.evaluate(() => ({
+        state: state.opmaak,
+        scherm: {
+          korps: document.getElementById('kopKorps').value,
+          schuin: document.getElementById('kopSchuin').checked,
+          subGewicht: document.getElementById('subGewicht').value,
+        },
+        opnieuw: leesConcept().opmaak,
+      }));
+      const goed = na.state.kop.korps === 'pt66' && na.state.kop.schuin === true
+                   && na.state.sub.gewicht === 600
+                   && na.scherm.korps === 'pt66' && na.scherm.schuin === true
+                   && na.scherm.subGewicht === '600'
+                   && na.opnieuw.kop.korps === 'pt66';
+
+      // En een concept van voor deze knoppen laat de stijl gewoon staan.
+      await p.selectOption('#conceptlijst', 'c2');
+      await p.click('#conceptOpenen');
+      await p.waitForTimeout(200);
+      const oud = await p.evaluate(() => JSON.stringify(state.opmaak));
+      const terug = !/true|pt\d|[4-7]00/.test(oud);
+
+      return { ok: goed && terug,
+               uitleg: goed ? (terug ? 'bewaard, hersteld en oud concept valt terug'
+                                     : 'oud concept valt niet terug: ' + oud)
+                            : JSON.stringify(na) };
     });
 
   console.log(alles ? '\nAlle frontendtests geslaagd.' : '\nEr zijn tests gefaald.');

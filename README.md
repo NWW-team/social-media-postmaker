@@ -41,7 +41,10 @@ niet. Heb je toegang nodig, vraag dan de beheerder je toe te voegen — zie
    de toolkit; ga je eroverheen, dan zie je dat meteen.
 6. Kies waar de cirkels met de icoonbadges staan: in een van de vier hoeken,
    of onderaan of bovenaan het midden.
-7. Klik **PNG downloaden**.
+7. Wil je een grotere, zwaardere of schuine letter, stel hem dan bij onder
+   **Letter bijstellen**. Je ziet dan onder het voorbeeld waarin je van de
+   stijl afwijkt.
+8. Klik **PNG downloaden**.
 
 Stap 2 laat de vijf kaarten zien wat elke stijl met jouw materiaal doet. Heb je
 nog niets getypt, dan staat er voorbeeldtekst op de kaarten — zonder tekst is er
@@ -118,7 +121,7 @@ variant zoals die op het Instagramaccount staat.
 
 De toolkit schrijft voor: **hou je aan de korpsgrootte en aan het maximum aantal
 regels**. Daarom verkleint de tool de tekst niet stiekem — hij kapt af en meldt
-het. Twee bewuste afwijkingen:
+het. Drie bewuste afwijkingen:
 
 - **Het tekstvlak groeit mee met de tekst**, met de vaste toolkithoogte als
   plafond. De sjabloonpagina's tekenen een vlak van een halve pagina, maar in de
@@ -126,6 +129,21 @@ het. Twee bewuste afwijkingen:
   exact de toolkithoogte.
 - **Vierkant (1:1) staat niet in de toolkit.** Daar houdt het tekstvlak dezelfde
   hoogte in pixels en levert de foto de ruimte in.
+- **De letter is bij te stellen** onder *Letter bijstellen*: per tekstveld een
+  andere korpsgrootte, een ander gewicht en schuin aan of uit. De keuzes blijven
+  binnen de toolkit — de maten zijn de vijf korpsgroottes hierboven en de
+  gewichten zijn de drie snedes die de huisstijlletter heeft — maar je wijkt af
+  van de stijl, en dat staat dan met zoveel woorden onder het voorbeeld. De knop
+  **Terug naar de stijl** zet alles weer zoals de stijl het voorschrijft.
+
+  Wat de tool hier wél bewaakt: de regel waarop de tekst wordt afgebroken is
+  dezelfde waarmee hij wordt getekend, en het maximum aantal regels blijft
+  gelden. Een grotere letter betekent dus eerder een afkapmelding, niet tekst
+  die over de rand loopt.
+
+  Schuin heeft de huisstijlletter niet als eigen snede; de browser maakt er zelf
+  een schuine van. Voor een echte cursieve letter is een schuine snede van
+  RijksSansVF nodig.
 
 ## De opmaak aanpassen
 

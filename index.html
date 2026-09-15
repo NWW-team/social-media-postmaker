@@ -478,8 +478,57 @@ input[type="range"] { inline-size: 100%; }
                       placeholder="Bijvoorbeeld: Dit zijn de regels."></textarea>
 
             <p class="hulptekst" style="margin-block-start:10px">
-              De korpsgrootte ligt vast in de toolkit. Past je tekst niet binnen
+              De korpsgrootte komt uit de toolkit. Past je tekst niet binnen
               het maximum aantal regels, dan wordt hij afgekapt en zie je een melding.
+            </p>
+          </fieldset>
+
+          <hr class="streep" style="margin-block:24px">
+
+          <fieldset>
+            <legend class="veld">Letter bijstellen</legend>
+            <p class="hulptekst" style="margin-block-end:14px">
+              De stijl bepaalt de letter. Stel je hem bij, dan blijf je met de
+              maten en de gewichten binnen de toolkit — maar je wijkt af van de
+              stijl, en dat zie je onder het voorbeeld staan.
+            </p>
+
+            <p class="veld" style="margin-block-end:8px">Kop</p>
+            <div class="knoprij">
+              <label class="veld" for="kopKorps" style="flex:1 1 120px">Grootte
+                <select id="kopKorps" class="utrecht-select rhc-form-field-select" style="margin-block-start:5px;font-weight:400"></select>
+              </label>
+              <label class="veld" for="kopGewicht" style="flex:1 1 120px">Gewicht
+                <select id="kopGewicht" class="utrecht-select rhc-form-field-select" style="margin-block-start:5px;font-weight:400"></select>
+              </label>
+              <div class="aanvink" style="flex:1 1 140px;align-self:flex-end;padding-block-end:9px">
+                <input type="checkbox" id="kopSchuin" class="utrecht-checkbox rhc-checkbox">
+                <label class="utrecht-form-label utrecht-form-label--checkbox" for="kopSchuin">Schuin</label>
+              </div>
+            </div>
+
+            <p class="veld" style="margin-block:18px 8px">Subtekst</p>
+            <div class="knoprij">
+              <label class="veld" for="subKorps" style="flex:1 1 120px">Grootte
+                <select id="subKorps" class="utrecht-select rhc-form-field-select" style="margin-block-start:5px;font-weight:400"></select>
+              </label>
+              <label class="veld" for="subGewicht" style="flex:1 1 120px">Gewicht
+                <select id="subGewicht" class="utrecht-select rhc-form-field-select" style="margin-block-start:5px;font-weight:400"></select>
+              </label>
+              <div class="aanvink" style="flex:1 1 140px;align-self:flex-end;padding-block-end:9px">
+                <input type="checkbox" id="subSchuin" class="utrecht-checkbox rhc-checkbox">
+                <label class="utrecht-form-label utrecht-form-label--checkbox" for="subSchuin">Schuin</label>
+              </div>
+            </div>
+
+            <p class="knoprij" style="margin-block-start:16px">
+              <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button" id="opmaakterug">Terug naar de stijl</button>
+            </p>
+
+            <p class="hulptekst" style="margin-block-start:12px">
+              Schuin heeft de huisstijlletter niet als eigen snede; de browser
+              maakt er dan zelf een schuine van. Voor een echte cursieve letter
+              is een schuine snede van RijksSansVF nodig.
             </p>
           </fieldset>
 
