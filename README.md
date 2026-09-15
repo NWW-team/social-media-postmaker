@@ -171,9 +171,9 @@ niemand de huisstijl veranderen, ook een toegelaten redacteur niet.
   Fira Sans, de open letter die de Rijkshuisstijl Community daar zelf voor
   meelevert; die staat in `vendor/rijkshuisstijl/fonts/`. De regelval wijkt dan
   iets af.
-- **Logo** ontbreekt nog. In het scherm staat op die plek een zichtbare
-  gestippelde plaatshouder: liever een leeg vak dat zegt dat er iets hoort te
-  staan, dan een tekstlogo dat voor het echte kan doorgaan.
+- **Logo** ontbreekt nog. Er stond een zichtbare gestippelde plaatshouder in de
+  kopbalk; die is er op verzoek uit, dus de kopbalk draagt nu alleen de sessie.
+  Komt het beeldmerk er, dan is dat de plek ervoor.
 - **Iconenset**: drie pictogrammen komen uit de toolkit (wereld, gesprek,
   megafoon). De overige zeventien zijn eenvoudige eigen tekeningen in dezelfde
   lijnstijl — placeholders, net als de vijf die er al stonden. Twee dingen uit
