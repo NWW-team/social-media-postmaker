@@ -41,9 +41,13 @@ niet. Heb je toegang nodig, vraag dan de beheerder je toe te voegen — zie
    de toolkit; ga je eroverheen, dan zie je dat meteen.
 6. Klik **PNG downloaden**.
 
-Stap 2 werkt pas echt als er een foto en tekst staan: dan laten de vijf kaarten
-zien wat elke stijl met jouw materiaal doet. Zolang je nog geen foto hebt
-gekozen, tekent de tool een verloop als plaatshouder — anders is er niets om de
+Stap 2 laat de vijf kaarten zien wat elke stijl met jouw materiaal doet. Heb je
+nog niets getypt, dan staat er voorbeeldtekst op de kaarten — zonder tekst is er
+namelijk geen tekstvlak, en dan lijken alle stijlen op elkaar. Zodra je één van
+de twee velden invult, staat overal je eigen tekst. Het grote voorbeeld en de
+download krijgen die voorbeeldtekst nooit: die tonen wat je werkelijk downloadt.
+
+Zolang je nog geen foto hebt gekozen, tekent de tool een verloop als plaatshouder — anders is er niets om de
 witte koppen en de witte cirkellijnen tegen af te zetten en valt de opmaak niet
 te beoordelen. Op het grote voorbeeld staat er dan **Nog geen foto gekozen** bij,
 zodat de plaatshouder nooit voor een foto kan doorgaan.

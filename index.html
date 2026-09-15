@@ -412,7 +412,7 @@ input[type="range"] { inline-size: 100%; }
 
         <!-- Hetzelfde sjabloon als de export, alleen kleiner getekend. -->
         <canvas id="miniatuur" width="520" height="650"
-                aria-label="Klein voorbeeld van de post die je nu maakt."></canvas>
+                aria-label="Klein voorbeeld van de post in de gekozen stijl."></canvas>
       </div>
     </div>
   </header>
@@ -443,6 +443,11 @@ input[type="range"] { inline-size: 100%; }
         <p class="hulptekst" style="margin-block-start:4px">
           Op elke kaart staat jouw foto en jouw tekst, in die stijl — getekend
           met dezelfde code als de download.
+        </p>
+        <p class="hulptekst" id="stijlvoorbeeldnoot" style="margin-block-start:4px" hidden>
+          Je hebt nog geen tekst ingevuld, dus op de kaarten staat voorbeeldtekst.
+          Zonder tekst is er geen tekstvlak en lijken alle stijlen op elkaar.
+          Het grote voorbeeld en de download blijven leeg tot je zelf iets typt.
         </p>
       </div>
       <div class="kaarten" id="stijlknoppen" role="group" aria-label="Stijl"></div>

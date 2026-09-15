@@ -87,7 +87,7 @@ function startApp() {
     'canvas', 'dropzone', 'bestandsknop', 'bestandsinvoer', 'voorbeeldknop',
     'kop', 'sub', 'kopregels', 'subregels', 'zoom', 'zoomrij', 'resetknop',
     'downloadknop', 'maatlabel', 'stijlbron', 'melding', 'fotonaam', 'formaatnoot',
-    'decoratieAan', 'icoon0', 'icoon1', 'icoonrij', 'miniatuur',
+    'decoratieAan', 'icoon0', 'icoon1', 'icoonrij', 'miniatuur', 'stijlvoorbeeldnoot',
   ].forEach((id) => { el[id] = document.getElementById(id); });
 
   el.ctx = el.canvas.getContext('2d');
@@ -222,6 +222,24 @@ function regellimiet(aantal, wat) {
  * dubbele van hun getoonde breedte getekend, zodat ze scherp blijven op een
  * scherm met een hoge pixeldichtheid.
  */
+/*
+ * Voorbeeldtekst, en alleen voor de kleine voorbeelden.
+ *
+ * Zonder tekst is er geen tekstvlak: tekstHoogte() geeft dan nul terug en met
+ * vlakKrimpt schrompelt het vlak weg. Alle vijf de stijlkaarten tonen dan
+ * precies hetzelfde — een foto zonder vlak — terwijl het verschil tussen de
+ * stijlen nu juist is waar die kaarten voor zijn. Met voorbeeldtekst zie je
+ * waar het vlak zit, hoe hoog het wordt en welke kleur het heeft.
+ *
+ * Het exportcanvas krijgt dit NOOIT. Dat toont wat je downloadt, en met lege
+ * velden download je een post zonder tekst. Zodra je één van de twee velden
+ * invult, staat overal je eigen tekst.
+ */
+const VOORBEELDTEKST = {
+  kop: 'Souvenirs meenemen uit het buitenland?',
+  sub: 'Dit zijn de regels.',
+};
+
 const KAARTBREEDTE = 440;
 const MINIATUURBREEDTE = 520;
 let kaartjesWacht = null;
@@ -241,15 +259,21 @@ function tekenVoorbeelden() {
   const [breed, hoog] = huidigeMaat(state);
   const verhouding = hoog / breed;
 
+  // Eén ingevuld veld is genoeg om overal je eigen tekst te laten zien.
+  const eigenTekst = Boolean(state.kop.trim() || state.sub.trim());
+  const invulling = eigenTekst ? {} : VOORBEELDTEKST;
+
   stijlkaartjes.forEach((kaartje) => {
     tekenKlein(kaartje.canvas, KAARTBREEDTE, Math.round(KAARTBREEDTE * verhouding),
-               opdrachtMet({ stijl: kaartje.stijl, voorbeeldje: true }));
+               opdrachtMet(Object.assign({ stijl: kaartje.stijl, voorbeeldje: true }, invulling)));
   });
 
   if (el.miniatuur) {
-    tekenKlein(el.miniatuur, MINIATUURBREEDTE,
-               Math.round(MINIATUURBREEDTE * verhouding), opdrachtMet({ voorbeeldje: true }));
+    tekenKlein(el.miniatuur, MINIATUURBREEDTE, Math.round(MINIATUURBREEDTE * verhouding),
+               opdrachtMet(Object.assign({ voorbeeldje: true }, invulling)));
   }
+
+  if (el.stijlvoorbeeldnoot) el.stijlvoorbeeldnoot.hidden = eigenTekst;
 }
 
 function tekenKlein(canvas, breed, hoog, opdracht) {
