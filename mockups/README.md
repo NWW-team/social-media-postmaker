@@ -1,7 +1,34 @@
-# Vijf mockups — de tool in de Rijkshuisstijl
+# Mockups — de tool in de Rijkshuisstijl
+
+Twee pagina's, allebei zonder server te openen:
+
+| Pagina | Waarover | Stand |
+| --- | --- | --- |
+| [`index.html`](index.html) | Vijf indelingen voor de hele tool | Beslist: nummer 4 |
+| [`teksteditor.html`](teksteditor.html) | Drie manieren om de letterknoppen in het tekstveld te zetten | **Open — nog te kiezen** |
+
+## De letterknoppen in het tekstveld
+
+De knoppen voor grootte, gewicht en schuin staan in de tool als los blok onder
+de tekstvelden. [`teksteditor.html`](teksteditor.html) zet drie manieren naast
+elkaar om ze bij de tekst zelf te zetten. De voorstellen wérken: typ in de
+velden, klik op de knoppen en het voorbeeld verandert mee.
+
+| | Voorstel | Geldt voor | Bouwwerk |
+| --- | --- | --- | --- |
+| 1 | **Werkbalk boven het veld** | Het hele veld | Klein — dezelfde werking als nu, andere plek |
+| 2 | **Werkbalk op de selectie** | Wat je geselecteerd hebt | Groot — de export moet regels in stukken meten en tekenen |
+| 3 | **Dunne rij onder het veld** | Het hele veld | Klein — als 1, met minder hoogte |
+
+Het verschil dat er het meest toe doet zit tussen 1 en 3 enerzijds en 2
+anderzijds. Alleen in 2 kun je één woord vet of groter maken; dat is ook de
+enige van de drie die aan de tekencode raakt. Kies je 1 of 3, dan verhuizen de
+bestaande knoppen en verandert er aan de export niets.
+
+## Vijf indelingen voor de hele tool
 
 > **Gekozen: nummer 4, Keuzekaarten.** Die is gebouwd; zie `../index.html`.
-> Deze map blijft staan als vastlegging van de keuze — wat er naast lag, en wat
+> Dit deel blijft staan als vastlegging van de keuze — wat er naast lag, en wat
 > elke indeling zou kosten.
 
 Open **[`index.html`](index.html)** en klik door de vijf indelingen.
@@ -42,7 +69,9 @@ Twee dingen zijn met opzet géén huisstijl:
 - **De donkere balk bovenaan** is de vergelijkingsbalk, niet het ontwerp. Die
   hoort niet bij een van de vijf.
 - **Het logoblok is een gestippelde plaatshouder.** Het beeldmerk staat niet in
-  deze repo en hoort niet in een mockup; zie `../README.md`, *Nog te doen*.
+  deze repo en hoort niet in een mockup; zie `../README.md`, *Nog te doen*. In
+  de tool zelf staat die plaatshouder niet meer; in deze vastlegging van de
+  keuze blijft hij staan zoals hij toen was.
 
 ## Het voorbeeld is op schaal
 
