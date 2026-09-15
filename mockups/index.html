@@ -1,0 +1,1537 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vijf mockups — Social Media Opmaaktool in de Rijkshuisstijl</title>
+
+<!--
+  De echte Rijkshuisstijl Community, onveranderd uit npm. Zie vendor/LEESMIJ.md.
+  Deze mockups tekenen de huisstijl dus niet na: ze gebruiken hem.
+-->
+<link rel="stylesheet" href="vendor/font.css">
+<link rel="stylesheet" href="vendor/rhc-tokens-hemelblauw.css">
+<link rel="stylesheet" href="vendor/rhc-tokens-hemelblauw-dense.css">
+<link rel="stylesheet" href="vendor/rhc-components.css">
+
+<style>
+/* ===================================================================== *
+ * 1. De keuzebalk om de mockups heen.
+ *
+ * Deze is met opzet NIET in de huisstijl: donker, neutraal, herkenbaar als
+ * gereedschap. Zo haal je de vergelijkingsbalk nooit per ongeluk aan voor
+ * een onderdeel van het ontwerp.
+ * ===================================================================== */
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  font: 15px/1.5 "Fira Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.kiezer {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: #0f172a;
+  border-block-end: 1px solid #1e293b;
+  padding: 14px 20px 0;
+}
+.kiezer__titel {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.kiezer__onder {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #94a3b8;
+  max-width: 78ch;
+}
+.kiezer__rij { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.kiezer__spatie { flex: 1 1 20px; }
+
+.tab {
+  appearance: none;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #cbd5e1;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.tab:hover { border-color: #475569; color: #f1f5f9; }
+.tab[aria-selected="true"] {
+  background: #f1f5f9;
+  border-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+.tab__nr {
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  opacity: 0.7;
+  font-weight: 700;
+}
+.tab:focus-visible, .breedteknop:focus-visible {
+  outline: 2px solid #7dd3fc;
+  outline-offset: 2px;
+}
+
+.breedterij { display: flex; gap: 6px; align-items: center; }
+.breedterij__label { font-size: 12px; color: #64748b; }
+.breedteknop {
+  appearance: none;
+  border: 1px solid #334155;
+  background: transparent;
+  color: #94a3b8;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.breedteknop[aria-pressed="true"] { background: #334155; color: #f1f5f9; }
+
+/* Het kaartje met de beoordeling van de getoonde mockup. */
+.uitleg {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0 26px;
+  padding: 14px 0 16px;
+  border-block-start: 1px solid #1e293b;
+  margin-block-start: 12px;
+}
+.uitleg h2 {
+  grid-column: 1 / -1;
+  margin: 0 0 8px;
+  font-size: 17px;
+  color: #fff;
+  font-weight: 700;
+}
+.uitleg dl { margin: 0; }
+.uitleg dt {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #64748b;
+  font-weight: 700;
+  margin-block-end: 3px;
+}
+.uitleg dd { margin: 0 0 10px; font-size: 13px; color: #cbd5e1; }
+.uitleg dd strong { color: #fff; }
+
+/* ===================================================================== *
+ * 2. Het raam waarin een mockup staat.
+ * ===================================================================== */
+
+.raam {
+  margin: 22px auto 60px;
+  background: #fff;
+  color: #000;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  transition: max-inline-size 0.18s ease;
+
+  /* Containerquery, geen mediaquery: de knoppen Laptop/Telefoon versmallen het
+     raam, niet het browservenster. Op de echte maat van het venster afgaan zou
+     hier dus het verkeerde antwoord geven. */
+  container-type: inline-size;
+}
+.raam--breed { max-inline-size: min(1400px, calc(100% - 40px)); }
+.raam--smal  { max-inline-size: 400px; }
+
+/* Vervangt de browserreset die de Rijkshuisstijl zelf niet meelevert:
+   components-css is volledig klassegebonden en raakt kale elementen niet. */
+.mockup {
+  font-family: var(--rhc-text-font-family-default);
+  font-size: var(--rhc-text-font-size-sm);
+  line-height: var(--rhc-text-line-height-md);
+  color: var(--rhc-color-foreground-default);
+  background: #fff;
+}
+.mockup h1, .mockup h2, .mockup h3, .mockup h4, .mockup p, .mockup ul, .mockup ol,
+.mockup figure, .mockup fieldset, .mockup legend { margin: 0; padding: 0; }
+.mockup ul, .mockup ol { list-style: none; }
+.mockup fieldset { border: 0; min-inline-size: 0; }
+.mockup button, .mockup input, .mockup select, .mockup textarea { font: inherit; }
+.mockup img { max-inline-size: 100%; }
+
+/* ===================================================================== *
+ * 3. Het voorbeeld van de post zelf.
+ *
+ * Alle maten zijn afgeleid van --pb, de getoonde breedte, met precies de
+ * verhoudingen uit de PowerPoint-toolkit (zie README.md). Het voorbeeld is
+ * dus op schaal: de kop is echt 66pt op een canvas van 1080pt breed, de
+ * marge echt 3,54% en de afgeronde hoek echt 9,492%.
+ * ===================================================================== */
+
+.post {
+  --pb: 340px;
+  --marge: calc(var(--pb) * 0.0354);
+  --inspring: calc(var(--pb) * 0.0576);
+  --hoek: calc(var(--pb) * 0.09492);
+
+  --blauw: #007bc7;
+  --donkerblauw: #154173;
+  --lichtblauw: #c7e5f3;
+
+  position: relative;
+  inline-size: var(--pb);
+  max-inline-size: 100%;
+  aspect-ratio: 4 / 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  border-end-end-radius: var(--hoek);
+  background: #0b3a5c;
+  isolation: isolate;
+}
+.post--vierkant { aspect-ratio: 1 / 1; }
+
+/* De "foto". Geen bestand, want deze pagina laadt met opzet niets van buiten;
+   een paar verlopen over elkaar lezen op deze maat als een onscherpe foto. */
+.post__foto {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(90% 60% at 72% 12%, #ffd9a3 0%, rgba(255, 217, 163, 0) 58%),
+    radial-gradient(85% 60% at 12% 92%, #07293f 0%, rgba(7, 41, 63, 0) 62%),
+    linear-gradient(158deg, #5aa9d0 0%, #2f74a0 42%, #123c58 100%);
+}
+.post__foto::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(38% 26% at 26% 62%, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0) 70%),
+    radial-gradient(22% 30% at 62% 74%, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0) 70%);
+}
+
+/* De witte cirkellijnen met badges, gerekend vanaf de linkeronderhoek. */
+.post__ringen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.post__vlak {
+  display: block;
+  position: relative;
+  z-index: 2;
+  background: var(--lichtblauw);
+  color: var(--donkerblauw);
+  padding: calc(var(--pb) * 0.05) var(--inspring) calc(var(--pb) * 0.055);
+}
+.post__kop {
+  display: block;
+  font-size: calc(var(--pb) * 0.061);
+  line-height: 1.14;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+}
+.post__sub {
+  display: block;
+  font-size: calc(var(--pb) * 0.037);
+  line-height: 1.24;
+  margin-block-start: calc(var(--pb) * 0.022) !important;
+}
+
+/* De vijf stijlen uit de toolkit. */
+.post--vlak-boven { justify-content: flex-start; }
+.post--diepblauw .post__vlak { background: var(--donkerblauw); color: #fff; }
+.post--op-foto .post__vlak {
+  background: none;
+  color: #fff;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5);
+  padding-block-end: calc(var(--pb) * 0.09);
+}
+.post--groot .post__vlak { padding-block: calc(var(--pb) * 0.035); }
+.post--groot .post__sub { display: none; }
+
+/* ===================================================================== *
+ * 4. Onderdelen die meer dan één mockup gebruikt.
+ * ===================================================================== */
+
+/* Het logoblok. Met opzet een PLAATSHOUDER: het echte beeldmerk staat niet
+   in deze repo en hoort niet in een mockup. Zie README.md, "Nog te doen". */
+.logoblok {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.logoblok__merk {
+  inline-size: 40px;
+  block-size: 46px;
+  border: 2px dashed currentColor;
+  border-radius: 3px;
+  opacity: 0.55;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.logoblok__tekst { font-size: 14px; line-height: 1.25; }
+.logoblok__tekst b { display: block; font-weight: 600; }
+.logoblok__tekst span { opacity: 0.8; font-size: 13px; }
+
+.sessie {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  margin-inline-start: auto;
+}
+
+.werkgebied {
+  max-inline-size: 1240px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 3vw, 32px);
+}
+
+.stap__nr {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 28px;
+  block-size: 28px;
+  border-radius: 999px;
+  background: var(--rhc-color-primary-500);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Keuzeknoppen: de knoprij uit de huidige app, maar op de tokens. */
+.keuzerij { display: flex; flex-wrap: wrap; gap: 8px; }
+.keuze {
+  appearance: none;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid var(--rhc-color-border-default);
+  border-radius: var(--rhc-border-radius-md);
+  color: var(--rhc-color-foreground-default);
+  padding: 9px 15px;
+  font-size: 1rem;
+}
+.keuze:hover { border-color: var(--rhc-color-primary-500); }
+.keuze[aria-pressed="true"] {
+  background: var(--rhc-color-primary-500);
+  border-color: var(--rhc-color-primary-500);
+  color: #fff;
+  font-weight: 600;
+}
+.keuze:focus-visible {
+  outline: var(--rhc-focus-outline-width) solid var(--rhc-focus-outline-color);
+  outline-offset: var(--rhc-focus-outline-offset);
+}
+
+.hulptekst {
+  font-size: 0.875rem !important;
+  color: var(--rhc-color-foreground-subtle);
+}
+.streep { border: 0; border-block-start: 1px solid var(--rhc-color-border-subtle); }
+
+/* ===================================================================== *
+ * 5. Per mockup: alleen de indeling. De kleuren, letters, afstanden en
+ *    componenten komen uit de Rijkshuisstijl en staan hier niet.
+ * ===================================================================== */
+
+/* ---- 1. Rijksformulier ---------------------------------------------- */
+
+.m1__balk {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding: 14px clamp(16px, 3vw, 32px);
+  max-inline-size: 1240px;
+  margin-inline: auto;
+}
+.m1__lint { block-size: 6px; background: var(--rhc-color-primary-500); }
+.m1__kruimels {
+  padding-block: 14px;
+  font-size: 0.875rem;
+  color: var(--rhc-color-foreground-subtle);
+}
+.m1__kruimels a { color: var(--rhc-color-foreground-link); }
+.m1__titel { padding-block-end: 22px; max-inline-size: 62ch; }
+.m1__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 40px;
+  align-items: start;
+  padding-block: 28px 56px;
+}
+.m1__stap {
+  border-block-start: 1px solid var(--rhc-color-border-subtle);
+  padding-block: 26px;
+}
+.m1__stap:first-of-type { border-block-start: 0; padding-block-start: 0; }
+.m1__stapkop { display: flex; align-items: center; gap: 12px; margin-block-end: 14px; }
+.m1__zij { position: sticky; inset-block-start: 20px; }
+.m1__zijkaart {
+  border: 1px solid var(--rhc-color-border-subtle);
+  border-radius: var(--rhc-border-radius-md);
+  padding: 18px;
+}
+.m1__voet {
+  background: var(--rhc-color-cool-grey-900);
+  color: #fff;
+  padding-block: 28px;
+  font-size: 0.875rem;
+}
+
+/* ---- 2. Stappenplan -------------------------------------------------- */
+
+.m2__grid {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr) 330px;
+  gap: 36px;
+  align-items: start;
+  padding-block: 28px 56px;
+}
+.m2__stappen { position: sticky; inset-block-start: 20px; }
+.m2__stap {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 10px;
+  border-radius: var(--rhc-border-radius-md);
+  color: var(--rhc-color-foreground-link);
+  font-size: 1rem;
+  border-inline-start: 3px solid transparent;
+}
+.m2__stap[aria-current="step"] {
+  background: var(--rhc-color-primary-50);
+  border-inline-start-color: var(--rhc-color-primary-500);
+  color: var(--rhc-color-foreground-default);
+  font-weight: 700;
+}
+.m2__bol {
+  inline-size: 24px;
+  block-size: 24px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  border: 2px solid var(--rhc-color-border-default);
+  color: var(--rhc-color-foreground-subtle);
+  flex-shrink: 0;
+}
+.m2__stap--klaar .m2__bol {
+  background: var(--rhc-color-primary-500);
+  border-color: var(--rhc-color-primary-500);
+  color: #fff;
+}
+.m2__stap[aria-current="step"] .m2__bol {
+  border-color: var(--rhc-color-primary-500);
+  color: var(--rhc-color-primary-500);
+}
+.m2__voortgang {
+  block-size: 8px;
+  border-radius: 999px;
+  background: var(--rhc-color-primary-100);
+  overflow: hidden;
+  margin-block: 12px 26px;
+}
+.m2__voortgang i { display: block; block-size: 100%; inline-size: 50%; background: var(--rhc-color-primary-500); }
+.m2__paneel {
+  border: 1px solid var(--rhc-color-border-subtle);
+  border-radius: var(--rhc-border-radius-md);
+  padding: 26px;
+}
+.m2__sleepvak {
+  border: 2px dashed var(--rhc-color-primary-300);
+  border-radius: var(--rhc-border-radius-md);
+  background: var(--rhc-color-primary-50);
+  padding: 34px 20px;
+  text-align: center;
+}
+.m2__zij { position: sticky; inset-block-start: 20px; }
+
+/* ---- 3. Werkbank ----------------------------------------------------- */
+
+.m3__balk {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 18px;
+  background: var(--rhc-color-cool-grey-900);
+  color: #fff;
+  flex-wrap: wrap;
+}
+.m3__balk .keuze {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+  padding: 6px 12px;
+  font-size: 0.875rem;
+}
+.m3__balk .keuze[aria-pressed="true"] { background: var(--rhc-color-primary-500); border-color: var(--rhc-color-primary-500); }
+.m3__scheider { inline-size: 1px; block-size: 26px; background: rgba(255, 255, 255, 0.2); }
+.m3__grid { display: grid; grid-template-columns: minmax(0, 1fr) 350px; min-block-size: 640px; }
+.m3__doek {
+  background:
+    repeating-conic-gradient(var(--rhc-color-cool-grey-100) 0% 25%, #fff 0% 50%) 50% / 22px 22px;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  gap: 16px;
+  align-content: center;
+}
+.m3__gereedschap {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--rhc-color-border-subtle);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 0.875rem;
+}
+.m3__rail {
+  border-inline-start: 1px solid var(--rhc-color-border-subtle);
+  padding: 0;
+  overflow: hidden;
+}
+.m3__vak { border-block-end: 1px solid var(--rhc-color-border-subtle); }
+.m3__vak > summary {
+  cursor: pointer;
+  padding: 13px 18px;
+  font-weight: 700;
+  font-size: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  list-style: none;
+}
+.m3__vak > summary::-webkit-details-marker { display: none; }
+.m3__vak > summary::after { content: "▾"; color: var(--rhc-color-primary-500); }
+.m3__vak[open] > summary::after { content: "▴"; }
+.m3__vak > summary:hover { background: var(--rhc-color-primary-50); }
+.m3__vakinhoud { padding: 0 18px 18px; }
+
+/* ---- 4. Kaarten ------------------------------------------------------ */
+
+.m4__hero {
+  position: relative;
+  background: var(--rhc-color-primary-500);
+  color: #fff;
+  overflow: hidden;
+  border-end-start-radius: var(--rhc-rounded-corner-lg-border-radius, 6rem);
+}
+.m4__heroinhoud {
+  max-inline-size: 1240px;
+  margin-inline: auto;
+  padding: 52px clamp(16px, 3vw, 32px) 58px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 40px;
+  align-items: center;
+}
+.m4__hoek {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  inline-size: 190px;
+  block-size: 190px;
+  background: #fff;
+  border-end-start-radius: 100%;
+}
+.m4__kaarten {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+}
+.m4__kaart {
+  border: 1px solid var(--rhc-color-border-subtle);
+  border-radius: var(--rhc-border-radius-md);
+  padding: 14px;
+  background: #fff;
+  text-align: start;
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+}
+.m4__kaart:hover { border-color: var(--rhc-color-primary-500); }
+.m4__kaart[aria-pressed="true"] {
+  border-color: var(--rhc-color-primary-500);
+  box-shadow: inset 0 0 0 1px var(--rhc-color-primary-500);
+  background: var(--rhc-color-primary-50);
+}
+.m4__kaartnaam { font-weight: 700; font-size: 1rem; }
+.m4__blok { padding-block: 40px; }
+.m4__eind {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 40px;
+  align-items: start;
+  background: var(--rhc-color-primary-50);
+  border-start-start-radius: 3rem;
+  padding: 36px;
+}
+
+/* ---- 5. Compact ------------------------------------------------------ */
+
+.m5 { font-size: 0.875rem; }
+.m5__balk {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  border-block-end: 1px solid var(--rhc-color-border-subtle);
+  font-size: 0.8125rem;
+}
+.m5__grid {
+  display: grid;
+  grid-template-columns: 278px minmax(0, 1fr) 216px;
+  min-block-size: 610px;
+}
+.m5__kolom { padding: 12px 14px; display: grid; gap: 12px; align-content: start; }
+.m5__kolom + .m5__kolom { border-inline-start: 1px solid var(--rhc-color-border-subtle); }
+.m5__doek { background: var(--rhc-color-cool-grey-50); place-items: center; align-content: center; }
+.m5__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--rhc-color-foreground-subtle);
+}
+.m5 .keuze { padding: 4px 10px; font-size: 0.8125rem; }
+.m5__lijst { display: grid; gap: 2px; }
+.m5__lijst button {
+  appearance: none;
+  border: 0;
+  background: none;
+  text-align: start;
+  padding: 5px 7px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: var(--rhc-color-foreground-link);
+}
+.m5__lijst button:hover { background: var(--rhc-color-primary-50); }
+.m5__statusbalk {
+  border-block-start: 1px solid var(--rhc-color-border-subtle);
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  color: var(--rhc-color-foreground-subtle);
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ---- Smal (telefoon) ------------------------------------------------- */
+
+@container (max-width: 900px) {
+  .m1__grid, .m2__grid, .m3__grid, .m4__heroinhoud, .m4__eind { grid-template-columns: minmax(0, 1fr); }
+  .m5__grid { grid-template-columns: minmax(0, 1fr); }
+  .m5__kolom + .m5__kolom { border-inline-start: 0; border-block-start: 1px solid var(--rhc-color-border-subtle); }
+  .m1__zij, .m2__zij, .m2__stappen { position: static; }
+  .m3__rail { border-inline-start: 0; border-block-start: 1px solid var(--rhc-color-border-subtle); }
+  .m4__hoek { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="kiezer">
+  <p class="kiezer__titel">Social Media Opmaaktool — vijf mockups in de Rijkshuisstijl</p>
+  <p class="kiezer__onder">
+    Vijf indelingen voor dezelfde tool, allemaal opgebouwd met de échte
+    Rijkshuisstijl Community: de componenten-CSS en de design tokens zoals ze uit
+    npm komen. De inhoud is overal gelijk, alleen de indeling verschilt. Kies er
+    één; die bouw ik daarna in <code>index.html</code>.
+  </p>
+
+  <div class="kiezer__rij" role="tablist" aria-label="Mockup kiezen">
+    <button type="button" class="tab" role="tab" aria-selected="true"  aria-controls="m1" id="t1"><span class="tab__nr">1</span> Rijksformulier</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="m2" id="t2"><span class="tab__nr">2</span> Stappenplan</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="m3" id="t3"><span class="tab__nr">3</span> Werkbank</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="m4" id="t4"><span class="tab__nr">4</span> Keuzekaarten</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="m5" id="t5"><span class="tab__nr">5</span> Compact</button>
+
+    <span class="kiezer__spatie"></span>
+
+    <span class="breedterij">
+      <span class="breedterij__label">Toon op</span>
+      <button type="button" class="breedteknop" id="breedLaptop" aria-pressed="true">Laptop</button>
+      <button type="button" class="breedteknop" id="breedTelefoon" aria-pressed="false">Telefoon</button>
+    </span>
+  </div>
+
+  <div class="uitleg">
+    <h2 id="uitlegNaam">Rijksformulier</h2>
+    <dl><dt>Wat je ziet</dt><dd id="uitlegZiet"></dd></dl>
+    <dl><dt>Goed voor</dt><dd id="uitlegGoed"></dd></dl>
+    <dl><dt>Wat het kost</dt><dd id="uitlegPrijs"></dd></dl>
+    <dl><dt>Bouwwerk</dt><dd id="uitlegBouw"></dd></dl>
+  </div>
+</div>
+
+<!-- ==================================================================== 1 -->
+<div class="raam raam--breed" id="raam">
+
+<section class="mockup hemelblauw" id="m1" role="tabpanel" aria-labelledby="t1">
+  <div class="m1__lint"></div>
+
+  <div class="m1__balk">
+    <div class="logoblok">
+      <span class="logoblok__merk" aria-hidden="true">logo</span>
+      <span class="logoblok__tekst">
+        <b>Social Media Opmaaktool</b>
+        <span>Plaats voor het beeldmerk van de organisatie</span>
+      </span>
+    </div>
+    <div class="sessie">
+      <span class="hulptekst">redacteur@voorbeeld.nl</span>
+      <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button">Uitloggen</button>
+    </div>
+  </div>
+
+  <div style="border-block-start:1px solid var(--rhc-color-border-subtle)">
+    <div class="werkgebied">
+      <nav class="m1__kruimels" aria-label="Kruimelpad">
+        <a href="#m1">Start</a> &rsaquo; <span>Post opmaken</span>
+      </nav>
+    </div>
+  </div>
+
+  <div class="werkgebied">
+    <div class="m1__titel">
+      <p class="rhc-pre-heading" style="color:var(--rhc-color-foreground-subtle);font-weight:700;font-size:.875rem;text-transform:uppercase;letter-spacing:.06em;margin-block-end:6px !important">Prototype</p>
+      <h1 class="nl-heading nl-heading--level-1 rhc-heading">Post opmaken</h1>
+      <p class="nl-paragraph nl-paragraph--lead rhc-paragraph" style="margin-block-start:10px !important">
+        Zet een foto in de huisstijl en download hem op de juiste maat voor
+        Instagram of Facebook.
+      </p>
+    </div>
+
+    <div class="utrecht-alert utrecht-alert--warning rhc-alert" style="margin-block-end:8px">
+      <div class="utrecht-alert__content">
+        <p class="nl-paragraph rhc-paragraph">
+          <strong>Nog geen goedgekeurde export.</strong> Kleuren, korpsgroottes en
+          maatvoering komen uit de PowerPoint-toolkit. Laat een export controleren
+          voordat je hiermee publiceert.
+        </p>
+      </div>
+    </div>
+
+    <div class="m1__grid">
+      <form>
+        <section class="m1__stap">
+          <div class="m1__stapkop">
+            <span class="stap__nr" aria-hidden="true">1</span>
+            <h2 class="nl-heading nl-heading--level-2 rhc-heading" style="font-size:1.5rem">Waar plaats je de post?</h2>
+          </div>
+          <div class="keuzerij" role="group" aria-label="Platform">
+            <button type="button" class="keuze" aria-pressed="true">Instagram</button>
+            <button type="button" class="keuze" aria-pressed="false">Facebook</button>
+          </div>
+          <div class="keuzerij" role="group" aria-label="Formaat" style="margin-block-start:10px">
+            <button type="button" class="keuze" aria-pressed="true">Staand&nbsp;&nbsp;4:5</button>
+            <button type="button" class="keuze" aria-pressed="false">Vierkant&nbsp;&nbsp;1:1</button>
+          </div>
+          <p class="hulptekst" style="margin-block-start:12px !important">Exportmaat: <strong>1080 &times; 1350 px</strong></p>
+        </section>
+
+        <section class="m1__stap">
+          <div class="m1__stapkop">
+            <span class="stap__nr" aria-hidden="true">2</span>
+            <h2 class="nl-heading nl-heading--level-2 rhc-heading" style="font-size:1.5rem">Kies een stijl</h2>
+          </div>
+          <div class="keuzerij" role="group" aria-label="Stijl">
+            <button type="button" class="keuze" aria-pressed="true">Foto boven, vlak onder</button>
+            <button type="button" class="keuze" aria-pressed="false">Vlak boven, foto onder</button>
+            <button type="button" class="keuze" aria-pressed="false">Tekst op de foto</button>
+            <button type="button" class="keuze" aria-pressed="false">Grote foto</button>
+            <button type="button" class="keuze" aria-pressed="false">Diepblauw</button>
+          </div>
+          <p class="hulptekst" style="margin-block-start:12px !important">Maximaal 3 regels kop en 2 regels subtekst.</p>
+        </section>
+
+        <section class="m1__stap">
+          <div class="m1__stapkop">
+            <span class="stap__nr" aria-hidden="true">3</span>
+            <h2 class="nl-heading nl-heading--level-2 rhc-heading" style="font-size:1.5rem">Kies een foto</h2>
+          </div>
+          <div style="display:flex;gap:14px;align-items:center;border:1px solid var(--rhc-color-border-default);border-radius:var(--rhc-border-radius-md);padding:14px">
+            <span style="inline-size:52px;block-size:52px;border-radius:3px;flex-shrink:0;background:linear-gradient(158deg,#5aa9d0,#123c58)"></span>
+            <span style="min-inline-size:0">
+              <b style="display:block">strand-lissabon.jpg</b>
+              <span class="hulptekst">2,4 MB &middot; blijft op je eigen computer</span>
+            </span>
+            <button type="button" class="utrecht-button utrecht-button--subtle rhc-button" style="margin-inline-start:auto">Vervangen</button>
+          </div>
+          <label class="utrecht-form-label" for="m1zoom" style="display:block;margin-block:18px 6px;font-weight:600">Inzoomen</label>
+          <input type="range" id="m1zoom" min="1" max="3" step="0.01" value="1.3" style="inline-size:100%">
+          <p class="hulptekst">Sleep de foto in het voorbeeld om de uitsnede te kiezen.</p>
+        </section>
+
+        <section class="m1__stap">
+          <div class="m1__stapkop">
+            <span class="stap__nr" aria-hidden="true">4</span>
+            <h2 class="nl-heading nl-heading--level-2 rhc-heading" style="font-size:1.5rem">Cirkels en icoontjes</h2>
+          </div>
+          <div class="rhc-form-field-checkbox-option utrecht-form-field utrecht-form-field--checkbox rhc-form-field" style="display:flex;gap:10px;align-items:center">
+            <input type="checkbox" id="m1deco" class="utrecht-checkbox rhc-checkbox" checked>
+            <label class="utrecht-form-label utrecht-form-label--checkbox" for="m1deco">Witte cirkellijnen met icoonbadges over de foto</label>
+          </div>
+          <div class="keuzerij" style="margin-block-start:14px">
+            <label class="utrecht-form-field rhc-form-field" style="flex:1 1 150px">
+              <span class="utrecht-form-label" style="display:block;font-weight:600;margin-block-end:5px">Grote badge</span>
+              <select class="utrecht-select rhc-form-field-select" style="inline-size:100%"><option>Wereld</option><option>Gesprek</option></select>
+            </label>
+            <label class="utrecht-form-field rhc-form-field" style="flex:1 1 150px">
+              <span class="utrecht-form-label" style="display:block;font-weight:600;margin-block-end:5px">Kleine badge</span>
+              <select class="utrecht-select rhc-form-field-select" style="inline-size:100%"><option>Gesprek</option><option>Megafoon</option></select>
+            </label>
+          </div>
+        </section>
+
+        <section class="m1__stap">
+          <div class="m1__stapkop">
+            <span class="stap__nr" aria-hidden="true">5</span>
+            <h2 class="nl-heading nl-heading--level-2 rhc-heading" style="font-size:1.5rem">Tekst</h2>
+          </div>
+          <label class="utrecht-form-label" for="m1kop" style="display:flex;justify-content:space-between;font-weight:600;margin-block-end:5px">
+            <span>Kop</span> <span class="hulptekst">2 van 3 regels</span>
+          </label>
+          <textarea id="m1kop" rows="2" class="utrecht-textarea rhc-textarea rhc-textarea--html-textarea" style="inline-size:100%">Souvenirs meenemen uit het buitenland?</textarea>
+          <label class="utrecht-form-label" for="m1sub" style="display:flex;justify-content:space-between;font-weight:600;margin-block:16px 5px">
+            <span>Subtekst</span> <span class="hulptekst">1 van 2 regels</span>
+          </label>
+          <textarea id="m1sub" rows="2" class="utrecht-textarea rhc-textarea rhc-textarea--html-textarea" style="inline-size:100%">Dit zijn de regels.</textarea>
+          <p class="hulptekst" style="margin-block-start:10px !important">
+            De korpsgrootte ligt vast in de toolkit. Past je tekst er niet in, dan
+            wordt hij afgekapt en zie je een melding.
+          </p>
+        </section>
+
+        <section class="m1__stap">
+          <div class="m1__stapkop">
+            <span class="stap__nr" aria-hidden="true">6</span>
+            <h2 class="nl-heading nl-heading--level-2 rhc-heading" style="font-size:1.5rem">Concepten</h2>
+          </div>
+          <div class="keuzerij">
+            <input type="text" class="utrecht-textbox rhc-text-input" value="Souvenirs juli" style="flex:1 1 180px">
+            <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button">Bewaren</button>
+          </div>
+          <label class="utrecht-form-label" for="m1conc" style="display:block;font-weight:600;margin-block:16px 5px">Bewaarde concepten</label>
+          <select id="m1conc" class="utrecht-select rhc-form-field-select" style="inline-size:100%">
+            <option>Souvenirs juli &middot; 12 juli</option>
+            <option>Reisadvies Marokko &middot; 3 juli</option>
+          </select>
+        </section>
+
+        <div class="utrecht-action-group utrecht-action-group--row" style="display:flex;gap:12px;padding-block-start:8px">
+          <button type="button" class="utrecht-button utrecht-button--primary-action rhc-button">PNG downloaden</button>
+          <button type="button" class="utrecht-button utrecht-button--subtle rhc-button">Uitsnede terugzetten</button>
+        </div>
+      </form>
+
+      <aside class="m1__zij">
+        <div class="m1__zijkaart">
+          <h2 class="nl-heading nl-heading--level-3 rhc-heading" style="font-size:1.25rem;margin-block-end:12px !important">Voorbeeld</h2>
+          <div class="post" style="--pb:300px">
+            <span class="post__foto" aria-hidden="true"></span>
+            <svg class="post__ringen" viewBox="0 0 400 500" preserveAspectRatio="xMinYMax slice" aria-hidden="true" focusable="false">
+      <g fill="none" stroke="#ffffff" stroke-width="2.4" opacity=".92">
+        <circle cx="0" cy="500" r="152"/>
+        <circle cx="0" cy="500" r="232"/>
+        <circle cx="0" cy="500" r="312"/>
+      </g>
+      <circle cx="116" cy="299" r="33" fill="#ffffff"/>
+      <g fill="none" stroke="#007bc7" stroke-width="2.4">
+        <circle cx="116" cy="299" r="17"/>
+        <ellipse cx="116" cy="299" rx="7.5" ry="17"/>
+        <path d="M100 294h32M100 304h32"/>
+      </g>
+      <circle cx="136" cy="437" r="21" fill="#ffffff"/>
+      <path d="M126 430h20v12h-8l-5 5v-5h-7z" fill="#007bc7"/>
+    </svg>
+            <div class="post__vlak">
+              <p class="post__kop">Souvenirs meenemen uit het buitenland?</p>
+              <p class="post__sub">Dit zijn de regels.</p>
+            </div>
+          </div>
+          <p class="hulptekst" style="margin-block-start:12px !important">
+            Instagram &middot; staand &middot; 1080 &times; 1350 px
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <footer class="m1__voet">
+    <div class="werkgebied">
+      <strong>Je foto blijft op je eigen computer.</strong>
+      Inpassen, bijsnijden en exporteren gebeurt volledig in je browser.
+    </div>
+  </footer>
+</section>
+
+<!-- ==================================================================== 2 -->
+<section class="mockup hemelblauw" id="m2" role="tabpanel" aria-labelledby="t2" hidden>
+  <div class="m1__lint"></div>
+
+  <div class="m1__balk">
+    <div class="logoblok">
+      <span class="logoblok__merk" aria-hidden="true">logo</span>
+      <span class="logoblok__tekst">
+        <b>Social Media Opmaaktool</b>
+        <span>Plaats voor het beeldmerk van de organisatie</span>
+      </span>
+    </div>
+    <div class="sessie">
+      <span class="hulptekst">redacteur@voorbeeld.nl</span>
+      <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button">Uitloggen</button>
+    </div>
+  </div>
+
+  <div class="werkgebied" style="border-block-start:1px solid var(--rhc-color-border-subtle)">
+    <div class="m2__grid">
+
+      <nav class="m2__stappen rhc-side-nav" aria-label="Stappen">
+        <p class="hulptekst" style="font-weight:700;color:var(--rhc-color-foreground-default) !important">Stap 3 van 6</p>
+        <div class="m2__voortgang" role="presentation"><i></i></div>
+        <ul class="rhc-side-nav__list" style="display:grid;gap:2px">
+          <li><span class="m2__stap m2__stap--klaar"><span class="m2__bol" aria-hidden="true">&check;</span> Platform</span></li>
+          <li><span class="m2__stap m2__stap--klaar"><span class="m2__bol" aria-hidden="true">&check;</span> Stijl</span></li>
+          <li><span class="m2__stap" aria-current="step"><span class="m2__bol" aria-hidden="true">3</span> Foto</span></li>
+          <li><span class="m2__stap"><span class="m2__bol" aria-hidden="true">4</span> Cirkels</span></li>
+          <li><span class="m2__stap"><span class="m2__bol" aria-hidden="true">5</span> Tekst</span></li>
+          <li><span class="m2__stap"><span class="m2__bol" aria-hidden="true">6</span> Downloaden</span></li>
+        </ul>
+        <hr class="streep" style="margin-block:20px">
+        <p class="hulptekst">Concepten</p>
+        <div class="m5__lijst" style="margin-block-start:6px">
+          <button type="button">Souvenirs juli</button>
+          <button type="button">Reisadvies Marokko</button>
+        </div>
+      </nav>
+
+      <div>
+        <div class="m2__paneel">
+          <p class="hulptekst" style="font-weight:700;text-transform:uppercase;letter-spacing:.06em">Stap 3</p>
+          <h1 class="nl-heading nl-heading--level-1 rhc-heading" style="font-size:2rem;margin-block:4px 8px !important">Kies een foto</h1>
+          <p class="nl-paragraph rhc-paragraph" style="margin-block-end:22px !important">
+            Je foto blijft op je eigen computer. Inpassen en exporteren gebeurt in
+            je browser; er gaat geen enkele pixel naar een server.
+          </p>
+
+          <div class="m2__sleepvak">
+            <p class="nl-paragraph rhc-paragraph" style="margin-block-end:14px !important">
+              Sleep een foto hierheen, of plak met <kbd>Ctrl</kbd>&nbsp;+&nbsp;<kbd>V</kbd>
+            </p>
+            <div class="utrecht-action-group" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+              <button type="button" class="utrecht-button utrecht-button--primary-action rhc-button">Bestand kiezen</button>
+              <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button">Voorbeeldfoto</button>
+            </div>
+          </div>
+
+          <hr class="streep" style="margin-block:24px">
+
+          <label class="utrecht-form-label" for="m2zoom" style="display:flex;justify-content:space-between;font-weight:600;margin-block-end:6px">
+            <span>Inzoomen</span><span class="hulptekst">130%</span>
+          </label>
+          <input type="range" id="m2zoom" min="1" max="3" step="0.01" value="1.3" style="inline-size:100%">
+          <p class="hulptekst">Sleep de foto in het voorbeeld hiernaast om de uitsnede te kiezen.</p>
+        </div>
+
+        <div class="utrecht-action-group utrecht-action-group--row" style="display:flex;gap:12px;margin-block-start:22px">
+          <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button">Vorige</button>
+          <button type="button" class="utrecht-button utrecht-button--primary-action rhc-button">Volgende: cirkels</button>
+          <button type="button" class="utrecht-button utrecht-button--subtle rhc-button" style="margin-inline-start:auto">Overslaan</button>
+        </div>
+      </div>
+
+      <aside class="m2__zij">
+        <h2 class="nl-heading nl-heading--level-3 rhc-heading" style="font-size:1.25rem;margin-block-end:12px !important">Voorbeeld</h2>
+        <div class="post" style="--pb:290px">
+            <span class="post__foto" aria-hidden="true"></span>
+            <svg class="post__ringen" viewBox="0 0 400 500" preserveAspectRatio="xMinYMax slice" aria-hidden="true" focusable="false">
+      <g fill="none" stroke="#ffffff" stroke-width="2.4" opacity=".92">
+        <circle cx="0" cy="500" r="152"/>
+        <circle cx="0" cy="500" r="232"/>
+        <circle cx="0" cy="500" r="312"/>
+      </g>
+      <circle cx="116" cy="299" r="33" fill="#ffffff"/>
+      <g fill="none" stroke="#007bc7" stroke-width="2.4">
+        <circle cx="116" cy="299" r="17"/>
+        <ellipse cx="116" cy="299" rx="7.5" ry="17"/>
+        <path d="M100 294h32M100 304h32"/>
+      </g>
+      <circle cx="136" cy="437" r="21" fill="#ffffff"/>
+      <path d="M126 430h20v12h-8l-5 5v-5h-7z" fill="#007bc7"/>
+    </svg>
+            <div class="post__vlak">
+              <p class="post__kop">Souvenirs meenemen uit het buitenland?</p>
+              <p class="post__sub">Dit zijn de regels.</p>
+            </div>
+          </div>
+        <p class="hulptekst" style="margin-block-start:12px !important">Instagram &middot; staand &middot; 1080 &times; 1350 px</p>
+        <button type="button" class="utrecht-button utrecht-button--subtle rhc-button" style="margin-block-start:10px;padding-inline:0">PNG downloaden</button>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================================== 3 -->
+<section class="mockup hemelblauw" id="m3" role="tabpanel" aria-labelledby="t3" hidden>
+  <div class="m3__balk">
+    <span class="logoblok__tekst" style="font-weight:600;margin-inline-end:6px">Opmaaktool</span>
+    <span class="m3__scheider" aria-hidden="true"></span>
+
+    <span class="keuzerij" role="group" aria-label="Platform">
+      <button type="button" class="keuze" aria-pressed="true">Instagram</button>
+      <button type="button" class="keuze" aria-pressed="false">Facebook</button>
+    </span>
+    <span class="keuzerij" role="group" aria-label="Formaat">
+      <button type="button" class="keuze" aria-pressed="true">4:5</button>
+      <button type="button" class="keuze" aria-pressed="false">1:1</button>
+    </span>
+
+    <span class="m3__scheider" aria-hidden="true"></span>
+    <label style="display:flex;align-items:center;gap:8px;font-size:.875rem">
+      <span>Stijl</span>
+      <select class="utrecht-select rhc-form-field-select" style="min-inline-size:190px">
+        <option>Foto boven, vlak onder</option>
+        <option>Vlak boven, foto onder</option>
+        <option>Tekst op de foto</option>
+        <option>Grote foto</option>
+        <option>Diepblauw</option>
+      </select>
+    </label>
+
+    <span style="margin-inline-start:auto;display:flex;align-items:center;gap:12px">
+      <span style="font-size:.8125rem;opacity:.75">1080 &times; 1350 px</span>
+      <button type="button" class="utrecht-button utrecht-button--primary-action rhc-button">PNG downloaden</button>
+    </span>
+  </div>
+
+  <div class="m3__grid">
+    <div class="m3__doek">
+      <div class="post" style="--pb:380px">
+            <span class="post__foto" aria-hidden="true"></span>
+            <svg class="post__ringen" viewBox="0 0 400 500" preserveAspectRatio="xMinYMax slice" aria-hidden="true" focusable="false">
+      <g fill="none" stroke="#ffffff" stroke-width="2.4" opacity=".92">
+        <circle cx="0" cy="500" r="152"/>
+        <circle cx="0" cy="500" r="232"/>
+        <circle cx="0" cy="500" r="312"/>
+      </g>
+      <circle cx="116" cy="299" r="33" fill="#ffffff"/>
+      <g fill="none" stroke="#007bc7" stroke-width="2.4">
+        <circle cx="116" cy="299" r="17"/>
+        <ellipse cx="116" cy="299" rx="7.5" ry="17"/>
+        <path d="M100 294h32M100 304h32"/>
+      </g>
+      <circle cx="136" cy="437" r="21" fill="#ffffff"/>
+      <path d="M126 430h20v12h-8l-5 5v-5h-7z" fill="#007bc7"/>
+    </svg>
+            <div class="post__vlak">
+              <p class="post__kop">Souvenirs meenemen uit het buitenland?</p>
+              <p class="post__sub">Dit zijn de regels.</p>
+            </div>
+          </div>
+      <div class="m3__gereedschap">
+        <button type="button" class="utrecht-button utrecht-button--subtle rhc-button" style="padding:2px 8px">&minus;</button>
+        <input type="range" min="1" max="3" step="0.01" value="1.3" aria-label="Inzoomen" style="inline-size:150px">
+        <button type="button" class="utrecht-button utrecht-button--subtle rhc-button" style="padding:2px 8px">+</button>
+        <span class="m3__scheider" style="background:var(--rhc-color-border-subtle)" aria-hidden="true"></span>
+        <span style="color:var(--rhc-color-foreground-subtle)">130%</span>
+        <button type="button" class="utrecht-button utrecht-button--subtle rhc-button" style="padding:2px 8px">Terugzetten</button>
+      </div>
+      <p class="hulptekst" style="text-align:center;max-inline-size:44ch">
+        Sleep de foto om de uitsnede te kiezen, of verschuif hem met de pijltjestoetsen.
+      </p>
+    </div>
+
+    <aside class="m3__rail">
+      <details class="m3__vak" open>
+        <summary>Tekst</summary>
+        <div class="m3__vakinhoud">
+          <label class="utrecht-form-label" for="m3kop" style="display:flex;justify-content:space-between;font-weight:600;margin-block-end:5px">
+            <span>Kop</span><span class="hulptekst">2 van 3 regels</span>
+          </label>
+          <textarea id="m3kop" rows="2" class="utrecht-textarea rhc-textarea rhc-textarea--html-textarea" style="inline-size:100%">Souvenirs meenemen uit het buitenland?</textarea>
+          <label class="utrecht-form-label" for="m3sub" style="display:flex;justify-content:space-between;font-weight:600;margin-block:14px 5px">
+            <span>Subtekst</span><span class="hulptekst">1 van 2 regels</span>
+          </label>
+          <textarea id="m3sub" rows="2" class="utrecht-textarea rhc-textarea rhc-textarea--html-textarea" style="inline-size:100%">Dit zijn de regels.</textarea>
+        </div>
+      </details>
+
+      <details class="m3__vak" open>
+        <summary>Foto</summary>
+        <div class="m3__vakinhoud" style="display:flex;gap:12px;align-items:center">
+          <span style="inline-size:46px;block-size:46px;border-radius:3px;flex-shrink:0;background:linear-gradient(158deg,#5aa9d0,#123c58)"></span>
+          <span style="min-inline-size:0">
+            <b style="display:block;font-size:.9375rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">strand-lissabon.jpg</b>
+            <span class="hulptekst" style="white-space:nowrap">blijft bij jou</span>
+          </span>
+          <button type="button" class="utrecht-button utrecht-button--subtle rhc-button" style="margin-inline-start:auto">Vervangen</button>
+        </div>
+      </details>
+
+      <details class="m3__vak">
+        <summary>Cirkels en icoontjes</summary>
+        <div class="m3__vakinhoud">
+          <div style="display:flex;gap:10px;align-items:center">
+            <input type="checkbox" id="m3deco" class="utrecht-checkbox rhc-checkbox" checked>
+            <label class="utrecht-form-label utrecht-form-label--checkbox" for="m3deco">Cirkellijnen tonen</label>
+          </div>
+        </div>
+      </details>
+
+      <details class="m3__vak">
+        <summary>Concepten</summary>
+        <div class="m3__vakinhoud">
+          <div class="m5__lijst">
+            <button type="button">Souvenirs juli &middot; 12 juli</button>
+            <button type="button">Reisadvies Marokko &middot; 3 juli</button>
+          </div>
+        </div>
+      </details>
+
+      <div style="padding:16px 18px">
+        <p class="hulptekst">
+          Ingelogd als redacteur@voorbeeld.nl.
+          <a href="#m3" style="color:var(--rhc-color-foreground-link)">Uitloggen</a>
+        </p>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ==================================================================== 4 -->
+<section class="mockup hemelblauw" id="m4" role="tabpanel" aria-labelledby="t4" hidden>
+  <div class="m1__balk">
+    <div class="logoblok">
+      <span class="logoblok__merk" aria-hidden="true">logo</span>
+      <span class="logoblok__tekst">
+        <b>Social Media Opmaaktool</b>
+        <span>Plaats voor het beeldmerk van de organisatie</span>
+      </span>
+    </div>
+    <div class="sessie">
+      <span class="hulptekst">redacteur@voorbeeld.nl</span>
+      <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button">Uitloggen</button>
+    </div>
+  </div>
+
+  <header class="m4__hero">
+    <span class="m4__hoek" aria-hidden="true"></span>
+    <div class="m4__heroinhoud">
+      <div>
+        <h1 class="nl-heading nl-heading--level-1 rhc-heading" style="color:#fff;font-size:2.5rem">
+          Maak zelf een post in de huisstijl
+        </h1>
+        <p class="nl-paragraph nl-paragraph--lead rhc-paragraph" style="color:#fff;margin-block-start:12px !important;max-inline-size:52ch">
+          Kies een platform, een stijl en een foto. De opmaak klopt daarna
+          vanzelf — je hoeft er niet meer op te wachten.
+        </p>
+        <p style="margin-block-start:20px !important">
+          <span style="display:inline-block;background:#fff;color:var(--rhc-color-primary-500);border-radius:999px;padding:5px 14px;font-size:.875rem;font-weight:600">
+            Klaar in ongeveer 2 minuten
+          </span>
+        </p>
+      </div>
+      <div class="post" style="--pb:250px">
+            <span class="post__foto" aria-hidden="true"></span>
+            <svg class="post__ringen" viewBox="0 0 400 500" preserveAspectRatio="xMinYMax slice" aria-hidden="true" focusable="false">
+      <g fill="none" stroke="#ffffff" stroke-width="2.4" opacity=".92">
+        <circle cx="0" cy="500" r="152"/>
+        <circle cx="0" cy="500" r="232"/>
+        <circle cx="0" cy="500" r="312"/>
+      </g>
+      <circle cx="116" cy="299" r="33" fill="#ffffff"/>
+      <g fill="none" stroke="#007bc7" stroke-width="2.4">
+        <circle cx="116" cy="299" r="17"/>
+        <ellipse cx="116" cy="299" rx="7.5" ry="17"/>
+        <path d="M100 294h32M100 304h32"/>
+      </g>
+      <circle cx="136" cy="437" r="21" fill="#ffffff"/>
+      <path d="M126 430h20v12h-8l-5 5v-5h-7z" fill="#007bc7"/>
+    </svg>
+            <div class="post__vlak">
+              <p class="post__kop">Souvenirs meenemen uit het buitenland?</p>
+              <p class="post__sub">Dit zijn de regels.</p>
+            </div>
+          </div>
+    </div>
+  </header>
+
+  <div class="werkgebied m4__blok">
+    <h2 class="nl-heading nl-heading--level-2 rhc-heading" style="font-size:1.5rem">1. Waar plaats je de post?</h2>
+    <p class="hulptekst" style="margin-block:4px 16px !important">De vorm hangt aan het formaat, de pixelmaat aan het platform.</p>
+    <div class="m4__kaarten">
+      <button type="button" class="m4__kaart" aria-pressed="true">
+        <span style="display:block;block-size:78px;border-radius:3px;background:var(--rhc-color-primary-100);display:grid;place-items:center">
+          <span style="display:block;inline-size:42px;block-size:52px;background:#fff;border:1px solid var(--rhc-color-primary-300);border-end-end-radius:9px"></span>
+        </span>
+        <span class="m4__kaartnaam">Instagram &middot; staand</span>
+        <span class="hulptekst">1080 &times; 1350 px &middot; 4:5</span>
+      </button>
+      <button type="button" class="m4__kaart" aria-pressed="false">
+        <span style="display:block;block-size:78px;border-radius:3px;background:var(--rhc-color-cool-grey-50);display:grid;place-items:center">
+          <span style="display:block;inline-size:50px;block-size:50px;background:#fff;border:1px solid var(--rhc-color-border-subtle);border-end-end-radius:9px"></span>
+        </span>
+        <span class="m4__kaartnaam">Instagram &middot; vierkant</span>
+        <span class="hulptekst">1080 &times; 1080 px &middot; 1:1</span>
+      </button>
+      <button type="button" class="m4__kaart" aria-pressed="false">
+        <span style="display:block;block-size:78px;border-radius:3px;background:var(--rhc-color-cool-grey-50);display:grid;place-items:center">
+          <span style="display:block;inline-size:42px;block-size:52px;background:#fff;border:1px solid var(--rhc-color-border-subtle);border-end-end-radius:9px"></span>
+        </span>
+        <span class="m4__kaartnaam">Facebook &middot; staand</span>
+        <span class="hulptekst">1200 &times; 1500 px &middot; 4:5</span>
+      </button>
+      <button type="button" class="m4__kaart" aria-pressed="false">
+        <span style="display:block;block-size:78px;border-radius:3px;background:var(--rhc-color-cool-grey-50);display:grid;place-items:center">
+          <span style="display:block;inline-size:50px;block-size:50px;background:#fff;border:1px solid var(--rhc-color-border-subtle);border-end-end-radius:9px"></span>
+        </span>
+        <span class="m4__kaartnaam">Facebook &middot; vierkant</span>
+        <span class="hulptekst">1200 &times; 1200 px &middot; 1:1</span>
+      </button>
+    </div>
+
+    <hr class="streep" style="margin-block:36px">
+
+    <h2 class="nl-heading nl-heading--level-2 rhc-heading" style="font-size:1.5rem">2. Kies een stijl</h2>
+    <p class="hulptekst" style="margin-block:4px 16px !important">De vijf stijlen komen één op één van de sjabloonpagina&rsquo;s uit de toolkit.</p>
+    <div class="m4__kaarten">
+      <button type="button" class="m4__kaart" aria-pressed="true">
+        <span style="block-size:112px;display:grid;place-items:center;background:var(--rhc-color-cool-grey-50);border-radius:3px">
+          <span class="post post--vlak-onder" style="--pb:86px">
+            <span class="post__foto" aria-hidden="true"></span>
+            <span class="post__vlak"><span class="post__kop">Souvenirs meenemen?</span><span class="post__sub">Dit zijn de regels.</span></span>
+          </span>
+        </span>
+        <span class="m4__kaartnaam">Foto boven, vlak onder</span>
+        <span class="hulptekst">3 regels kop, 2 sub</span>
+      </button>
+      <button type="button" class="m4__kaart" aria-pressed="false">
+        <span style="block-size:112px;display:grid;place-items:center;background:var(--rhc-color-cool-grey-50);border-radius:3px">
+          <span class="post post--vlak-boven" style="--pb:86px">
+            <span class="post__foto" aria-hidden="true"></span>
+            <span class="post__vlak"><span class="post__kop">Souvenirs meenemen?</span><span class="post__sub">Dit zijn de regels.</span></span>
+          </span>
+        </span>
+        <span class="m4__kaartnaam">Vlak boven, foto onder</span>
+        <span class="hulptekst">2 regels kop, 2 sub</span>
+      </button>
+      <button type="button" class="m4__kaart" aria-pressed="false">
+        <span style="block-size:112px;display:grid;place-items:center;background:var(--rhc-color-cool-grey-50);border-radius:3px">
+          <span class="post post--op-foto" style="--pb:86px">
+            <span class="post__foto" aria-hidden="true"></span>
+            <span class="post__vlak"><span class="post__kop">Souvenirs meenemen?</span><span class="post__sub">Dit zijn de regels.</span></span>
+          </span>
+        </span>
+        <span class="m4__kaartnaam">Tekst op de foto</span>
+        <span class="hulptekst">2 regels kop, 1 sub</span>
+      </button>
+      <button type="button" class="m4__kaart" aria-pressed="false">
+        <span style="block-size:112px;display:grid;place-items:center;background:var(--rhc-color-cool-grey-50);border-radius:3px">
+          <span class="post post--groot" style="--pb:86px">
+            <span class="post__foto" aria-hidden="true"></span>
+            <span class="post__vlak"><span class="post__kop">Souvenirs meenemen?</span></span>
+          </span>
+        </span>
+        <span class="m4__kaartnaam">Grote foto</span>
+        <span class="hulptekst">1 regel kop</span>
+      </button>
+      <button type="button" class="m4__kaart" aria-pressed="false">
+        <span style="block-size:112px;display:grid;place-items:center;background:var(--rhc-color-cool-grey-50);border-radius:3px">
+          <span class="post post--diepblauw" style="--pb:86px">
+            <span class="post__foto" aria-hidden="true"></span>
+            <span class="post__vlak"><span class="post__kop">Souvenirs meenemen?</span><span class="post__sub">Dit zijn de regels.</span></span>
+          </span>
+        </span>
+        <span class="m4__kaartnaam">Diepblauw</span>
+        <span class="hulptekst">3 regels kop, 2 sub</span>
+      </button>
+    </div>
+
+    <hr class="streep" style="margin-block:36px">
+
+    <div class="m4__eind">
+      <div>
+        <h2 class="nl-heading nl-heading--level-2 rhc-heading" style="font-size:1.5rem">3. Foto en tekst</h2>
+        <p class="hulptekst" style="margin-block:4px 18px !important">Je foto blijft op je eigen computer.</p>
+
+        <div style="display:flex;gap:14px;align-items:center;background:#fff;border:1px solid var(--rhc-color-border-subtle);border-radius:var(--rhc-border-radius-md);padding:14px">
+          <span style="inline-size:52px;block-size:52px;border-radius:3px;flex-shrink:0;background:linear-gradient(158deg,#5aa9d0,#123c58)"></span>
+          <span style="min-inline-size:0">
+            <b style="display:block">strand-lissabon.jpg</b>
+            <span class="hulptekst">2,4 MB</span>
+          </span>
+          <button type="button" class="utrecht-button utrecht-button--subtle rhc-button" style="margin-inline-start:auto">Vervangen</button>
+        </div>
+
+        <label class="utrecht-form-label" for="m4kop" style="display:flex;justify-content:space-between;font-weight:600;margin-block:18px 5px">
+          <span>Kop</span><span class="hulptekst">2 van 3 regels</span>
+        </label>
+        <textarea id="m4kop" rows="2" class="utrecht-textarea rhc-textarea rhc-textarea--html-textarea" style="inline-size:100%">Souvenirs meenemen uit het buitenland?</textarea>
+        <label class="utrecht-form-label" for="m4sub" style="display:flex;justify-content:space-between;font-weight:600;margin-block:14px 5px">
+          <span>Subtekst</span><span class="hulptekst">1 van 2 regels</span>
+        </label>
+        <textarea id="m4sub" rows="2" class="utrecht-textarea rhc-textarea rhc-textarea--html-textarea" style="inline-size:100%">Dit zijn de regels.</textarea>
+
+        <div class="utrecht-action-group utrecht-action-group--row" style="display:flex;gap:12px;margin-block-start:22px;flex-wrap:wrap">
+          <button type="button" class="utrecht-button utrecht-button--primary-action rhc-button">PNG downloaden</button>
+          <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button">Bewaren als concept</button>
+        </div>
+      </div>
+
+      <div>
+        <p class="hulptekst" style="margin-block-end:10px !important">Voorbeeld</p>
+        <div class="post" style="--pb:300px">
+            <span class="post__foto" aria-hidden="true"></span>
+            <svg class="post__ringen" viewBox="0 0 400 500" preserveAspectRatio="xMinYMax slice" aria-hidden="true" focusable="false">
+      <g fill="none" stroke="#ffffff" stroke-width="2.4" opacity=".92">
+        <circle cx="0" cy="500" r="152"/>
+        <circle cx="0" cy="500" r="232"/>
+        <circle cx="0" cy="500" r="312"/>
+      </g>
+      <circle cx="116" cy="299" r="33" fill="#ffffff"/>
+      <g fill="none" stroke="#007bc7" stroke-width="2.4">
+        <circle cx="116" cy="299" r="17"/>
+        <ellipse cx="116" cy="299" rx="7.5" ry="17"/>
+        <path d="M100 294h32M100 304h32"/>
+      </g>
+      <circle cx="136" cy="437" r="21" fill="#ffffff"/>
+      <path d="M126 430h20v12h-8l-5 5v-5h-7z" fill="#007bc7"/>
+    </svg>
+            <div class="post__vlak">
+              <p class="post__kop">Souvenirs meenemen uit het buitenland?</p>
+              <p class="post__sub">Dit zijn de regels.</p>
+            </div>
+          </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================================== 5 -->
+<section class="mockup hemelblauw-information-dense m5" id="m5" role="tabpanel" aria-labelledby="t5" hidden>
+  <div class="m5__balk">
+    <b style="margin-inline-end:6px">Opmaaktool</b>
+    <span class="hulptekst">Instagram &middot; staand &middot; 1080 &times; 1350 px</span>
+    <span style="margin-inline-start:auto;display:flex;align-items:center;gap:10px">
+      <span class="hulptekst">redacteur@voorbeeld.nl</span>
+      <button type="button" class="utrecht-button utrecht-button--primary-action rhc-button" style="padding:4px 12px;font-size:.8125rem">PNG downloaden</button>
+    </span>
+  </div>
+
+  <div class="m5__grid">
+    <div class="m5__kolom">
+      <div>
+        <p class="m5__label">Platform &amp; formaat</p>
+        <div class="keuzerij" style="margin-block-start:5px" role="group" aria-label="Platform">
+          <button type="button" class="keuze" aria-pressed="true">Instagram</button>
+          <button type="button" class="keuze" aria-pressed="false">Facebook</button>
+        </div>
+        <div class="keuzerij" style="margin-block-start:5px" role="group" aria-label="Formaat">
+          <button type="button" class="keuze" aria-pressed="true">Staand 4:5</button>
+          <button type="button" class="keuze" aria-pressed="false">Vierkant 1:1</button>
+        </div>
+      </div>
+
+      <div>
+        <p class="m5__label">Stijl</p>
+        <select class="utrecht-select rhc-form-field-select" style="inline-size:100%;margin-block-start:5px">
+          <option>Foto boven, vlak onder</option>
+          <option>Vlak boven, foto onder</option>
+          <option>Tekst op de foto</option>
+          <option>Grote foto</option>
+          <option>Diepblauw</option>
+        </select>
+      </div>
+
+      <div>
+        <p class="m5__label">Foto</p>
+        <div style="display:flex;gap:9px;align-items:center;margin-block-start:5px">
+          <span style="inline-size:34px;block-size:34px;border-radius:3px;flex-shrink:0;background:linear-gradient(158deg,#5aa9d0,#123c58)"></span>
+          <span style="min-inline-size:0;font-size:.8125rem">strand-lissabon.jpg</span>
+          <button type="button" class="utrecht-button utrecht-button--subtle rhc-button" style="margin-inline-start:auto;padding:2px 8px;font-size:.8125rem">Vervangen</button>
+        </div>
+        <input type="range" min="1" max="3" step="0.01" value="1.3" aria-label="Inzoomen" style="inline-size:100%;margin-block-start:8px">
+      </div>
+
+      <div>
+        <p class="m5__label">Kop <span style="float:inline-end;font-weight:400;text-transform:none;letter-spacing:0">2/3 regels</span></p>
+        <textarea rows="2" class="utrecht-textarea rhc-textarea rhc-textarea--html-textarea" style="inline-size:100%;margin-block-start:5px" aria-label="Kop">Souvenirs meenemen uit het buitenland?</textarea>
+      </div>
+      <div>
+        <p class="m5__label">Subtekst <span style="float:inline-end;font-weight:400;text-transform:none;letter-spacing:0">1/2 regels</span></p>
+        <textarea rows="2" class="utrecht-textarea rhc-textarea rhc-textarea--html-textarea" style="inline-size:100%;margin-block-start:5px" aria-label="Subtekst">Dit zijn de regels.</textarea>
+      </div>
+
+      <div style="display:flex;gap:9px;align-items:center">
+        <input type="checkbox" id="m5deco" class="utrecht-checkbox rhc-checkbox" checked>
+        <label class="utrecht-form-label utrecht-form-label--checkbox" for="m5deco" style="font-size:.8125rem">Cirkels en badges</label>
+      </div>
+    </div>
+
+    <div class="m5__kolom m5__doek">
+      <div class="post" style="--pb:330px">
+            <span class="post__foto" aria-hidden="true"></span>
+            <svg class="post__ringen" viewBox="0 0 400 500" preserveAspectRatio="xMinYMax slice" aria-hidden="true" focusable="false">
+      <g fill="none" stroke="#ffffff" stroke-width="2.4" opacity=".92">
+        <circle cx="0" cy="500" r="152"/>
+        <circle cx="0" cy="500" r="232"/>
+        <circle cx="0" cy="500" r="312"/>
+      </g>
+      <circle cx="116" cy="299" r="33" fill="#ffffff"/>
+      <g fill="none" stroke="#007bc7" stroke-width="2.4">
+        <circle cx="116" cy="299" r="17"/>
+        <ellipse cx="116" cy="299" rx="7.5" ry="17"/>
+        <path d="M100 294h32M100 304h32"/>
+      </g>
+      <circle cx="136" cy="437" r="21" fill="#ffffff"/>
+      <path d="M126 430h20v12h-8l-5 5v-5h-7z" fill="#007bc7"/>
+    </svg>
+            <div class="post__vlak">
+              <p class="post__kop">Souvenirs meenemen uit het buitenland?</p>
+              <p class="post__sub">Dit zijn de regels.</p>
+            </div>
+          </div>
+    </div>
+
+    <div class="m5__kolom">
+      <p class="m5__label">Concepten</p>
+      <div class="m5__lijst">
+        <button type="button"><b>Souvenirs juli</b><br><span class="hulptekst">12 juli</span></button>
+        <button type="button">Reisadvies Marokko<br><span class="hulptekst">3 juli</span></button>
+        <button type="button">Paspoort kwijt<br><span class="hulptekst">28 juni</span></button>
+      </div>
+      <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button" style="padding:4px 10px;font-size:.8125rem">Bewaren</button>
+    </div>
+  </div>
+
+  <div class="m5__statusbalk">
+    <span>Kop past: 2 van 3 regels</span>
+    <span>Subtekst past: 1 van 2 regels</span>
+    <span>Uitsnede 130%</span>
+    <span style="margin-inline-start:auto">Foto blijft op je eigen computer</span>
+  </div>
+</section>
+
+</div><!-- /raam -->
+
+<script>
+'use strict';
+
+/* De beoordeling per mockup. Bewust ook de nadelen: een mockup kiezen is een
+   afweging, en die maak je niet op het plaatje alleen. */
+const UITLEG = {
+  m1: {
+    naam: 'Rijksformulier',
+    ziet: 'Eén pagina, zes genummerde stappen onder elkaar, voorbeeld dat meeschuift aan de rechterkant. De standaardopbouw van een Rijksoverheidsformulier: lint, kruimelpad, kop, melding, formulier, voet.',
+    goed: 'Herkenbaarheid en toegankelijkheid. Alles is tegelijk zichtbaar en doorzoekbaar met <strong>Ctrl+F</strong>; een schermlezer loopt er in één rechte lijn doorheen. Dit is de indeling waar de Rijkshuisstijl op is ontworpen.',
+    prijs: 'Lang scrollen. Op een laptop staat het voorbeeld ver van stap 5, dus je ziet je tekst veranderen zonder ernaar te kijken.',
+    bouw: '<strong>Het minste werk.</strong> De huidige <code>index.html</code> heeft al deze vorm — dit is vooral de eigen CSS vervangen door de tokens en de componentklassen.'
+  },
+  m2: {
+    naam: 'Stappenplan',
+    ziet: 'Eén stap per scherm, met een stappenlijst links die aangeeft waar je bent, en het voorbeeld permanent rechts. Vorige en Volgende onderin.',
+    goed: 'De redacteur die dit een paar keer per maand doet. Je kunt maar één ding tegelijk fout doen, en de tool kan per stap uitleggen wat de toolkit voorschrijft.',
+    prijs: 'Trager als je maar één ding wilt wijzigen: voor een andere kop moet je terug naar stap 5. En je ziet nooit het hele recept in één blik.',
+    bouw: 'Middel. De stappen zitten al in de opbouw; er komt navigatie tussen stappen bij, plus onthouden waar je bent.'
+  },
+  m3: {
+    naam: 'Werkbank',
+    ziet: 'Het voorbeeld is de hoofdpersoon en staat groot in het midden op een werkdoek. De keuzes staan in een balk bovenin en in inklapbare vakken rechts.',
+    goed: 'De redacteur die er tien achter elkaar maakt. Alles wat je vaak wijzigt — platform, formaat, stijl, tekst — is één klik ver, en je kijkt de hele tijd naar het resultaat.',
+    prijs: 'Het minst &ldquo;Rijksoverheid&rdquo; van de vijf: een donkere balk en inklapvakken zijn gereedschapstaal, geen formuliertaal. Voor iemand die de tool één keer per kwartaal gebruikt is het minder vanzelfsprekend.',
+    bouw: 'Middel. Nieuwe indeling, maar dezelfde onderdelen; de inklapvakken zijn gewoon <code>&lt;details&gt;</code>.'
+  },
+  m4: {
+    naam: 'Keuzekaarten',
+    ziet: 'Een hero met de afgeronde hoek uit de huisstijl, en daarna keuzes als kaarten met een klein voorbeeld erop — je ziet een stijl in plaats van hem te lezen.',
+    goed: 'Uitleggen wat de tool doet en wat de vijf stijlen zijn. De meest uitnodigende van de vijf, en de enige waarin je de stijlen naast elkaar kunt vergelijken.',
+    prijs: 'De meeste ruimte voor de minste invoer. Veel scrollen, en het voorbeeld staat pas onderaan bij de tekst — precies waar je het nodig hebt, maar nergens anders.',
+    bouw: 'Het meeste werk. De stijlkaartjes moeten elk een echt voorbeeld tekenen, dus daar komt tekencode bij die er nu niet is.'
+  },
+  m5: {
+    naam: 'Compact',
+    ziet: 'Alles op één scherm zonder scrollen: keuzes links, voorbeeld midden, concepten rechts, een statusbalk onderin. Gebruikt de <em>information dense</em>-tokenset van de Rijkshuisstijl.',
+    goed: 'Volume. Concept openen, tekst wijzigen, downloaden, volgende — zonder ooit iets weg te klikken. De statusbalk vertelt continu of de tekst nog past.',
+    prijs: 'Kleine letters en weinig lucht. Op een klein scherm valt de indeling helemaal uit elkaar, en voor een nieuwe gebruiker is er geen enkele begeleiding.',
+    bouw: 'Middel. Andere indeling en een ander tokenbestand; de onderdelen blijven gelijk.'
+  }
+};
+
+const tabs = Array.from(document.querySelectorAll('.tab'));
+const raam = document.getElementById('raam');
+
+function toon(id) {
+  tabs.forEach((tab) => {
+    const doel = document.getElementById(tab.getAttribute('aria-controls'));
+    const aan = doel.id === id;
+    tab.setAttribute('aria-selected', String(aan));
+    doel.hidden = !aan;
+  });
+
+  const u = UITLEG[id];
+  document.getElementById('uitlegNaam').textContent = u.naam;
+  document.getElementById('uitlegZiet').innerHTML = u.ziet;
+  document.getElementById('uitlegGoed').innerHTML = u.goed;
+  document.getElementById('uitlegPrijs').innerHTML = u.prijs;
+  document.getElementById('uitlegBouw').innerHTML = u.bouw;
+}
+
+tabs.forEach((tab) => {
+  tab.addEventListener('click', () => toon(tab.getAttribute('aria-controls')));
+});
+
+const laptop = document.getElementById('breedLaptop');
+const telefoon = document.getElementById('breedTelefoon');
+
+function breedte(smal) {
+  raam.classList.toggle('raam--smal', smal);
+  raam.classList.toggle('raam--breed', !smal);
+  laptop.setAttribute('aria-pressed', String(!smal));
+  telefoon.setAttribute('aria-pressed', String(smal));
+}
+
+laptop.addEventListener('click', () => breedte(false));
+telefoon.addEventListener('click', () => breedte(true));
+
+/* Met de pijltjestoetsen door de mockups, zoals een tablist hoort te werken. */
+document.querySelector('[role="tablist"]').addEventListener('keydown', (e) => {
+  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+  const nu = tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true');
+  const volgende = (nu + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+  toon(tabs[volgende].getAttribute('aria-controls'));
+  tabs[volgende].focus();
+  e.preventDefault();
+});
+
+toon('m1');
+</script>
+
+</body>
+</html>

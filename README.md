@@ -6,6 +6,10 @@ Facebook — zonder tussenkomst van het social mediabureau.
 Bedoeld voor redacteuren die zelf hun posts bedenken, maar voor de opmaak nu nog
 moeten wachten. Zie [STRATEGY.md](STRATEGY.md) voor het waarom.
 
+> **De schermopmaak gaat naar de Rijkshuisstijl.** Er liggen vijf mockups klaar
+> om uit te kiezen: [mockups/README.md](mockups/README.md). Zolang er nog geen
+> keuze is gemaakt, staat het scherm hieronder nog op de eigen CSS.
+
 > **Prototype.** Kleuren, korpsgroottes, marges en hoekafronding komen uit de
 > officiële PowerPoint-toolkit (*NWW_PPT_template_Posten_toolkit_socials_v1*).
 > Het huisstijllettertype zit er niet in — zie hieronder. Laat een export
