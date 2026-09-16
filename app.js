@@ -635,9 +635,84 @@ function zetSelectie(host, start, eind) {
 /* ---------------------------------------------------------------- werkbalk */
 
 /*
- * De werkbalk werkt op de selectie. Staat de cursor ergens zonder iets te
- * selecteren, dan valt er niets op te maken — dan zegt de knop dat, in plaats
- * van stilletjes niets te doen of stiekem het hele veld te pakken.
+ * De werkbalk kent twee soorten knoppen, en dat verschil is met opzet.
+ *
+ * De KORPSGROOTTE en OPMAAK VERWIJDEREN gelden voor het hele veld. Een kop
+ * heeft één maat — dat is wat een kop tot een kop maakt — dus een maat per
+ * woord zou een keuze zijn die de redacteur niet hoort te hoeven maken. En
+ * omdat er niets te kiezen valt, hoeft er ook niets geselecteerd te worden.
+ *
+ * VET en SCHUIN gelden wel voor de selectie: die zijn er juist om één woord
+ * uit te lichten.
+ */
+
+/* Voor het hele veld. Levert false als het veld leeg is; dan valt er niets op
+   te maken en horen de knoppen uit te staan. */
+function pasOpHeelVeld(veld, wijziging) {
+  const host = el[veld.host];
+  const stukken = stukkenUitDom(host);
+  const lengte = platteTekst(stukken).length;
+  if (!lengte) return false;
+
+  const nieuw = zetOpmaak(stukken, 0, lengte, wijziging(stukken));
+  state[veld.naam] = nieuw;
+  domUitStukken(host, nieuw, veld.naam);
+  werkbijWerkbalken();
+  teken();
+  return true;
+}
+
+/*
+ * Welke sport van de korpsladder dit veld nu aanhoudt.
+ *
+ * Stukken zonder eigen korps volgen de stijl, dus die tellen mee met de maat
+ * van de stijl. Staan er verschillende maten in — dat kan uit een concept van
+ * voor deze knoppen komen — dan wint de grootste: die bepaalt de regelhoogte,
+ * en dus wat de redacteur als "de maat van dit veld" ziet staan.
+ *
+ * Er wordt naar de dichtstbijzijnde sport gezocht en niet naar een exacte
+ * treffer, zodat een stijlmaat die niet op de ladder staat toch een beginpunt
+ * heeft om vanaf te stappen.
+ *
+ * Levert de plek op de ladder en niet de sport zelf: korpsladder() maakt bij
+ * elke aanroep nieuwe objecten, dus een sport uit de ene aanroep is niet te
+ * vinden in de andere.
+ */
+function veldSport(stukken, stijlspec, ladder) {
+  const delen = stukken.map((stuk) => (
+    (stuk.korps && TEMPLATES.korps[stuk.korps] !== undefined)
+      ? TEMPLATES.korps[stuk.korps]
+      : stijlspec.grootte
+  ));
+  const deel = delen.length ? Math.max.apply(null, delen) : stijlspec.grootte;
+
+  let beste = 0;
+  ladder.forEach((sport, i) => {
+    if (Math.abs(sport.deel - deel) < Math.abs(ladder[beste].deel - deel)) beste = i;
+  });
+  return beste;
+}
+
+/* Eén sport omhoog (+1) of omlaag (-1), voor het hele veld. */
+function stapKorps(veld, richting) {
+  const stijlspec = TEMPLATES.stijlen[state.stijl][veld.naam];
+  const ladder = korpsladder();
+  const doel = ladder[veldSport(stukkenUitDom(el[veld.host]), stijlspec, ladder) + richting];
+  if (!doel) return;              // boven- of onderaan de ladder; de knop staat dan ook uit
+
+  /*
+   * Kom je precies op de maat van de stijl uit, dan krijgt het veld géén eigen
+   * korps maar volgt het de stijl weer. Anders zou "één omhoog en weer omlaag"
+   * een veld achterlaten dat toevallig dezelfde maat heeft maar niet meer
+   * meeschuift als je van stijl wisselt — en dat is iets anders.
+   */
+  pasOpHeelVeld(veld, () => ({ korps: doel.deel === stijlspec.grootte ? null : doel.sleutel }));
+}
+
+/*
+ * Voor de selectie. Staat de cursor ergens zonder iets te selecteren, dan valt
+ * er niets op te maken — dan zegt de knop dat, in plaats van stilletjes niets
+ * te doen of stiekem het hele veld te pakken.
  */
 function pasWerkbalkToe(veld, wijziging) {
   const host = el[veld.host];
@@ -668,21 +743,30 @@ function werkbijWerkbalken() {
   VELDEN.forEach((veld) => {
     const host = el[veld.host];
     const plek = selectieIn(host);
-    const stukjes = plek ? stukjesIn(stukkenUitDom(host), plek.start, plek.eind) : [];
+    const stukken = stukkenUitDom(host);
+    const stukjes = plek ? stukjesIn(stukken, plek.start, plek.eind) : [];
     const stijlspec = TEMPLATES.stijlen[state.stijl][veld.naam];
 
     const balk = el[veld.balk];
     const vet = balk.querySelector('[data-rol="vet"]');
     const schuin = balk.querySelector('[data-rol="schuin"]');
-    const korps = balk.querySelector('[data-rol="korps"]');
 
     vet.setAttribute('aria-pressed',
       String(allemaal(stukjes, (s) => (s.gewicht || stijlspec.gewicht) >= VET)));
     schuin.setAttribute('aria-pressed', String(allemaal(stukjes, (s) => s.schuin)));
 
-    // Eén maat in de hele selectie: toon die. Anders niets, want er ís er geen.
-    const maten = [...new Set(stukjes.map((s) => s.korps || ''))];
-    korps.value = maten.length === 1 ? maten[0] : '';
+    // De maat van het veld, met de grenzen van de ladder erbij: bovenaan gaat
+    // + uit, onderaan de min. Een lege kop heeft nog geen maat om te stappen,
+    // dus dan staan ze allebei uit — met de maat van de stijl in beeld, zodat
+    // je ziet waar je aan begint.
+    const ladder = korpsladder();
+    const sport = veldSport(stukken, stijlspec, ladder);
+    const gevuld = platteTekst(stukken).length > 0;
+
+    balk.querySelector('[data-rol="maat"]').textContent = korpslabel(ladder[sport].sleutel);
+    balk.querySelector('[data-rol="kleiner"]').disabled = !gevuld || sport <= 0;
+    balk.querySelector('[data-rol="groter"]').disabled = !gevuld || sport >= ladder.length - 1;
+    balk.querySelector('[data-rol="terug"]').disabled = !gevuld;
   });
 }
 
@@ -691,23 +775,8 @@ function bouwTekstvelden() {
     const host = el[veld.host];
     const balk = el[veld.balk];
 
-    const korps = balk.querySelector('[data-rol="korps"]');
-    const leeg = document.createElement('option');
-    leeg.value = '';
-    leeg.textContent = 'Grootte…';
-    korps.appendChild(leeg);
-    korpsladder().forEach((sport) => {
-      const optie = document.createElement('option');
-      optie.value = sport.sleutel;
-      optie.textContent = korpslabel(sport.sleutel);
-      korps.appendChild(optie);
-    });
-
-    korps.addEventListener('change', () => {
-      const gekozen = korps.value;
-      korps.value = '';
-      if (gekozen) pasWerkbalkToe(veld, () => ({ korps: gekozen }));
-    });
+    balk.querySelector('[data-rol="kleiner"]').addEventListener('click', () => stapKorps(veld, -1));
+    balk.querySelector('[data-rol="groter"]').addEventListener('click', () => stapKorps(veld, 1));
 
     balk.querySelector('[data-rol="vet"]').addEventListener('click', () => {
       const stijlspec = TEMPLATES.stijlen[state.stijl][veld.naam];
@@ -720,8 +789,11 @@ function bouwTekstvelden() {
       pasWerkbalkToe(veld, (stukjes) => ({ schuin: !allemaal(stukjes, (s) => s.schuin) }));
     });
 
+    // Het hele veld terug naar de stijl, niet alleen de selectie: "opmaak
+    // verwijderen" hoort te doen wat er staat, zonder dat je eerst iets moet
+    // aanwijzen.
     balk.querySelector('[data-rol="terug"]').addEventListener('click', () => {
-      pasWerkbalkToe(veld, () => Object.assign({}, KAAL));
+      pasOpHeelVeld(veld, () => Object.assign({}, KAAL));
     });
 
     // Typen: het model bijwerken zonder het veld opnieuw op te bouwen, anders
@@ -1651,6 +1723,14 @@ function werkbijUI() {
   el.dropzone.classList.toggle('gevuld', Boolean(state.foto));
   el.zoomrij.hidden = !state.foto;
   el.downloadknop.disabled = !state.foto;
+
+  /*
+   * Ook de werkbalken, want de maat die zij tonen hangt van de stijl af: een
+   * veld dat de stijl volgt heeft na een stijlwissel een andere maat, zonder
+   * dat er iets aan de tekst veranderd is. En zonder deze regel staat het
+   * maatvakje bij het opstarten leeg tot je ergens klikt.
+   */
+  werkbijWerkbalken();
 }
 
 /* Waarschuwingen over te lange tekst mogen een gekozen foto of een geslaagde

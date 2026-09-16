@@ -266,20 +266,23 @@ input[type="range"] { inline-size: 100%; }
   background: var(--rhc-color-cool-grey-50);
 }
 .werkbalk__spatie { flex: 1 1 8px; }
-/* De pagina zet elke select op 100 %, wat klopt voor een veld onder een label
-   maar niet voor een knop in een werkbalk: dan valt de rest naar de volgende
-   regel. Hier dus zo breed als hij nodig heeft. */
-.werkbalk__lijst {
-  inline-size: auto;
+
+/* De korpsstapper: min, de huidige maat, plus. Bij elkaar gehouden, zodat het
+   leest als één regelaar en niet als drie losse dingen. */
+.werkbalk__korps {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   flex: 0 0 auto;
-  border: 1px solid var(--rhc-color-border-default);
-  border-radius: var(--rhc-border-radius-md);
-  background: #fff;
-  padding: 4px 6px;
-  font: inherit;
+}
+.werkbalk__maat {
+  min-inline-size: 52px;
+  text-align: center;
   font-size: 0.875rem;
   font-weight: 400;
+  font-variant-numeric: tabular-nums;
 }
+.werkbalk__knop--stap { font-size: 1.125rem; font-weight: 700; }
 
 /* Bewust geen utrecht-button: dit is een schakelaar die aan of uit staat, geen
    knop die iets in gang zet. Vandaar aria-pressed in plaats van een klasse. */
@@ -296,7 +299,10 @@ input[type="range"] { inline-size: 100%; }
   line-height: 1;
   cursor: pointer;
 }
-.werkbalk__knop:hover { border-color: var(--rhc-color-primary-500); }
+.werkbalk__knop:hover:not(:disabled) { border-color: var(--rhc-color-primary-500); }
+/* Uitgegrijsd in plaats van weg: zo blijft zichtbaar dat de maat een boven- en
+   ondergrens heeft, in plaats van dat de knop zomaar verdwijnt. */
+.werkbalk__knop:disabled { opacity: 0.45; cursor: default; }
 .werkbalk__knop[aria-pressed="true"] {
   background: var(--rhc-color-primary-500);
   border-color: var(--rhc-color-primary-500);
@@ -558,7 +564,11 @@ input[type="range"] { inline-size: 100%; }
             <span class="veld veld--rij" id="koplabel">Kop <span id="kopregels"></span></span>
             <div class="editor">
               <div class="werkbalk" id="kopbalk" role="toolbar" aria-label="Opmaak van de kop">
-                <select data-rol="korps" class="werkbalk__lijst" aria-label="Korpsgrootte van de selectie"></select>
+                <div class="werkbalk__korps">
+                  <button type="button" class="werkbalk__knop werkbalk__knop--stap" data-rol="kleiner" aria-label="Kop kleiner">&minus;</button>
+                  <span class="werkbalk__maat" data-rol="maat" aria-live="polite" aria-label="Korpsgrootte van de kop"></span>
+                  <button type="button" class="werkbalk__knop werkbalk__knop--stap" data-rol="groter" aria-label="Kop groter">+</button>
+                </div>
                 <button type="button" class="werkbalk__knop werkbalk__knop--vet" data-rol="vet" aria-pressed="false" aria-label="Vet">B</button>
                 <button type="button" class="werkbalk__knop werkbalk__knop--schuin" data-rol="schuin" aria-pressed="false" aria-label="Schuin">I</button>
                 <span class="werkbalk__spatie"></span>
@@ -572,7 +582,11 @@ input[type="range"] { inline-size: 100%; }
             <span class="veld veld--rij" id="sublabel" style="margin-block-start:16px">Subtekst <span id="subregels"></span></span>
             <div class="editor">
               <div class="werkbalk" id="subbalk" role="toolbar" aria-label="Opmaak van de subtekst">
-                <select data-rol="korps" class="werkbalk__lijst" aria-label="Korpsgrootte van de selectie"></select>
+                <div class="werkbalk__korps">
+                  <button type="button" class="werkbalk__knop werkbalk__knop--stap" data-rol="kleiner" aria-label="Subtekst kleiner">&minus;</button>
+                  <span class="werkbalk__maat" data-rol="maat" aria-live="polite" aria-label="Korpsgrootte van de subtekst"></span>
+                  <button type="button" class="werkbalk__knop werkbalk__knop--stap" data-rol="groter" aria-label="Subtekst groter">+</button>
+                </div>
                 <button type="button" class="werkbalk__knop werkbalk__knop--vet" data-rol="vet" aria-pressed="false" aria-label="Vet">B</button>
                 <button type="button" class="werkbalk__knop werkbalk__knop--schuin" data-rol="schuin" aria-pressed="false" aria-label="Schuin">I</button>
                 <span class="werkbalk__spatie"></span>
@@ -584,11 +598,15 @@ input[type="range"] { inline-size: 100%; }
             </div>
 
             <p class="hulptekst" style="margin-block-start:10px">
-              Selecteer een stuk tekst en klik op een knop: de opmaak geldt voor
-              dat stuk. De maten zijn de korpsgroottes uit de toolkit; wijk je
-              van de stijl af, dan zie je dat onder het voorbeeld staan.
-              <strong>Opmaak verwijderen</strong> zet de selectie terug zoals de stijl hem
-              voorschrijft.
+              <strong>&minus;</strong> en <strong>+</strong> zetten het hele veld een
+              maat kleiner of groter, langs de korpsgroottes uit de toolkit. Daar
+              hoef je niets voor te selecteren: een kop of een subtekst heeft één
+              maat. <strong>Opmaak verwijderen</strong> zet het hele veld terug zoals
+              de stijl het voorschrijft.
+              <br>
+              <strong>B</strong> en <strong>I</strong> werken wél op een selectie: die
+              zijn er juist om één woord uit te lichten. Wijk je van de stijl af,
+              dan zie je dat onder het voorbeeld staan.
             </p>
           </fieldset>
 

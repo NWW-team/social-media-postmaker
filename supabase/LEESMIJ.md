@@ -13,7 +13,7 @@ API — ze kunnen alleen via het dashboard.
 | Stap | Wat | Status |
 | --- | --- | --- |
 | 1 | Tabellen, RLS en policies | Gedaan |
-| 2 | Huisstijl gevuld (11 sleutels, 8 iconen) | Gedaan, md5 gecontroleerd |
+| 2 | Huisstijl gevuld (11 sleutels, 8 iconen) | Gedaan, md5 gecontroleerd; `stijlen` daarna aangepast, zie stap 2 |
 | 3 | Registratie uitzetten | Gedaan, geverifieerd: `signup_disabled` |
 | 4 | Testaccounts aanmaken | Eén account: `test@test.nl`. **Tweede nog nodig** |
 | 5 | Allowlist | `test@test.nl` staat erop |
@@ -93,6 +93,25 @@ Zie je die, dan staat de huisstijl erin.
 
 Bewaar dat bestand ergens buiten de repo — bijvoorbeeld in de teamopslag. Zet
 het niet terug in GitHub.
+
+### Eén latere wijziging op `stijlen`
+
+De korpsgroottes van de twee "foto boven"-stijlen zijn naderhand bijgesteld naar
+de maten van de echte posts (kop 66 pt, subtekst 54 pt); zie *Hoe groot is de
+letter eigenlijk?* in de README. Dat is via de connector gedaan en staat dus
+**niet** in jouw kopie van `02_huisstijl_vullen.sql`. Draai je dat bestand ooit
+opnieuw, dan zet je de oude maten terug. Deze query zet ze weer goed:
+
+```sql
+update public.huisstijl
+set waarde = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(waarde,
+      '{fotoBovenVlak,kop,grootte}',      '0.061111'::jsonb),
+      '{fotoBovenVlak,sub,grootte}',      '0.05'::jsonb),
+      '{fotoBovenVlak,sub,maxRegels}',    '2'::jsonb),
+      '{fotoBovenDiepblauw,kop,grootte}', '0.061111'::jsonb),
+      '{fotoBovenDiepblauw,sub,grootte}', '0.05'::jsonb)
+where sleutel = 'stijlen';
+```
 
 ---
 
