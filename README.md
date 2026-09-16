@@ -13,8 +13,10 @@ onveranderd uit npm. Zie [De Rijkshuisstijl](#de-rijkshuisstijl) hieronder.
 
 > **Prototype.** Kleuren, korpsgroottes, marges en hoekafronding komen uit de
 > officiële PowerPoint-toolkit (*NWW_PPT_template_Posten_toolkit_socials_v1*).
-> Het huisstijllettertype zit er niet in — zie hieronder. Laat een export
-> controleren door communicatie voordat hier echt mee gepubliceerd wordt.
+> Het huisstijllettertype zit niet in deze repo maar in de afgeschermde
+> opslag — zie [Het huisstijllettertype](#het-huisstijllettertype). Laat een
+> export controleren door communicatie voordat hier echt mee gepubliceerd
+> wordt.
 
 ## Gebruiken
 
@@ -146,9 +148,9 @@ het. Drie bewuste afwijkingen:
   aantal regels blijft gelden. Een grotere letter betekent dus eerder een
   afkapmelding, niet tekst die over de rand loopt.
 
-  Schuin heeft de huisstijlletter niet als eigen snede; de browser maakt er zelf
-  een schuine van. Voor een echte cursieve letter is een schuine snede van
-  RijksSansVF nodig.
+  Schuin komt uit de schuine snede van RijksSansVF, die de tool meelaadt uit de
+  afgeschermde opslag. Lukt dat niet, dan valt de tekst terug op Fira Sans en
+  maakt de browser daar zelf een schuine van.
 
 ## De opmaak aanpassen
 
@@ -210,14 +212,42 @@ scherm komen daar vanzelf uit; `index.html` hoeft niet aangepast te worden.
 Er is met opzet **geen** schrijfpolicy op deze tabel: vanuit de browser kan
 niemand de huisstijl veranderen, ook een toegelaten redacteur niet.
 
+### Het huisstijllettertype
+
+RijksSansVF is licentieplichtig en staat daarom **niet** in deze publieke repo.
+Hij staat in Supabase Storage, in de besloten bak `huisstijl-font`, achter
+precies dezelfde toets als de huisstijl zelf: alleen een account op de allowlist
+krijgt de bestanden. `huisstijlletter.js` haalt ze op na het inloggen en
+registreert ze met `FontFace`, niet met een `@font-face`-regel — een CSS-url
+zou het bestand zonder token opvragen, en dat weigert de opslag terecht.
+
+Twee bestanden, allebei variabel over het gewicht (wght 200–800), dus alle
+gewichten die de huisstijl gebruikt komen uit dezelfde twee bestanden:
+
+| In de bak | Wat |
+| --- | --- |
+| `RijksSansWeb-Regular.woff2` | De rechte snede |
+| `RijksSansWeb-Italic.woff2` | De schuine snede |
+
+Komt de letter er niet door — geen toegang, nog niet geüpload, netwerk eruit —
+dan draait de tool door op **Fira Sans**, de open letter die de Rijkshuisstijl
+Community daar zelf voor meelevert; die staat in `vendor/rijkshuisstijl/fonts/`.
+De regelval wijkt dan iets af. Staat RijksSansVF geïnstalleerd op de
+werklaptop, dan pakt de browser die vanzelf: de tokens noemen hem als eerste
+keuze.
+
+Uploaden doe je in het dashboard, net als het vullen van de huisstijl: zie
+[supabase/LEESMIJ.md](supabase/LEESMIJ.md) stap 9. Er is met opzet geen
+schrijfpolicy op de bak — vanuit de browser kan niemand een lettertype
+toevoegen of vervangen.
+
+> Dit houdt de letter uit de openbare ruimte, niet uit de browser van wie hem
+> mag gebruiken. Een ingelogde redacteur heeft het bestand per definitie
+> binnengehaald en kan het daaruit opdiepen. Dat is bij de huisstijl niet
+> anders: de grens ligt bij het account.
+
 ### Nog te doen
 
-- **Lettertype**: RijksSansVF is licentieplichtig en staat daarom niet in deze
-  publieke repo. Staat hij geïnstalleerd op de werklaptop, dan pakt de browser
-  hem vanzelf — de tokens noemen hem als eerste keuze. Anders valt hij terug op
-  Fira Sans, de open letter die de Rijkshuisstijl Community daar zelf voor
-  meelevert; die staat in `vendor/rijkshuisstijl/fonts/`. De regelval wijkt dan
-  iets af.
 - **Logo** ontbreekt nog. Er stond een zichtbare gestippelde plaatshouder in de
   kopbalk; die is er op verzoek uit, dus de kopbalk draagt nu alleen de sessie.
   Komt het beeldmerk er, dan is dat de plek ervoor.
@@ -276,7 +306,8 @@ echt voorbeeld — geen tekening die erop lijkt, maar dezelfde tekencode als de
 export, met jouw foto en jouw tekst erin. Wat dat kostte, staat in die mockup
 ook beschreven: het is de langste pagina van de vijf.
 
-Let op bij hergebruik: `components-css` en het lettertype zijn EUPL-1.2, maar de
+Let op bij hergebruik: `components-css` en de meegeleverde terugvalletter Fira
+Sans zijn EUPL-1.2, maar de
 **design tokens zijn niet open source**. Op het logo en de huisstijl rust
 auteursrecht; gebruik is voorbehouden aan de Rijksoverheid en aan partijen die
 voor de Rijksoverheid werken.
@@ -289,8 +320,9 @@ Alleen vooraf toegelaten accounts kunnen de tool gebruiken. Inrichten:
 
 ### Wat wél is afgeschermd
 
-De **huisstijl** en de **opgeslagen concepten**. Die staan in Supabase achter
-row level security. Elke policy toetst twee dingen: ben je wie je zegt te zijn
+De **huisstijl**, de **opgeslagen concepten** en het **huisstijllettertype**.
+Die staan in Supabase achter row level security — de eerste twee in tabellen,
+de letter in een besloten opslagbak. Elke policy toetst twee dingen: ben je wie je zegt te zijn
 (`auth.uid()`), en sta je op de allowlist (`public.is_toegestaan()`). Die toets
 draait in Postgres, bij elk verzoek opnieuw — niet in de browser, waar de
 bezoeker hem zou kunnen omzeilen.
@@ -349,9 +381,11 @@ stap 6.
 | `index.html` | Het scherm, het inlogscherm en de indeling van de pagina |
 | `app.js` | Foto inpassen, slepen, zoomen, tekenen, exporteren |
 | `auth.js` | Inloggen, uitloggen, huisstijl en concepten ophalen |
+| `huisstijlletter.js` | Het huisstijllettertype ophalen uit de besloten opslag |
 | `config.js` | De publieke Supabase-URL en publishable key |
 | `supabase/01_schema.sql` | Tabellen, RLS en policies — hier ligt de toegangscontrole |
 | `supabase/03_controle.sql` | Nalopen of RLS op elke tabel aan staat |
+| `supabase/05_huisstijlletter.sql` | De besloten opslagbak voor het huisstijllettertype |
 | `supabase/LEESMIJ.md` | Wat je zelf in het Supabase-dashboard doet |
 | `TESTEN.md` | Testdraaiboek voor de toegangscontrole |
 | `vendor/supabase-js.js` | De officiële Supabase-client, meegeleverd |

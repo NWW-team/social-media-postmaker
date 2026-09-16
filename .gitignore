@@ -6,3 +6,10 @@ supabase/02_huisstijl_vullen.sql
 .env
 .env.*
 *.key
+
+# Het huisstijllettertype is licentieplichtig en hoort niet in deze publieke
+# repo: het staat in Supabase Storage, achter de allowlist. Zie
+# supabase/05_huisstijlletter.sql. Dit is een vangnet voor een kopie die tijdens
+# het werken per ongeluk in de map belandt, niet een plek om hem neer te zetten.
+RijksSans*
+*WOFF-2-TT-Var*

@@ -3,9 +3,13 @@
  * meelevert (@rijkshuisstijl-community/font, EUPL-1.2).
  *
  * RijksSansVF staat hier NIET: die is licentieplichtig en hoort niet in een
- * publieke repo. Staat hij op de werklaptop, dan pakt de browser hem vanzelf,
- * want de tokens noemen hem als eerste in --rhc-text-font-family-default.
- * Anders valt alles terug op Fira Sans, en dat is precies wat de community
+ * publieke repo. Hij komt uit de besloten opslag in Supabase en wordt na het
+ * inloggen geregistreerd door huisstijlletter.js — met FontFace, niet met een
+ * @font-face-regel, want een CSS-url zou hem zonder token opvragen.
+ *
+ * Staat hij op de werklaptop, dan pakt de browser hem sowieso vanzelf, want de
+ * tokens noemen hem als eerste in --rhc-text-font-family-default. Lukt geen van
+ * beide, dan valt alles terug op Fira Sans, en dat is precies wat de community
  * zelf ook doet.
  *
  * Alleen de latin-subsets, in de drie gewichten die de tokens gebruiken.

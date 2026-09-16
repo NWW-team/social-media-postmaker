@@ -247,6 +247,19 @@ function startApp() {
 }
 
 /*
+ * Opnieuw tekenen omdat er buiten de app om iets veranderd is waar de
+ * tekening van afhangt. Nu is dat één ding: de huisstijlletter die alsnog
+ * binnenkwam nadat het scherm al stond. Zonder dit blijft het canvas op de
+ * terugvalletter staan terwijl het scherm eromheen de huisstijlletter al
+ * gebruikt — en dan wijkt de download af van wat de redacteur ziet.
+ *
+ * teken() ververst ook de stijlkaartjes en het miniatuur, dus dit is genoeg.
+ */
+function tekenOpnieuw() {
+  if (appGestart) teken();
+}
+
+/*
  * De keuzekaarten voor platform en formaat: één kaart per combinatie, met de
  * vorm en de exportmaat erop. Ze komen uit de huisstijl in Supabase, net als de
  * stijlen, zodat een platform of formaat toevoegen daar genoeg is.
@@ -1079,8 +1092,9 @@ function stukSpec(stijlspec, stuk, breed) {
   };
 }
 
-/* De fontregel voor canvas. Schuin bestaat niet als eigen snede in Fira Sans;
-   de browser maakt er dan zelf een schuine van. */
+/* De fontregel voor canvas. RijksSansVF heeft een eigen schuine snede, die
+   huisstijlletter.js meelaadt; staat die er niet, dan valt alles terug op Fira
+   Sans en maakt de browser zelf een schuine. */
 function fontVan(spec) {
   return (spec.schuin ? 'italic ' : '') + spec.gewicht + ' ' +
          spec.grootte.toFixed(1) + 'px ' + TEMPLATES.lettertype;

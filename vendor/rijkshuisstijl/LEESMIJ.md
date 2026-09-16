@@ -48,6 +48,11 @@ kleur, geen letter, geen knop.
   aan de Rijksoverheid zelf en aan partijen die voor de Rijksoverheid werken.
   Voor deze tool is dat in orde; voor hergebruik buiten die kring niet.
 - Het huisstijllettertype **RijksSansVF zit hier bewust niet in** — dat is
-  licentieplichtig. De Rijkshuisstijl Community levert zelf Fira Sans mee als
-  open terugval, en dat is wat hier staat. Staat RijksSansVF op de werklaptop,
-  dan pakt de browser hem vanzelf: de tokens noemen hem als eerste keuze.
+  licentieplichtig. Hij staat in Supabase Storage, in de besloten bak
+  `huisstijl-font`, en wordt na het inloggen opgehaald door
+  `../../huisstijlletter.js`. Zie `../../supabase/05_huisstijlletter.sql`.
+
+  Komt hij daar niet door, dan valt alles terug op Fira Sans: de open letter die
+  de Rijkshuisstijl Community daar zelf voor meelevert, en dat is wat hier
+  staat. Staat RijksSansVF op de werklaptop, dan pakt de browser hem sowieso
+  vanzelf: de tokens noemen hem als eerste keuze.

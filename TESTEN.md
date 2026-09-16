@@ -13,9 +13,14 @@ afwijking hier betekent dat de toegangsregels niet doen wat ze beloven.
 
 ## Voorbereiding
 
-Het meeste staat al klaar. Wat nog moet gebeuren voordat je kunt testen, zijn
-**stap 3 en stap 4** uit `supabase/LEESMIJ.md`: registratie uitzetten en de
-twee testaccounts aanmaken. Beide kunnen alleen via het dashboard.
+Het meeste staat al klaar. Wat nog moet gebeuren voordat je kunt testen, is
+**stap 4** uit `supabase/LEESMIJ.md`: het tweede testaccount aanmaken. Dat kan
+alleen via het dashboard.
+
+Voor test 6e hoort daar **stap 9** bij: de twee bestanden van het
+huisstijllettertype in de bak `huisstijl-font` zetten. Zonder die stap kun je
+alleen de weigering toetsen, niet dat een toegestaan account de letter wél
+krijgt.
 
 De tabellen, policies, huisstijl, allowlist en `config.js` zijn al ingericht en
 gecontroleerd (zie de statustabel in `supabase/LEESMIJ.md`).
@@ -187,6 +192,44 @@ sb.from('toegestane_gebruikers')
 Zie je `GELUKT`, dan is er per ongeluk een schrijfpolicy op de allowlist
 gekomen en kan elke toegelaten gebruiker collega's binnenlaten. Meld dat.
 
+### 6e — Het huisstijllettertype ophalen
+
+RijksSansVF is licentieplichtig. Hij staat niet in de repo maar in de besloten
+opslagbak `huisstijl-font`, achter dezelfde allowlist. Deze test gaat na of dat
+klopt.
+
+**Zonder sessie.** Open in een privévenster:
+
+```
+https://<PROJECT>.supabase.co/storage/v1/object/huisstijl-font/RijksSansWeb-Regular.woff2?apikey=<KEY>
+```
+
+**Verwacht:** `{"statusCode":"404","error":"Bucket not found",…}` — geen bestand.
+De opslag geeft bewust niet eens toe dat de bak bestaat.
+
+Krijg je hier een bestand, dan staat de bak op **publiek**. Stop dan en draai
+`supabase/03_controle.sql`; blok 6 wijst hem aan.
+
+**Ingelogd als niet-toegestaan account.** In het venster van test 3, `F12` →
+**Console**:
+
+```js
+sb.storage.from('huisstijl-font').download('RijksSansWeb-Regular.woff2')
+  .then(({ data, error }) => console.log('letter:', error ? error.message : 'GEKREGEN — DIT IS FOUT'));
+```
+
+**Verwacht:** een foutmelding, bijvoorbeeld `Object not found`. Een geldig token
+is niet genoeg; het adres moet op de allowlist staan.
+
+**Ingelogd als `test@test.nl`.** Dezelfde regel in de console.
+
+**Verwacht:** `GEKREGEN` — en op het scherm staat de huisstijlletter. Zo hoort
+het: wie de huisstijl mag gebruiken, mag ook de letter.
+
+> Staan de bestanden er nog niet in (zie `supabase/LEESMIJ.md` stap 9), dan
+> krijg je ook als toegestaan account `Object not found`. Dat is dan geen
+> weigering maar een lege bak.
+
 ---
 
 ## Test 7 — Opnieuw proberen na uitloggen
@@ -217,12 +260,13 @@ gekomen en kan elke toegelaten gebruiker collega's binnenlaten. Meld dat.
 | Policies in Postgres | `supabase/04_rls_test.sql`, als rol `anon` en `authenticated` | 12 van 12 goed |
 | **6a** direct verzoek, uitgelogd | HTTP-verzoek op alle drie de tabellen met de publishable key | 3× `401 permission denied` |
 | **6c** zelf registreren | `POST /auth/v1/signup` van buitenaf | `signup_disabled` |
+| **6e** lettertype, uitgelogd | `GET /storage/v1/object/huisstijl-font/…` met de publishable key | `404 Bucket not found` |
 
 Test 6a is daarmee ook echt door PostgREST heen getoetst: de publishable key
 wordt op de rol `anon` afgebeeld, en die komt er niet in.
 
 Wat nog openstaat is alles waarvoor een ingelogde sessie nodig is: test 1 tot
-en met 5, test 6b, 6d en 7. Die moet je in de browser doen.
+en met 5, test 6b, 6d, het ingelogde deel van 6e, en 7. Die moet je in de browser doen.
 
 ## Wat deze tests niet aantonen
 
@@ -233,8 +277,10 @@ en met 5, test 6b, 6d en 7. Die moet je in de browser doen.
 - **Dat de huisstijl nooit gelekt is.** Hij heeft in een openbare repo gestaan
   en staat nog in de Git-geschiedenis. Zie de README.
 - **Dat een toegelaten gebruiker niets kan kopiëren.** Wie de huisstijl mag
-  zien, kan hem overschrijven. Toegangscontrole regelt wie erbij mag, niet wat
-  die persoon daarna met de gegevens doet.
+  zien, kan hem overschrijven. Dat geldt ook voor het huisstijllettertype: een
+  ingelogde redacteur heeft het bestand per definitie in zijn browser staan en
+  kan het daaruit opdiepen. Toegangscontrole regelt wie erbij mag, niet wat die
+  persoon daarna met de gegevens doet.
 
 ---
 
@@ -251,4 +297,5 @@ en met 5, test 6b, 6d en 7. Die moet je in de browser doen.
 | 6b. Direct verzoek, niet toegestaan | `[]` | | |
 | 6c. Zelf registreren | geweigerd | | |
 | 6d. Zelf op allowlist zetten | geweigerd | | |
+| 6e. Lettertype zonder toegang | `Bucket not found` / `Object not found` | | |
 | 7. Na uitloggen | inlogscherm, `TEMPLATES` is `null` | | |

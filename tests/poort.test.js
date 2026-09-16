@@ -60,6 +60,7 @@ const huisstijl = {
 
 const stub = (scenario) => `
 window.__scenario = ${JSON.stringify(scenario)};
+window.__letterverzoeken = [];
 window.supabase = {
   createClient() {
     let cb = null;
@@ -74,6 +75,25 @@ window.supabase = {
           return { data: { session: sessie }, error: null };
         },
         async signOut() { return { error: null }; },
+      },
+      /*
+       * De besloten opslag met het huisstijllettertype. Een echte woff2 staat
+       * hier niet: die is licentieplichtig en hoort net zomin in de tests als
+       * in de repo. Wat hier wél te toetsen valt, is het gedrag als de letter
+       * er niet is of niet deugt — en dat is precies het geval waarin de
+       * redacteur geen stukgelopen scherm mag krijgen.
+       */
+      storage: {
+        from(bak) {
+          return {
+            async download(bestand) {
+              window.__letterverzoeken.push(bak + '/' + bestand);
+              const inhoud = (s.letters || {})[bestand];
+              if (inhoud === undefined) return { data: null, error: { message: 'Object not found' } };
+              return { data: new Blob([inhoud]), error: null };
+            },
+          };
+        },
       },
       from(tabel) {
         const q = {
@@ -507,6 +527,47 @@ const zichtbaar = (page, id) => page.evaluate((i) => {
       if (oud.tekst !== 'Oud concept') fouten.push('oude tekst niet in het veld: ' + oud.tekst);
 
       return { ok: fouten.length === 0, uitleg: fouten.length ? fouten.join('; ') : 'beide vormen goed' };
+    });
+
+  alles &= await run('huisstijlletter ontbreekt in de opslag: de tool start op de terugvalletter',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      const werkblad = await zichtbaar(p, 'werkblad');
+      const getekend = await p.evaluate(() => {
+        const d = document.getElementById('canvas').getContext('2d').getImageData(0, 0, 1, 1).data;
+        return d[3] > 0;
+      });
+      // Gevraagd is er wél, en onder de naam die 05_huisstijlletter.sql
+      // beschrijft: een typefout in bak of bestandsnaam valt hier door de mand.
+      const gevraagd = await p.evaluate(() => window.__letterverzoeken.slice().sort());
+      const juist = String(gevraagd) === String([
+        'huisstijl-font/RijksSansWeb-Italic.woff2',
+        'huisstijl-font/RijksSansWeb-Regular.woff2',
+      ]);
+      return { ok: werkblad && getekend && juist,
+               uitleg: `werkblad=${werkblad} getekend=${getekend} gevraagd=${gevraagd.join(' + ') || 'niets'}` };
+    });
+
+  alles &= await run('onleesbaar lettertypebestand houdt de tool niet tegen',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan,
+      letters: { 'RijksSansWeb-Regular.woff2': 'dit is geen woff2',
+                 'RijksSansWeb-Italic.woff2': 'dit ook niet' } },
+    async (p) => {
+      const werkblad = await zichtbaar(p, 'werkblad');
+      const getekend = await p.evaluate(() => {
+        const d = document.getElementById('canvas').getContext('2d').getImageData(0, 0, 1, 1).data;
+        return d[3] > 0;
+      });
+      // Geen halve registratie: een bestand dat niet parseert hoort niet als
+      // huisstijlletter in document.fonts te belanden.
+      const families = await p.evaluate(() => {
+        const uit = [];
+        document.fonts.forEach((f) => uit.push(f.family));
+        return uit;
+      });
+      const schoon = !families.includes('RijksSansVF');
+      return { ok: werkblad && getekend && schoon,
+               uitleg: `werkblad=${werkblad} getekend=${getekend} families=[${families.join(', ')}]` };
     });
 
   console.log(alles ? '\nAlle frontendtests geslaagd.' : '\nEr zijn tests gefaald.');
