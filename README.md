@@ -43,9 +43,11 @@ niet. Heb je toegang nodig, vraag dan de beheerder je toe te voegen — zie
    de toolkit; ga je eroverheen, dan zie je dat meteen.
 6. Kies waar de cirkels met de icoonbadges staan: in een van de vier hoeken,
    of onderaan of bovenaan het midden.
-7. Wil je een woord uitlichten, selecteer het dan en klik in de werkbalk boven
-   het veld op een korpsgrootte, **B** of **I**. Je ziet onder het voorbeeld
-   waarin je van de stijl afwijkt; **Opmaak verwijderen** haalt het weer weg.
+7. Te groot of te klein? Klik in de werkbalk boven het veld op **&minus;** of
+   **+**: dat zet de hele kop of subtekst een maat op. Wil je één woord
+   uitlichten, selecteer het dan en klik op **B** of **I**. Je ziet onder het
+   voorbeeld waarin je van de stijl afwijkt; **Opmaak verwijderen** zet het hele
+   veld weer terug.
 8. Klik **PNG downloaden**.
 
 Stap 2 laat de vijf kaarten zien wat elke stijl met jouw materiaal doet. Heb je
@@ -123,7 +125,7 @@ variant zoals die op het Instagramaccount staat.
 
 De toolkit schrijft voor: **hou je aan de korpsgrootte en aan het maximum aantal
 regels**. Daarom verkleint de tool de tekst niet stiekem — hij kapt af en meldt
-het. Drie bewuste afwijkingen:
+het. Vier bewuste afwijkingen:
 
 - **Het tekstvlak groeit mee met de tekst**, met de vaste toolkithoogte als
   plafond. De sjabloonpagina's tekenen een vlak van een halve pagina, maar in de
@@ -131,12 +133,24 @@ het. Drie bewuste afwijkingen:
   exact de toolkithoogte.
 - **Vierkant (1:1) staat niet in de toolkit.** Daar houdt het tekstvlak dezelfde
   hoogte in pixels en levert de foto de ruimte in.
-- **De letter is per stuk tekst bij te stellen.** Boven elk tekstveld staat een
-  werkbalk: selecteer een woord en kies een korpsgrootte, **B** of **I**. De
-  maten zijn de vijf korpsgroottes hierboven, dus je blijft met de maat binnen
-  de toolkit — maar je wijkt af van de stijl, en dat staat dan met zoveel
-  woorden onder het voorbeeld. **Opmaak verwijderen** zet de selectie terug
-  zoals de stijl hem voorschrijft.
+- **De korpsgroottes van de twee "foto boven"-stijlen komen uit de echte posts,
+  niet van de sjabloonpagina.** Zie [Hoe groot is de letter
+  eigenlijk?](#hoe-groot-is-de-letter-eigenlijk) hieronder.
+- **De letter is bij te stellen.** Boven elk tekstveld staat een werkbalk, en
+  die kent twee soorten knoppen:
+
+  **&minus; en +** zetten het **hele veld** een maat kleiner of groter, langs de
+  vijf korpsgroottes hierboven. Daar hoef je niets voor te selecteren: een kop
+  heeft één maat, dat is wat een kop tot een kop maakt. Het vakje ertussen laat
+  zien waar je staat; aan het eind van de ladder gaat de knop uit.
+  **Opmaak verwijderen** zet het hele veld terug zoals de stijl het
+  voorschrijft. Kom je met &minus; of + precies op de maat van de stijl uit, dan
+  krijgt het veld géén eigen maat maar volgt het de stijl weer — anders zou het
+  veld niet meer meeschuiven als je van stijl wisselt.
+
+  **B en I** werken wél op een selectie: die zijn er juist om één woord uit te
+  lichten. Wijk je van de stijl af, dan staat dat met zoveel woorden onder het
+  voorbeeld.
 
   **B is een schakelaar, geen "maak vetter".** In de meeste stijlen is de kop al
   vet; daar haalt B het vet er dus af. De knop laat met zijn ingedrukte stand
@@ -151,6 +165,31 @@ het. Drie bewuste afwijkingen:
   Schuin komt uit de schuine snede van RijksSansVF, die de tool meelaadt uit de
   afgeschermde opslag. Lukt dat niet, dan valt de tekst terug op Fira Sans en
   maakt de browser daar zelf een schuine van.
+
+### Hoe groot is de letter eigenlijk?
+
+De sjabloonpagina's van de toolkit en de posts zoals ze werkelijk op het
+Instagramaccount staan, gebruiken niet dezelfde korpsgrootte. De posts zijn een
+maat groter. Dat is nagemeten en niet geschat, op drie echte posts (de
+zorgverzekeringscheck, het overlijden in het buitenland, het contante geld):
+
+De tekstkolom is op 1080 px breed **879 px** (`marge` + `paddingZij` aan beide
+kanten). Zet je de kop van de eerste post in RijksSansVF, dan is
+*"Ben ik in het buitenland verzekerd"* bij 54 pt **782 px** — dat past, en de
+regel zou dus nooit na "buitenland" afbreken. Bij 66 pt is diezelfde regel
+**956 px**: te breed, en de kop breekt precies waar hij in de post breekt.
+Alleen 66 pt geeft de regelval van de post. Dezelfde rekensom op de subtekst van
+de derde post wijst 54 pt aan.
+
+| | Sjabloonpagina | Echte posts |
+| --- | --- | --- |
+| Kop | 54 pt | **66 pt** |
+| Subtekst | 30 tot 40 pt | **54 pt** |
+
+De twee stijlen met een gekleurd vlak onder de foto (*Foto boven, lichtblauw
+vlak* en *Foto boven, diepblauw vlak*) staan daarom op 66/54 pt. De andere drie
+stijlen houden de maten van hun sjabloonpagina, want daar is geen post van om
+tegen te meten. Eén maat terug is één klik op **&minus;**.
 
 ## De opmaak aanpassen
 

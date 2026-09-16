@@ -570,6 +570,130 @@ const zichtbaar = (page, id) => page.evaluate((i) => {
                uitleg: `werkblad=${werkblad} getekend=${getekend} families=[${families.join(', ')}]` };
     });
 
+  alles &= await run('plus en min zetten het hele veld een maat op, zonder selectie',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      // proefA: kop 0.05 = pt54. Niets selecteren — dat is juist het punt.
+      await p.evaluate(() => {
+        state.stijl = 'proefA';
+        state.kop = [{ tekst: 'Souvenirs meenemen uit het buitenland', korps: null, gewicht: null, schuin: false }];
+        toonTekstvelden();
+        werkbijUI();
+      });
+
+      const maat = () => p.evaluate(() => document.querySelector('#kopbalk [data-rol="maat"]').textContent);
+      const korpsen = () => p.evaluate(() => state.kop.map((s) => s.korps));
+
+      const beginmaat = await maat();
+      await p.click('#kopbalk [data-rol="groter"]');
+      const naGroter = { maat: await maat(), korps: await korpsen() };
+      await p.click('#kopbalk [data-rol="kleiner"]');
+      const naTerug = { maat: await maat(), korps: await korpsen() };
+
+      const fouten = [];
+      if (beginmaat !== '54 pt') fouten.push('beginmaat is niet die van de stijl: ' + beginmaat);
+      if (naGroter.maat !== '66 pt') fouten.push('+ ging niet naar 66 pt maar naar ' + naGroter.maat);
+      if (JSON.stringify(naGroter.korps) !== '["pt66"]') {
+        fouten.push('+ zette het veld niet op pt66: ' + JSON.stringify(naGroter.korps));
+      }
+      if (naTerug.maat !== '54 pt') fouten.push('- ging niet terug naar 54 pt maar naar ' + naTerug.maat);
+      // Terug op de maat van de stijl hoort "volgt de stijl" te betekenen, niet
+      // "toevallig even groot": anders schuift het veld niet mee met een andere stijl.
+      if (JSON.stringify(naTerug.korps) !== '[null]') {
+        fouten.push('terug op de stijlmaat liet een eigen korps staan: ' + JSON.stringify(naTerug.korps));
+      }
+      return { ok: fouten.length === 0,
+               uitleg: fouten.length ? fouten.join('; ') : beginmaat + ' -> ' + naGroter.maat + ' -> ' + naTerug.maat };
+    });
+
+  alles &= await run('de maatknoppen stoppen aan het eind van de korpsladder',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      const stand = await p.evaluate(() => {
+        state.stijl = 'proefA';
+        state.kop = [{ tekst: 'Kop', korps: null, gewicht: null, schuin: false }];
+        toonTekstvelden();
+        werkbijUI();
+
+        const klik = (rol) => {
+          const knop = document.querySelector('#kopbalk [data-rol="' + rol + '"]');
+          if (!knop.disabled) knop.click();
+          return knop.disabled;
+        };
+        // Vijf sporten op de ladder: tien klikken komt hoe dan ook aan het eind uit.
+        for (let i = 0; i < 10; i++) klik('groter');
+        const boven = { maat: document.querySelector('#kopbalk [data-rol="maat"]').textContent,
+                        groterUit: document.querySelector('#kopbalk [data-rol="groter"]').disabled };
+        for (let i = 0; i < 10; i++) klik('kleiner');
+        const onder = { maat: document.querySelector('#kopbalk [data-rol="maat"]').textContent,
+                        kleinerUit: document.querySelector('#kopbalk [data-rol="kleiner"]').disabled };
+        return { boven, onder };
+      });
+
+      const fouten = [];
+      if (stand.boven.maat !== '66 pt' || !stand.boven.groterUit) {
+        fouten.push('bovenaan klopt niet: ' + JSON.stringify(stand.boven));
+      }
+      if (stand.onder.maat !== '24 pt' || !stand.onder.kleinerUit) {
+        fouten.push('onderaan klopt niet: ' + JSON.stringify(stand.onder));
+      }
+      return { ok: fouten.length === 0,
+               uitleg: fouten.length ? fouten.join('; ') : 'boven 66 pt, onder 24 pt, knoppen uit' };
+    });
+
+  alles &= await run('opmaak verwijderen wist het hele veld, niet alleen de selectie',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      await p.evaluate(() => {
+        state.stijl = 'proefA';
+        state.kop = [
+          { tekst: 'Souvenirs ', korps: 'pt66', gewicht: null, schuin: false },
+          { tekst: 'meenemen', korps: null, gewicht: 400, schuin: true },
+          { tekst: ' uit het buitenland', korps: 'pt24', gewicht: null, schuin: false },
+        ];
+        toonTekstvelden();
+        werkbijUI();
+        // Eén woord selecteren: de knop hoort zich daar niets van aan te trekken.
+        zetSelectie(document.getElementById('kop'), 0, 5);
+      });
+      await p.click('#kopbalk [data-rol="terug"]');
+
+      const uit = await p.evaluate(() => ({
+        stukken: state.kop.map((s) => [s.tekst, s.korps, s.gewicht, s.schuin]),
+        html: document.getElementById('kop').innerHTML,
+        maat: document.querySelector('#kopbalk [data-rol="maat"]').textContent,
+      }));
+
+      const fouten = [];
+      if (uit.stukken.length !== 1) fouten.push('niet alles is gewist: ' + JSON.stringify(uit.stukken));
+      const s0 = uit.stukken[0] || [];
+      if (s0[1] !== null || s0[2] !== null || s0[3] !== false) {
+        fouten.push('er bleef opmaak staan: ' + JSON.stringify(s0));
+      }
+      if (s0[0] !== 'Souvenirs meenemen uit het buitenland') fouten.push('de tekst veranderde: ' + s0[0]);
+      if (/data-/.test(uit.html)) fouten.push('het veld toont nog opmaak: ' + uit.html);
+      if (uit.maat !== '54 pt') fouten.push('de maat viel niet terug op de stijl: ' + uit.maat);
+      return { ok: fouten.length === 0, uitleg: fouten.length ? fouten.join('; ') : 'alles terug naar de stijl' };
+    });
+
+  alles &= await run('een leeg veld heeft niets op te maken: de knoppen staan uit',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      const uit = await p.evaluate(() => {
+        state.stijl = 'proefA';
+        state.kop = [];
+        toonTekstvelden();
+        werkbijUI();
+        const rol = (r) => document.querySelector('#kopbalk [data-rol="' + r + '"]').disabled;
+        return { kleiner: rol('kleiner'), groter: rol('groter'), terug: rol('terug'),
+                 maat: document.querySelector('#kopbalk [data-rol="maat"]').textContent };
+      });
+      // De maat van de stijl hoort er wél te staan: die zie je zo vast staan
+      // voordat je begint te typen.
+      const ok = uit.kleiner && uit.groter && uit.terug && uit.maat === '54 pt';
+      return { ok, uitleg: JSON.stringify(uit) };
+    });
+
   console.log(alles ? '\nAlle frontendtests geslaagd.' : '\nEr zijn tests gefaald.');
   process.exit(alles ? 0 : 1);
 })();
