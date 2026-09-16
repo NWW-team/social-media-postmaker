@@ -7,7 +7,7 @@ terminal, geen CLI en geen lokale installatie nodig.
 
 Via de Supabase-connector is het meeste al uitgevoerd op project
 `bsaltminmhvdsdkaqkag`. Wat jij nog zelf moet doen staat hieronder met
-**NOG TE DOEN** ervoor: dat zijn stap 3 en stap 4. Voor die twee bestaat geen
+**NOG TE DOEN** ervoor: dat zijn stap 4 en stap 9. Voor die twee bestaat geen
 API — ze kunnen alleen via het dashboard.
 
 | Stap | Wat | Status |
@@ -20,6 +20,7 @@ API — ze kunnen alleen via het dashboard.
 | 6 | URL en publishable key opgehaald | Gedaan |
 | 7 | `config.js` ingevuld | Gedaan |
 | 8 | Controle en RLS-test | Gedaan, 12 van 12 goed |
+| 9 | Huisstijllettertype in de besloten opslag | Bak en policy staan er. **De twee bestanden moeten er nog in** |
 
 ### Directe links voor dit project
 
@@ -28,6 +29,7 @@ API — ze kunnen alleen via het dashboard.
 | Sign In / Providers | <https://supabase.com/dashboard/project/bsaltminmhvdsdkaqkag/auth/providers> |
 | Users | <https://supabase.com/dashboard/project/bsaltminmhvdsdkaqkag/auth/users> |
 | SQL Editor | <https://supabase.com/dashboard/project/bsaltminmhvdsdkaqkag/sql/new> |
+| Storage — bak `huisstijl-font` | <https://supabase.com/dashboard/project/bsaltminmhvdsdkaqkag/storage/buckets/huisstijl-font> |
 | API Keys | <https://supabase.com/dashboard/project/bsaltminmhvdsdkaqkag/settings/api-keys> |
 
 Vind je een instelling niet: `Ctrl+K` in het dashboard en typ de naam van de
@@ -242,11 +244,13 @@ gaf 12 van de 12 goed.
 Zo herhaal je het zelf, bijvoorbeeld na een wijziging aan de policies:
 
 1. **SQL Editor** → **New query** → plak `supabase/03_controle.sql` → **Run**.
-2. Loop de vijf resultaatblokken langs:
+2. Loop de zeven resultaatblokken langs:
    - blok 1: alle drie de tabellen `rls_aan = true`, elk met minstens één policy;
    - blok 3: **moet leeg zijn** — hier verschijnt elke tabel zonder bescherming;
    - blok 4: `redacteur@example.org`, `heeft_account = true`, `bevestigd = true`;
-   - blok 5: `buitenstaander@example.org` — bestaat wel, staat niet op de lijst.
+   - blok 5: `buitenstaander@example.org` — bestaat wel, staat niet op de lijst;
+   - blok 6: `huisstijl-font` staat op `besloten`, niet op publiek;
+   - blok 7: precies één policy op `storage.objects`, alleen voor `select`.
 
 Klopt dit, dan staan de toegangsregels goed.
 
@@ -254,3 +258,43 @@ Klopt dit, dan staan de toegangsregels goed.
    `anon` en `authenticated` en beproeft de policies écht — in de SQL Editor ben
    je namelijk een rol die RLS omzeilt, dus een gewone `select` bewijst niets.
    Elke regel hoort `ja` te geven in de kolom `goed`.
+
+---
+
+## Stap 9 — Het huisstijllettertype uploaden *(NOG TE DOEN)*
+
+RijksSansVF is licentieplichtig en mag dus niet in de publieke repo. Hij hoort
+op dezelfde plek als de rest van de huisstijl: in Supabase, achter de allowlist.
+
+**De bak en de policy staan er al.** Uitgevoerd via de connector, met
+`supabase/05_huisstijlletter.sql`: een bak `huisstijl-font` die **niet** publiek
+is, met één leespolicy die `private.is_toegestaan()` toetst. Er is met opzet
+geen schrijfpolicy — uploaden kan alleen hier, in het dashboard.
+
+Wat er nog in moet, zijn de twee bestanden uit de officiële levering
+(`WOFF-2-TT-Var/RijksSans Web/`):
+
+| Bestand | Wat |
+| --- | --- |
+| `RijksSansWeb-Regular.woff2` | De rechte snede, variabel over wght 200–800 |
+| `RijksSansWeb-Italic.woff2` | De schuine snede, idem |
+
+1. Ga naar **Storage** → bak **`huisstijl-font`**
+   (<https://supabase.com/dashboard/project/bsaltminmhvdsdkaqkag/storage/buckets/huisstijl-font>).
+2. **Upload file** → kies allebei de bestanden.
+3. Laat ze in de hoofdmap van de bak staan en **hernoem ze niet**:
+   `huisstijlletter.js` vraagt ze op onder precies deze namen.
+
+Klaar. Log in de tool opnieuw in en de letter staat er — op het scherm én op het
+canvas, dus ook in de gedownloade PNG.
+
+> Zolang de bestanden er niet staan, is er niets stuk: de tool draait door op
+> Fira Sans, de open terugvalletter uit `vendor/rijkshuisstijl/fonts/`. In de
+> console staat dan één regel `Huisstijlletter niet geladen: … Object not found`.
+> De regelval wijkt iets af, de rest van de opmaak niet.
+
+### Controleren dat de letter écht afgeschermd is
+
+`supabase/03_controle.sql` sectie 6 en 7 laten zien dat de bak besloten is en
+welke policy erop staat. De echte proef staat in `TESTEN.md` test 6e: het bestand
+opvragen zonder sessie, en zien dat de opslag het weigert.

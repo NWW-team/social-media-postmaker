@@ -59,3 +59,29 @@ from auth.users u
 left join public.toegestane_gebruikers t on t.email = lower(u.email)
 where t.email is null
 order by u.created_at;
+
+-- 6. De opslagbak met het huisstijllettertype MOET besloten zijn.
+--    public = true betekent dat /storage/v1/object/public/... zonder token
+--    werkt, en dan staat een licentieplichtige letter open op het internet.
+select
+  id                                   as bak,
+  public                               as publiek,
+  file_size_limit                      as maxbytes,
+  allowed_mime_types                   as toegestane_types,
+  case when public then 'PUBLIEK — DIT MOET FALSE ZIJN' else 'besloten' end as oordeel
+from storage.buckets
+order by id;
+
+-- 7. De policies op de opslag, net als blok 2 maar dan voor storage.objects.
+--    Hier hoort precies één regel te staan: select, voor authenticated, met
+--    is_toegestaan() erin. Staat er een insert-, update- of delete-policy bij,
+--    dan kan een ingelogde gebruiker de letter vervangen of weggooien.
+select
+  policyname  as policy,
+  cmd         as operatie,
+  roles       as voor_rol,
+  qual        as leesvoorwaarde,
+  with_check  as schrijfvoorwaarde
+from pg_policies
+where schemaname = 'storage' and tablename = 'objects'
+order by cmd, policyname;

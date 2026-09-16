@@ -196,6 +196,16 @@ async function naBinnenkomst(sessie) {
   }
 
   TEMPLATES = config;
+
+  /*
+   * De huisstijlletter hoort bij de huisstijl en zit achter dezelfde
+   * allowlist. Hij wordt hier opgehaald en niet in index.html: een
+   * @font-face-regel zou het bestand zonder token opvragen, en dat weigert de
+   * besloten opslag terecht. Lukt het niet, dan draait de tool door op de
+   * terugvalletter — zie huisstijlletter.js.
+   */
+  await wachtOpHuisstijlletter(sb);
+
   toonApp(adres);
   startApp();
   await laadConcepten();
