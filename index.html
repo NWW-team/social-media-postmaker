@@ -245,6 +245,120 @@ input[type="range"] { inline-size: 100%; }
 
 .aanvink { display: flex; align-items: center; gap: 10px; }
 
+/* ------------------------------------------------------- eigen iconen */
+
+/*
+ * Het 'i'tje naast "Eigen iconen". Een knop en geen tooltip op hover: op een
+ * aanraakscherm is er geen hover, en met aria-expanded leest een schermlezer
+ * voor dat er uitleg open te klappen is. De uitleg staat er in de
+ * leesvolgorde meteen onder, dus hij komt terecht waar hij over gaat.
+ */
+.veld--knop { display: flex; align-items: center; gap: 8px; }
+
+.infoknop {
+  appearance: none;
+  inline-size: 20px;
+  block-size: 20px;
+  padding: 0;
+  border: 1px solid var(--rhc-color-primary-500);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--rhc-color-primary-500);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-style: italic;
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.infoknop:hover { background: var(--rhc-color-primary-100); }
+.infoknop:focus-visible {
+  outline: var(--rhc-focus-outline-width) solid var(--rhc-focus-outline-color);
+  outline-offset: var(--rhc-focus-outline-offset);
+}
+.infoknop[aria-expanded="true"] { background: var(--rhc-color-primary-500); color: #fff; }
+
+.infopaneel {
+  margin-block: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--rhc-color-border-subtle);
+  border-inline-start: 4px solid var(--rhc-color-primary-500);
+  border-radius: var(--rhc-border-radius-md);
+  background: #fff;
+  font-size: 0.875rem;
+  max-inline-size: 60ch;
+}
+.infopaneel ul { margin: 8px 0 0; padding-inline-start: 18px; }
+.infopaneel li { margin-block-end: 2px; }
+
+/* Dezelfde gestippelde rand als het fotovak, maar lager: een icoon is één
+   bestandje en geen foto om in te passen. */
+#eigenzone {
+  border: 2px dashed var(--rhc-color-primary-300);
+  border-radius: var(--rhc-border-radius-md);
+  background: #fff;
+  padding: 16px;
+  text-align: center;
+}
+#eigenzone.actief { border-color: var(--rhc-color-primary-500); background: var(--rhc-color-primary-100); }
+#eigennaam {
+  display: block;
+  margin-block-start: 8px;
+  font-size: 0.8125rem;
+  color: var(--rhc-color-foreground-subtle);
+  word-break: break-all;
+}
+
+/* Wat je zelf hebt toegevoegd, als strookje kaartjes. */
+#eigenrij { display: flex; flex-wrap: wrap; gap: 10px; margin-block-start: 14px; }
+#eigenrij:empty { display: none; }
+.eigenkaart {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 6px;
+  border: 1px solid var(--rhc-color-border-default);
+  border-radius: var(--rhc-border-radius-md);
+  background: #fff;
+  font-size: 0.8125rem;
+}
+.eigenkaart__beeld {
+  inline-size: 30px;
+  block-size: 30px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--rhc-color-border-subtle);
+  object-fit: contain;
+  padding: 4px;
+}
+.eigenkaart__naam { max-inline-size: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eigenkaart__weg {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--rhc-color-foreground-subtle);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+.eigenkaart__weg:hover { color: var(--rhc-color-negative-500); }
+.eigenkaart__weg:focus-visible {
+  outline: var(--rhc-focus-outline-width) solid var(--rhc-focus-outline-color);
+  outline-offset: var(--rhc-focus-outline-offset);
+}
+
+/* Alleen zichtbaar voor een schermlezer. */
+.verborgen {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* ----------------------------------------------------------- teksteditor */
 
 /*
@@ -619,6 +733,42 @@ input[type="range"] { inline-size: 100%; }
               <label class="veld" for="icoon1" style="flex:1 1 150px">Kleine badge
                 <select id="icoon1" class="utrecht-select rhc-form-field-select" style="margin-block-start:5px;font-weight:400"></select>
               </label>
+            </div>
+
+            <div id="eigenblok" style="margin-block-start:22px">
+              <span class="veld veld--knop" id="eigenlabel">Eigen iconen
+                <button type="button" class="infoknop" id="eigenuitlegknop" aria-expanded="false" aria-controls="eigenuitleg">
+                  <span aria-hidden="true">i</span><span class="verborgen">Uitleg over een eigen icoon</span>
+                </button>
+              </span>
+
+              <div class="infopaneel" id="eigenuitleg" role="note" hidden>
+                <p>
+                  <strong>Een eigen icoon downloaden van de huisstijl.</strong>
+                  Staat het pictogram dat je nodig hebt niet in de lijst? Je kunt een
+                  eigen icoon downloaden van
+                  <a href="https://www.rijkshuisstijl.nl/" target="_blank" rel="noopener">Rijkshuisstijl.nl</a>
+                  en hier uploaden om te gebruiken in de badges.
+                </p>
+                <ul>
+                  <li>Kies een <strong>SVG</strong> of een <strong>PNG</strong> met een doorzichtige achtergrond.</li>
+                  <li>Vierkant en in één kleur werkt het beste: het icoon komt in een witte cirkel te staan.</li>
+                  <li>Het bestand blijft op je eigen computer, net als je foto.</li>
+                </ul>
+              </div>
+
+              <div id="eigenzone">
+                <p class="hulptekst" style="margin-block-end:12px">
+                  Sleep een icoon hierheen, of:
+                </p>
+                <div class="knoprij" style="justify-content:center">
+                  <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button" id="eigenknop">Bestand kiezen</button>
+                </div>
+                <input type="file" id="eigeninvoer" accept=".svg,image/svg+xml,image/png" hidden>
+                <span id="eigennaam"></span>
+              </div>
+
+              <div id="eigenrij" aria-labelledby="eigenlabel"></div>
             </div>
           </fieldset>
         </div>

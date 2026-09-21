@@ -32,6 +32,14 @@ const state = {
   decoratie: true,
   decoratiepositie: 'linksonder',
   iconen: ['Wereld (toolkit)', 'Gesprek (toolkit)'],
+
+  /*
+   * Iconen die de redacteur zelf heeft toegevoegd, als { naam, bron } met de
+   * bron al als data-URI. Ze staan naast de iconen uit de huisstijl en horen
+   * bij deze sessie: net als de foto gaan ze nergens heen, en sluit je het
+   * tabblad, dan zijn ze weg.
+   */
+  eigenIconen: [],
 };
 
 /*
@@ -216,6 +224,8 @@ function startApp() {
     'downloadknop', 'maatlabel', 'stijlbron', 'melding', 'fotonaam', 'formaatnoot',
     'decoratieAan', 'decoratiepositie', 'icoon0', 'icoon1', 'icoonrij',
     'miniatuur', 'stijlvoorbeeldnoot', 'kopbalk', 'subbalk',
+    'eigenblok', 'eigenzone', 'eigenknop', 'eigeninvoer', 'eigennaam',
+    'eigenrij', 'eigenuitlegknop', 'eigenuitleg',
   ].forEach((id) => { el[id] = document.getElementById(id); });
 
   el.ctx = el.canvas.getContext('2d');
@@ -239,6 +249,8 @@ function startApp() {
   bouwFormaatkaarten();
   bouwStijlknoppen();
   bouwIcoonkeuze();
+  koppelEigenIconen();
+  toonIcoonkeuze();
   koppelKnoppen();
   koppelFotoInvoer();
   koppelSlepen();
@@ -436,14 +448,18 @@ function laadIconen() {
   const kleur = TEMPLATES.decoratie.icoonKleur;
   Object.keys(TEMPLATES.iconen).forEach((naam) => {
     const bron = TEMPLATES.iconen[naam].trim();
-    const img = new Image();
-    img.onload = () => teken();          // opnieuw tekenen zodra hij binnen is
-    img.src = bron.startsWith('data:')
+    zetIcoonInCache(naam, bron.startsWith('data:')
       ? bron
       : 'data:image/svg+xml;charset=utf-8,' +
-        encodeURIComponent(bron.replace(/\{kleur\}/g, kleur));
-    icoonCache[naam] = img;
+        encodeURIComponent(bron.replace(/\{kleur\}/g, kleur)));
   });
+}
+
+function zetIcoonInCache(naam, dataUri) {
+  const img = new Image();
+  img.onload = () => teken();            // opnieuw tekenen zodra hij binnen is
+  img.src = dataUri;
+  icoonCache[naam] = img;
 }
 
 /*
@@ -456,7 +472,21 @@ function laadIconen() {
  * iconen met een accent op hun plek.
  */
 function icoonnamen() {
-  return Object.keys(TEMPLATES.iconen).sort((a, b) => a.localeCompare(b, 'nl'));
+  return opAlfabet(Object.keys(TEMPLATES.iconen));
+}
+
+function eigenIcoonnamen() {
+  return opAlfabet(state.eigenIconen.map((eigen) => eigen.naam));
+}
+
+function opAlfabet(namen) {
+  return namen.slice().sort((a, b) => a.localeCompare(b, 'nl'));
+}
+
+/* Kennen we dit icoon — uit de huisstijl of zelf toegevoegd? */
+function kentIcoon(naam) {
+  return Boolean(TEMPLATES.iconen[naam]) ||
+    state.eigenIconen.some((eigen) => eigen.naam === naam);
 }
 
 /* ============================================================== teksteditor */
@@ -839,25 +869,218 @@ function bouwIcoonkeuze() {
   });
 
   [el.icoon0, el.icoon1].forEach((keuzelijst, i) => {
-    icoonnamen().forEach((naam) => {
-      const optie = document.createElement('option');
-      optie.value = naam;
-      optie.textContent = naam;
-      keuzelijst.appendChild(optie);
-    });
-    keuzelijst.value = state.iconen[i];
     keuzelijst.addEventListener('change', () => {
       state.iconen[i] = keuzelijst.value;
       teken();
     });
   });
+  vulIcoonlijsten();
 
   el.decoratieAan.checked = state.decoratie;
   el.decoratieAan.addEventListener('change', () => {
     state.decoratie = el.decoratieAan.checked;
-    el.icoonrij.hidden = !state.decoratie;
+    toonIcoonkeuze();
     teken();
   });
+}
+
+/*
+ * De twee keuzelijsten opnieuw vullen.
+ *
+ * Dit gebeurt niet één keer bij het opstarten maar telkens als er een eigen
+ * icoon bij komt of weggaat: dat is precies wat een eigen icoon doet, het komt
+ * in dezelfde lijst als de iconen uit de huisstijl te staan. De twee groepen
+ * staan uit elkaar in een optgroup, zodat je ziet wat van de huisstijl is en
+ * wat van jou.
+ */
+function vulIcoonlijsten() {
+  [el.icoon0, el.icoon1].forEach((keuzelijst, i) => {
+    keuzelijst.textContent = '';
+    keuzelijst.appendChild(icoongroep('Uit de huisstijl', icoonnamen()));
+
+    const eigen = eigenIcoonnamen();
+    if (eigen.length) keuzelijst.appendChild(icoongroep('Eigen iconen', eigen));
+
+    keuzelijst.value = state.iconen[i];
+  });
+}
+
+function icoongroep(label, namen) {
+  const groep = document.createElement('optgroup');
+  groep.label = label;
+  namen.forEach((naam) => {
+    const optie = document.createElement('option');
+    optie.value = naam;
+    optie.textContent = naam;
+    groep.appendChild(optie);
+  });
+  return groep;
+}
+
+/* Zonder cirkels valt er ook niets te kiezen en niets toe te voegen. */
+function toonIcoonkeuze() {
+  el.icoonrij.hidden = !state.decoratie;
+  el.eigenblok.hidden = !state.decoratie;
+}
+
+/* ---------------------------------------------------------- eigen iconen */
+
+/*
+ * Een eigen icoon uit de beeldbank van de huisstijl.
+ *
+ * Het bestand gaat nergens heen: net als de foto wordt het met FileReader
+ * gelezen en meteen als data-URI in de icoonvoorraad gezet. Er is geen
+ * upload-aanroep, en een bewaard concept bevat alleen de naam van het icoon —
+ * niet de tekening.
+ *
+ * SVG wordt als tekst gelezen en hier zelf tot data-URI gemaakt, zodat we
+ * onderweg kunnen kijken of er width en height op het svg-element staan. Zonder
+ * die twee tekenen Edge en Firefox het bestand niet op een canvas en zou de
+ * badge in de export leeg blijven, terwijl hij in Chrome gewoon gevuld lijkt.
+ * Zie ook "Zelf een icoon toevoegen" in de LEESMIJ.
+ */
+const EIGEN_ICOON_MAX = 512 * 1024;
+
+function koppelEigenIconen() {
+  el.eigenuitlegknop.addEventListener('click', () => {
+    const open = el.eigenuitlegknop.getAttribute('aria-expanded') === 'true';
+    el.eigenuitlegknop.setAttribute('aria-expanded', String(!open));
+    el.eigenuitleg.hidden = open;
+  });
+
+  el.eigenknop.addEventListener('click', () => el.eigeninvoer.click());
+  el.eigeninvoer.addEventListener('change', (e) => {
+    if (e.target.files[0]) neemIcoonbestand(e.target.files[0]);
+    e.target.value = '';   // zelfde bestand nogmaals kiezen moet ook werken
+  });
+
+  ['dragenter', 'dragover'].forEach((type) => {
+    el.eigenzone.addEventListener(type, (e) => {
+      e.preventDefault();
+      el.eigenzone.classList.add('actief');
+    });
+  });
+  ['dragleave', 'drop'].forEach((type) => {
+    el.eigenzone.addEventListener(type, (e) => {
+      e.preventDefault();
+      el.eigenzone.classList.remove('actief');
+    });
+  });
+  el.eigenzone.addEventListener('drop', (e) => {
+    if (e.dataTransfer.files[0]) neemIcoonbestand(e.dataTransfer.files[0]);
+  });
+}
+
+function neemIcoonbestand(bestand) {
+  const isSvg = bestand.type === 'image/svg+xml' || /\.svg$/i.test(bestand.name);
+  const isPng = bestand.type === 'image/png' || /\.png$/i.test(bestand.name);
+
+  if (!isSvg && !isPng) {
+    toonMelding(
+      'Dat is geen icoon (' + (bestand.type || bestand.name) + '). ' +
+      'Kies een SVG of een PNG.', 'fout');
+    return;
+  }
+  if (bestand.size > EIGEN_ICOON_MAX) {
+    toonMelding(
+      'Dit bestand is groter dan 512 kB. Een pictogram hoort klein te zijn — ' +
+      'is dit misschien een foto?', 'fout');
+    return;
+  }
+
+  const lezer = new FileReader();
+  lezer.onerror = () => toonMelding('Dit bestand kon niet gelezen worden.', 'fout');
+  lezer.onload = () => {
+    let bron;
+    if (isSvg) {
+      const tekst = String(lezer.result);
+      const svgkop = (tekst.match(/<svg[^>]*>/i) || [''])[0];
+      if (!/\swidth=/i.test(svgkop) || !/\sheight=/i.test(svgkop)) {
+        toonMelding(
+          'Deze SVG heeft geen width en height op het svg-element. Edge en Firefox ' +
+          'tekenen zo\u2019n bestand niet in de download, dus de badge zou leeg blijven. ' +
+          'Download hem opnieuw als PNG, of laat de beheerder de maten erin zetten.', 'fout');
+        return;
+      }
+      bron = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(tekst);
+    } else {
+      bron = String(lezer.result);
+    }
+    voegEigenIcoonToe(icoonnaamUit(bestand.name), bron);
+    el.eigennaam.textContent = bestand.name;
+  };
+
+  if (isSvg) lezer.readAsText(bestand); else lezer.readAsDataURL(bestand);
+}
+
+/* Van bestandsnaam naar iets dat in een keuzelijst te lezen is. */
+function icoonnaamUit(bestandsnaam) {
+  const kaal = bestandsnaam.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
+  return kaal ? kaal.charAt(0).toUpperCase() + kaal.slice(1) : 'Eigen icoon';
+}
+
+/*
+ * Erbij, en meteen in de grote badge: anders moet je na het toevoegen nóg een
+ * keuze maken om te zien wat je hebt gedaan.
+ */
+function voegEigenIcoonToe(naam, bron) {
+  let uniek = naam;
+  let teller = 2;
+  while (kentIcoon(uniek)) uniek = naam + ' ' + teller++;
+
+  state.eigenIconen.push({ naam: uniek, bron });
+  zetIcoonInCache(uniek, bron);
+  state.iconen[0] = uniek;
+
+  toonMelding('', '');
+  toonEigenIconen();
+  vulIcoonlijsten();
+  teken();
+}
+
+/*
+ * Weg is weg. Staat het icoon in een badge, dan valt die terug op het eerste
+ * icoon uit de huisstijl — een lege badge is geen stand die de huisstijl kent.
+ */
+function haalEigenIcoonWeg(naam) {
+  state.eigenIconen = state.eigenIconen.filter((eigen) => eigen.naam !== naam);
+  delete icoonCache[naam];
+  state.iconen = state.iconen.map((huidig) => (huidig === naam ? icoonnamen()[0] : huidig));
+
+  if (!state.eigenIconen.length) el.eigennaam.textContent = '';
+  toonEigenIconen();
+  vulIcoonlijsten();
+  teken();
+}
+
+function toonEigenIconen() {
+  el.eigenrij.textContent = '';
+  state.eigenIconen.forEach((eigen) => el.eigenrij.appendChild(eigenIcoonkaart(eigen)));
+}
+
+function eigenIcoonkaart(eigen) {
+  const kaart = document.createElement('span');
+  kaart.className = 'eigenkaart';
+
+  const beeld = document.createElement('img');
+  beeld.className = 'eigenkaart__beeld';
+  beeld.src = eigen.bron;
+  beeld.alt = '';
+
+  const naam = document.createElement('span');
+  naam.className = 'eigenkaart__naam';
+  naam.textContent = eigen.naam;
+  naam.title = eigen.naam;
+
+  const weg = document.createElement('button');
+  weg.type = 'button';
+  weg.className = 'eigenkaart__weg';
+  weg.innerHTML = '<span aria-hidden="true">&times;</span>';
+  weg.setAttribute('aria-label', 'Verwijder eigen icoon ' + eigen.naam);
+  weg.addEventListener('click', () => haalEigenIcoonWeg(eigen.naam));
+
+  kaart.append(beeld, naam, weg);
+  return kaart;
 }
 
 /* ------------------------------------------------------------------- invoer */
@@ -1826,7 +2049,7 @@ function pasConceptToe(inhoud) {
 
   if (Array.isArray(inhoud.iconen)) {
     state.iconen = state.iconen.map((huidig, i) =>
-      (typeof inhoud.iconen[i] === 'string' && TEMPLATES.iconen[inhoud.iconen[i]])
+      (typeof inhoud.iconen[i] === 'string' && kentIcoon(inhoud.iconen[i]))
         ? inhoud.iconen[i]
         : huidig);
   }
@@ -1843,7 +2066,7 @@ function pasConceptToe(inhoud) {
   toonTekstvelden();
   el.zoom.value = String(state.zoom);
   el.decoratieAan.checked = state.decoratie;
-  el.icoonrij.hidden = !state.decoratie;
+  toonIcoonkeuze();
   el.decoratiepositie.value = state.decoratiepositie;
   el.icoon0.value = state.iconen[0];
   el.icoon1.value = state.iconen[1];

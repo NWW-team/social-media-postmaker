@@ -42,7 +42,9 @@ niet. Heb je toegang nodig, vraag dan de beheerder je toe te voegen — zie
 5. Typ de kop en de subtekst. Elke stijl heeft een maximum aantal regels uit
    de toolkit; ga je eroverheen, dan zie je dat meteen.
 6. Kies waar de cirkels met de icoonbadges staan: in een van de vier hoeken,
-   of onderaan of bovenaan het midden.
+   of onderaan of bovenaan het midden. Staat het pictogram dat je nodig hebt
+   niet in de lijst, sleep er dan bij **Eigen iconen** zelf een in het vak —
+   zie [Zelf een icoon toevoegen](#zelf-een-icoon-toevoegen).
 7. Te groot of te klein? Klik in de werkbalk boven het veld op **&minus;** of
    **+**: dat zet de hele kop of subtekst een maat op. Wil je één woord
    uitlichten, selecteer het dan en klik op **B** of **I**. Je ziet onder het
@@ -90,6 +92,11 @@ Wat wél naar Supabase gaat:
 
 Een bewaard concept bevat dus een recept, geen plaatje. Open je het later, dan
 sleep je je foto er opnieuw in.
+
+Hetzelfde geldt voor een icoon dat je zelf toevoegt: dat wordt net als de foto
+in je browser gelezen en getekend, en gaat niet naar Supabase. Een concept
+onthoudt alleen de náám van het icoon. Sluit je het tabblad, dan is je eigen
+icoon weg en kies je het bij het openen van het concept opnieuw.
 
 ## Exportmaten
 
@@ -300,8 +307,32 @@ toevoegen of vervangen.
   De keuzelijsten staan op alfabet.
 - **Controle** door communicatie of de export echt aan de huisstijl voldoet.
 
-### Een pictogram toevoegen
+### Zelf een icoon toevoegen
 
+Dit doet de redacteur zelf, zonder beheerder. Onder de twee keuzelijsten staat
+**Eigen iconen**: sleep er een bestand in of klik op **Bestand kiezen**, en het
+icoon staat meteen in de grote badge én in beide keuzelijsten, onder het kopje
+*Eigen iconen*. Met het kruisje haal je het weer weg; een badge die het gebruikte
+valt dan terug op het eerste icoon uit de huisstijl.
+
+Het 'i'tje naast de naam vertelt waar zo'n icoon vandaan komt: je kunt er een
+downloaden van [Rijkshuisstijl.nl](https://www.rijkshuisstijl.nl/) en hier
+uploaden om in de badges te gebruiken. Een SVG of PNG met een doorzichtige
+achtergrond, vierkant en in één kleur, tot 512 kB.
+
+Het bestand blijft op je eigen computer: het wordt met `FileReader` gelezen en
+meteen als data-URI getekend, precies zoals de foto, en er is geen
+upload-aanroep. Een eigen icoon hoort dus bij dit tabblad en niet bij je account
+— een collega ziet het niet, en na het sluiten is het weg. Moet iedereen het
+kunnen kiezen, dan hoort het in de huisstijl thuis; zie het volgende kopje.
+
+Een SVG zonder `width` en `height` wordt geweigerd, met uitleg erbij. Dat is
+dezelfde valkuil als hieronder: in Chrome lijkt zo'n bestand te werken, terwijl
+de badge in de download leeg blijft.
+
+### Een pictogram aan de huisstijl toevoegen
+
+Dit doet de beheerder, en dan staat het pictogram bij iedereen in de lijst.
 Voeg een item toe aan de sleutel `iconen` in de tabel `public.huisstijl`. Twee
 vormen zijn toegestaan:
 

@@ -694,6 +694,135 @@ const zichtbaar = (page, id) => page.evaluate((i) => {
       return { ok, uitleg: JSON.stringify(uit) };
     });
 
+  /* ------------------------------------------------------- eigen iconen */
+
+  /*
+   * Een icoon dat de redacteur zelf toevoegt. Wat hier toe doet: het bestand
+   * gaat nergens heen, het komt naast de iconen uit de huisstijl in beide
+   * keuzelijsten te staan, en het wordt écht getekend.
+   */
+  const svgMetMaat = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">' +
+    '<path d="M4 12h16M12 4v16" stroke="#112233" stroke-width="2"/></svg>';
+  const svgZonderMaat = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
+    '<circle cx="12" cy="12" r="8" fill="#112233"/></svg>';
+
+  const kiesIcoon = async (p, bestandsnaam, inhoud, type) => {
+    await p.setInputFiles('#eigeninvoer', {
+      name: bestandsnaam,
+      mimeType: type || 'image/svg+xml',
+      buffer: Buffer.from(inhoud),
+    });
+    await p.waitForTimeout(250);
+  };
+
+  const groepen = (p, id) => p.evaluate((i) => [...document.getElementById(i).querySelectorAll('optgroup')]
+    .map((g) => g.label + ': ' + [...g.children].map((o) => o.value).join(', ')), id);
+
+  alles &= await run('een eigen icoon komt in beide lijsten, in de badge en op het doek',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      await kiesIcoon(p, 'ambassade.svg', svgMetMaat);
+
+      const uit = await p.evaluate(() => ({
+        eigen: state.eigenIconen.map((e) => e.naam),
+        dataUri: (state.eigenIconen[0] || {}).bron ? state.eigenIconen[0].bron.startsWith('data:') : false,
+        badge0: state.iconen[0],
+        lijst0: document.getElementById('icoon0').value,
+        getekend: Boolean(icoonCache['Ambassade'] && icoonCache['Ambassade'].complete &&
+                          icoonCache['Ambassade'].naturalWidth),
+        kaartjes: document.querySelectorAll('#eigenrij .eigenkaart').length,
+        melding: document.getElementById('melding').textContent,
+      }));
+
+      const lijsten = (await groepen(p, 'icoon0')).concat(await groepen(p, 'icoon1'));
+      const beide = lijsten.filter((g) => g.startsWith('Eigen iconen:')).length === 2;
+
+      const fouten = [];
+      if (String(uit.eigen) !== 'Ambassade') fouten.push('naam: ' + uit.eigen);
+      if (!uit.dataUri) fouten.push('de bron is geen data-URI');
+      if (uit.badge0 !== 'Ambassade' || uit.lijst0 !== 'Ambassade') fouten.push('staat niet in de grote badge');
+      if (!beide) fouten.push('niet in beide keuzelijsten: ' + lijsten.join(' | '));
+      if (!uit.getekend) fouten.push('het icoon is niet geladen');
+      if (uit.kaartjes !== 1) fouten.push('kaartjes: ' + uit.kaartjes);
+      if (uit.melding) fouten.push('onverwachte melding: ' + uit.melding);
+      return { ok: fouten.length === 0, uitleg: fouten.length ? fouten.join('; ') : 'Ambassade staat overal' };
+    });
+
+  /*
+   * Chrome vult een ontbrekende maat aan, Edge en Firefox tekenen zo'n SVG
+   * helemaal niet op een canvas. Zou de tool hem aannemen, dan zag de redacteur
+   * hier een gevulde badge en in de download een lege.
+   */
+  alles &= await run('een SVG zonder width en height wordt geweigerd, met uitleg',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      await kiesIcoon(p, 'zonder-maat.svg', svgZonderMaat);
+      const uit = await p.evaluate(() => ({
+        eigen: state.eigenIconen.length,
+        badge0: state.iconen[0],
+        melding: document.getElementById('melding').textContent,
+        soort: document.getElementById('melding').className,
+      }));
+      const ok = uit.eigen === 0 && uit.badge0 === 'Aanvraag' &&
+                 /width en height/.test(uit.melding) && /fout/.test(uit.soort);
+      return { ok, uitleg: `eigen=${uit.eigen} badge0=${uit.badge0} melding=${uit.melding.slice(0, 40)}` };
+    });
+
+  alles &= await run('een te groot bestand en een verkeerd bestandstype komen er niet in',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      await kiesIcoon(p, 'foto.jpg', 'x'.repeat(100), 'image/jpeg');
+      const geenJpg = await p.evaluate(() => ({
+        eigen: state.eigenIconen.length,
+        melding: document.getElementById('melding').textContent,
+      }));
+
+      await kiesIcoon(p, 'reus.png', 'x'.repeat(600 * 1024), 'image/png');
+      const geenReus = await p.evaluate(() => ({
+        eigen: state.eigenIconen.length,
+        melding: document.getElementById('melding').textContent,
+      }));
+
+      const ok = geenJpg.eigen === 0 && /SVG of een PNG/.test(geenJpg.melding) &&
+                 geenReus.eigen === 0 && /512 kB/.test(geenReus.melding);
+      return { ok, uitleg: `jpg="${geenJpg.melding.slice(0, 30)}" png="${geenReus.melding.slice(0, 30)}"` };
+    });
+
+  alles &= await run('een eigen icoon weghalen zet de badge terug op de huisstijl',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      await kiesIcoon(p, 'ambassade.svg', svgMetMaat);
+      await p.click('#eigenrij .eigenkaart__weg');
+      await p.waitForTimeout(150);
+
+      const uit = await p.evaluate(() => ({
+        eigen: state.eigenIconen.length,
+        badge0: state.iconen[0],
+        lijst0: document.getElementById('icoon0').value,
+        kaartjes: document.querySelectorAll('#eigenrij .eigenkaart').length,
+        cache: Object.prototype.hasOwnProperty.call(icoonCache, 'Ambassade'),
+      }));
+      const lijsten = await groepen(p, 'icoon0');
+      const weg = !lijsten.some((g) => g.startsWith('Eigen iconen:'));
+
+      const ok = uit.eigen === 0 && uit.kaartjes === 0 && !uit.cache && weg &&
+                 uit.badge0 === 'Aanvraag' && uit.lijst0 === 'Aanvraag';
+      return { ok, uitleg: `badge0=${uit.badge0} lijst=${lijsten.join(' | ')} cache=${uit.cache}` };
+    });
+
+  /*
+   * De belofte uit de LEESMIJ: een concept is een recept. Van een eigen icoon
+   * gaat dus alleen de naam mee naar Supabase, nooit de tekening.
+   */
+  alles &= await run('een bewaard concept bevat de naam van een eigen icoon, niet het bestand',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      await kiesIcoon(p, 'ambassade.svg', svgMetMaat);
+      const concept = await p.evaluate(() => JSON.stringify(leesConcept()));
+      const ok = concept.includes('"Ambassade"') && !concept.includes('data:');
+      return { ok, uitleg: ok ? 'alleen de naam' : concept.slice(0, 120) };
+    });
+
   console.log(alles ? '\nAlle frontendtests geslaagd.' : '\nEr zijn tests gefaald.');
   process.exit(alles ? 0 : 1);
 })();

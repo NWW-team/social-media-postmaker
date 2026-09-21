@@ -399,7 +399,7 @@ body {
 
 <p class="vlag">
   <b>Dit is niet de tool.</b>
-  Twee voorstellen om een eigen icoon uit de beeldbank in de badge te zetten.
+  Twee voorstellen om een eigen icoon in de badge te zetten.
   Ze werken: kies een icoon of upload er zelf een, en het voorbeeld verandert mee.
   <a href="../">Naar de tool &rarr;</a>
   <a href="index.html">De vijf indelingsmockups &rarr;</a>
@@ -411,7 +411,7 @@ body {
   <p class="kiezer__onder">
     De iconen in de badges komen nu uit de huisstijl in Supabase; wie er een
     wil bijzetten moet de beheerder vragen. Hieronder twee manieren om de
-    redacteur er zelf een te laten toevoegen, gedownload van Rijksbeeldbank.nl.
+    redacteur er zelf een te laten toevoegen, gedownload van Rijkshuisstijl.nl.
     Allebei met hetzelfde 'i'tje dat uitlegt waar dat icoon vandaan komt — het
     verschil zit in wáár het uploaden staat en of een eigen icoon blijft staan
     als je een andere badge kiest.
@@ -419,7 +419,7 @@ body {
 
   <div class="kiezer__rij" role="tablist" aria-label="Voorstel kiezen">
     <button type="button" class="tab" role="tab" aria-selected="true"  aria-controls="v1" id="t1"><span class="tab__nr">1</span> In de keuzelijst</button>
-    <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="v2" id="t2"><span class="tab__nr">2</span> Eigen blok met beeldbankiconen</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="v2" id="t2"><span class="tab__nr">2</span> Eigen blok met eigen iconen</button>
 
     <span class="kiezer__spatie"></span>
 
@@ -460,10 +460,10 @@ body {
 
         <div class="infopaneel" data-rol="infopaneel" id="v1-info" role="note" hidden>
           <p>
-            <b>Een eigen icoon downloaden van de beeldbank.</b>
+            <b>Een eigen icoon downloaden van de huisstijl.</b>
             Staat het pictogram dat je nodig hebt niet in de lijst? Je kunt een
             eigen icoon downloaden van
-            <a href="https://www.rijksbeeldbank.nl/" target="_blank" rel="noopener">Rijksbeeldbank.nl</a>
+            <a href="https://www.rijkshuisstijl.nl/" target="_blank" rel="noopener">Rijkshuisstijl.nl</a>
             en hier uploaden om te gebruiken in de badges.
           </p>
           <ul>
@@ -577,10 +577,10 @@ body {
 
           <div class="infopaneel" data-rol="infopaneel" id="v2-info" role="note" hidden>
             <p>
-              <b>Een eigen icoon downloaden van de beeldbank.</b>
+              <b>Een eigen icoon downloaden van de huisstijl.</b>
               Staat het pictogram dat je nodig hebt niet in de lijst? Je kunt een
               eigen icoon downloaden van
-              <a href="https://www.rijksbeeldbank.nl/" target="_blank" rel="noopener">Rijksbeeldbank.nl</a>
+              <a href="https://www.rijkshuisstijl.nl/" target="_blank" rel="noopener">Rijkshuisstijl.nl</a>
               en hier uploaden om te gebruiken in de badges.
             </p>
             <ul>
@@ -592,7 +592,7 @@ body {
 
           <div class="uploadvak" data-rol="uploadvak" style="margin-block-start:8px">
             <p style="margin-block-end:12px !important" data-rol="uploaduitleg">
-              Sleep een icoon van de beeldbank hierheen, of:
+              Sleep een icoon hierheen, of:
             </p>
             <div class="uploadvak__rij">
               <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button" data-rol="kiesknop">Bestand kiezen</button>
@@ -606,12 +606,6 @@ body {
       </fieldset>
 
       <p class="melding" data-rol="melding"></p>
-
-      <p class="noot">
-        Je eigen iconen staan bij elkaar en blijven staan, ook als je ze even
-        niet in een badge gebruikt. Ze komen in beide keuzelijsten onder het
-        kopje <b>Eigen iconen</b> te staan.
-      </p>
     </div>
 
     <div class="voorbeeldkolom">
@@ -875,7 +869,7 @@ function neemBestand(v, bestand) {
   const isPng = bestand.type === 'image/png' || /\.png$/i.test(bestand.name);
 
   if (!isSvg && !isPng) {
-    meld(v, 'Kies een SVG of een PNG. Van de beeldbank komt meestal een SVG; die is het scherpst.');
+    meld(v, 'Kies een SVG of een PNG. Van de huisstijlsite komt meestal een SVG; die is het scherpst.');
     return;
   }
   if (bestand.size > MAXBYTES) {
@@ -892,7 +886,7 @@ function neemBestand(v, bestand) {
       const kop = (tekst.match(/<svg[^>]*>/i) || [''])[0];
       if (!/\swidth=/i.test(kop) || !/\sheight=/i.test(kop)) {
         meld(v, 'Deze SVG heeft geen width en height op het <svg>-element. Edge en Firefox tekenen zo’n ' +
-                'bestand niet in de export, dus de badge zou leeg blijven. Open hem in de beeldbank ' +
+                'bestand niet in de export, dus de badge zou leeg blijven. Download hem ' +
                 'opnieuw als PNG, of laat de beheerder de maten erin zetten.');
         return;
       }
@@ -1088,7 +1082,7 @@ const UITLEG = {
     bouw: '<span class="duur">Klein.</span> Eén extra optie in de twee lijsten, een uploadvak en een icoon dat als data-URI in de bestaande icoonvoorraad komt. De tekencode verandert niet: die tekent al een plaatje in de badge.',
   },
   v2: {
-    naam: '2 — Eigen blok met beeldbankiconen',
+    naam: '2 — Eigen blok met eigen iconen',
     ziet: 'Onder de keuzelijsten een blok <b>Eigen iconen</b>: een sleepvak, en daaronder wat je hebt toegevoegd als strookje met een kruisje om het weer weg te halen. Wat hier staat, staat in beide lijsten onder <b>Eigen iconen</b>.',
     goed: 'Je eigen iconen zijn een verzameling in plaats van een eenmalige keuze: twee badges kunnen hetzelfde icoon gebruiken, en weghalen kan zonder de badge te veranderen. Ook de logische plek om ze later te bewaren.',
     zwak: 'Er staat altijd een sleepvak in beeld, ook bij wie nooit een eigen icoon gebruikt. Dat maakt de stap langer, en op een telefoon het meest.',
