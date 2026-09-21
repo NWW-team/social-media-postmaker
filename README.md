@@ -297,14 +297,13 @@ toevoegen of vervangen.
 - **Logo** ontbreekt nog. Er stond een zichtbare gestippelde plaatshouder in de
   kopbalk; die is er op verzoek uit, dus de kopbalk draagt nu alleen de sessie.
   Komt het beeldmerk er, dan is dat de plek ervoor.
-- **Iconenset**: drie pictogrammen komen uit de toolkit (wereld, gesprek,
-  megafoon). De overige zeventien zijn eenvoudige eigen tekeningen in dezelfde
-  lijnstijl — placeholders, net als de vijf die er al stonden. Twee dingen uit
-  de posts op het account zitten er nog niet bij: het Nederlandkaartje met het
-  hoofd en de brancard. Die zijn met de hand niet goed na te maken; een
-  Nederlandsilhouet dat net niet klopt is erger dan geen silhouet. Voor
-  "Nederland" staat er nu een vlaggetje en voor medische hulp een ziekenhuis.
-  De keuzelijsten staan op alfabet.
+- **Iconenset**: de plaatshouders zijn eruit. In de huisstijl staan nu veertig
+  officiële pictogrammen van Rijkshuisstijl.nl, plus de wereldbol — dat is het
+  eigen beeldmerk en die zat niet in de aangeleverde set, dus die is bewust
+  blijven staan onder zijn oude naam *Wereld (toolkit)*. Het Nederlandkaartje
+  met het hoofd, dat hier met de hand niet na te maken was, zit er nu wél bij
+  als *Nederland*. Zie `supabase/06_iconen.sql` voor wat er precies in de
+  tabel is gezet. De keuzelijsten staan op alfabet.
 - **Controle** door communicatie of de export echt aan de huisstijl voldoet.
 
 ### Zelf een icoon toevoegen
