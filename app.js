@@ -926,20 +926,31 @@ function toonIcoonkeuze() {
 /* ---------------------------------------------------------- eigen iconen */
 
 /*
- * Een eigen icoon uit de beeldbank van de huisstijl.
+ * Een eigen icoon van Rijkshuisstijl.nl.
  *
  * Het bestand gaat nergens heen: net als de foto wordt het met FileReader
- * gelezen en meteen als data-URI in de icoonvoorraad gezet. Er is geen
- * upload-aanroep, en een bewaard concept bevat alleen de naam van het icoon —
- * niet de tekening.
+ * gelezen en meteen getekend. Er is geen upload-aanroep, en een bewaard
+ * concept bevat alleen de naam van het icoon — niet de tekening.
  *
- * SVG wordt als tekst gelezen en hier zelf tot data-URI gemaakt, zodat we
- * onderweg kunnen kijken of er width en height op het svg-element staan. Zonder
- * die twee tekenen Edge en Firefox het bestand niet op een canvas en zou de
- * badge in de export leeg blijven, terwijl hij in Chrome gewoon gevuld lijkt.
+ * Twee dingen gebeuren voordat het icoon in de badge terechtkomt:
+ *
+ *  1. Ontbreekt width/height op het svg-element, dan vullen we ze zelf aan
+ *     vanuit de viewBox (zie metMaatAan()). Rijkshuisstijl.nl levert SVG's
+ *     zo aan: alleen een viewBox, geen width/height. Chrome vult dat zelf
+ *     aan, maar Edge en Firefox tekenen zo'n bestand dan helemaal niet op een
+ *     canvas — de badge zou leeg blijven terwijl hij in Chrome gewoon gevuld
+ *     lijkt. De WAARDE van width/height maakt niets uit voor hoe groot het
+ *     icoon straks in de badge komt — dat bepaalt drawImage() met een eigen
+ *     doelmaat — ze moeten alleen ergens staan, dus een standaardmaat volstaat.
+ *  2. Het icoon wordt herkleurd naar de icoonkleur van de huisstijl, ongeacht
+ *     welke kleur het bestand zelf heeft — zie kleurIcoonOm(). Zo gedragen
+ *     eigen iconen zich hetzelfde als de iconen uit de huisstijl, die ook
+ *     altijd in de icoonkleur staan.
+ *
  * Zie ook "Zelf een icoon toevoegen" in de LEESMIJ.
  */
 const EIGEN_ICOON_MAX = 512 * 1024;
+const EIGEN_ICOON_CANVASMAAT = 128;
 
 function koppelEigenIconen() {
   el.eigenuitlegknop.addEventListener('click', () => {
@@ -994,23 +1005,63 @@ function neemIcoonbestand(bestand) {
     let bron;
     if (isSvg) {
       const tekst = String(lezer.result);
-      const svgkop = (tekst.match(/<svg[^>]*>/i) || [''])[0];
-      if (!/\swidth=/i.test(svgkop) || !/\sheight=/i.test(svgkop)) {
-        toonMelding(
-          'Deze SVG heeft geen width en height op het svg-element. Edge en Firefox ' +
-          'tekenen zo\u2019n bestand niet in de download, dus de badge zou leeg blijven. ' +
-          'Download hem opnieuw als PNG, of laat de beheerder de maten erin zetten.', 'fout');
+      if (!/<svg[^>]*>/i.test(tekst)) {
+        toonMelding('Dit bestand is geen geldige SVG.', 'fout');
         return;
       }
-      bron = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(tekst);
+      bron = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(metMaatAan(tekst));
     } else {
       bron = String(lezer.result);
     }
-    voegEigenIcoonToe(icoonnaamUit(bestand.name), bron);
-    el.eigennaam.textContent = bestand.name;
+    kleurIcoonOm(bron, (herkleurd) => {
+      voegEigenIcoonToe(icoonnaamUit(bestand.name), herkleurd);
+      el.eigennaam.textContent = bestand.name;
+    });
   };
 
   if (isSvg) lezer.readAsText(bestand); else lezer.readAsDataURL(bestand);
+}
+
+/* Width en height op het svg-element zetten als ze ontbreken, met de maat
+   van de viewBox — of een standaardmaat als die er ook niet is. */
+function metMaatAan(svgtekst) {
+  const kop = (svgtekst.match(/<svg[^>]*>/i) || [''])[0];
+  if (/\swidth=/i.test(kop) && /\sheight=/i.test(kop)) return svgtekst;
+
+  const vb = kop.match(/viewBox\s*=\s*["'][\d.eE+-]+\s+[\d.eE+-]+\s+([\d.eE+-]+)\s+([\d.eE+-]+)["']/i);
+  const breed = vb ? vb[1] : '100';
+  const hoog = vb ? vb[2] : '100';
+  const nieuweKop = kop.replace(/^<svg/i, '<svg width="' + breed + '" height="' + hoog + '"');
+  return svgtekst.slice(0, svgtekst.indexOf(kop)) + nieuweKop +
+    svgtekst.slice(svgtekst.indexOf(kop) + kop.length);
+}
+
+/*
+ * Een geüploade tekening herkleuren naar de icoonkleur van de huisstijl.
+ *
+ * De bron kan van alles zijn — een gekleurde SVG, een meerkleurige PNG —
+ * dus in plaats van kleurcodes in de tekening op te zoeken en te vervangen,
+ * tekenen we hem op een canvas en verven we hem opnieuw: alles wat niet
+ * doorzichtig is wordt de icoonkleur, met behoud van de doorzichtigheid zelf.
+ * Dat werkt voor elk bestandsformaat en negeert de eigen kleur volledig — het
+ * resultaat is een data-URI, net zo'n plaatje als de iconen uit de huisstijl.
+ */
+function kleurIcoonOm(bron, klaar) {
+  const img = new Image();
+  img.onload = () => {
+    const maat = EIGEN_ICOON_CANVASMAAT;
+    const canvas = document.createElement('canvas');
+    canvas.width = maat;
+    canvas.height = maat;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, maat, maat);
+    ctx.globalCompositeOperation = 'source-in';
+    ctx.fillStyle = TEMPLATES.decoratie.icoonKleur;
+    ctx.fillRect(0, 0, maat, maat);
+    klaar(canvas.toDataURL('image/png'));
+  };
+  img.onerror = () => toonMelding('Dit bestand kon niet getekend worden.', 'fout');
+  img.src = bron;
 }
 
 /* Van bestandsnaam naar iets dat in een keuzelijst te lezen is. */

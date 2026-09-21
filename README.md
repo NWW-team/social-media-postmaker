@@ -317,17 +317,23 @@ valt dan terug op het eerste icoon uit de huisstijl.
 Het 'i'tje naast de naam vertelt waar zo'n icoon vandaan komt: je kunt er een
 downloaden van [Rijkshuisstijl.nl](https://www.rijkshuisstijl.nl/) en hier
 uploaden om in de badges te gebruiken. Een SVG of PNG met een doorzichtige
-achtergrond, vierkant en in één kleur, tot 512 kB.
+achtergrond, tot 512 kB. De kleur van het bestand doet er niet toe: de tool
+herkleurt elk eigen icoon naar de icoonkleur uit de huisstijl, precies zoals
+dat al gebeurde bij de iconen die er al stonden.
 
 Het bestand blijft op je eigen computer: het wordt met `FileReader` gelezen en
-meteen als data-URI getekend, precies zoals de foto, en er is geen
-upload-aanroep. Een eigen icoon hoort dus bij dit tabblad en niet bij je account
-— een collega ziet het niet, en na het sluiten is het weg. Moet iedereen het
-kunnen kiezen, dan hoort het in de huisstijl thuis; zie het volgende kopje.
+meteen getekend, precies zoals de foto, en er is geen upload-aanroep. Een
+eigen icoon hoort dus bij dit tabblad en niet bij je account — een collega
+ziet het niet, en na het sluiten is het weg. Moet iedereen het kunnen kiezen,
+dan hoort het in de huisstijl thuis; zie het volgende kopje.
 
-Een SVG zonder `width` en `height` wordt geweigerd, met uitleg erbij. Dat is
-dezelfde valkuil als hieronder: in Chrome lijkt zo'n bestand te werken, terwijl
-de badge in de download leeg blijft.
+Rijkshuisstijl.nl levert SVG's zonder `width` en `height` op het svg-element,
+alleen een viewBox. Chrome vult dat zelf aan, maar Edge en Firefox tekenen
+zo'n bestand dan helemaal niet in een canvas — de badge zou leeg blijven,
+terwijl hij in Chrome gewoon gevuld lijkt (dezelfde valkuil als hieronder). De
+tool vult die maat daarom zelf aan uit de viewBox, zodat een ongewijzigde
+download gewoon werkt; alleen een bestand dat geen geldige SVG is, wordt
+geweigerd.
 
 ### Een pictogram aan de huisstijl toevoegen
 

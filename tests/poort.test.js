@@ -699,12 +699,15 @@ const zichtbaar = (page, id) => page.evaluate((i) => {
   /*
    * Een icoon dat de redacteur zelf toevoegt. Wat hier toe doet: het bestand
    * gaat nergens heen, het komt naast de iconen uit de huisstijl in beide
-   * keuzelijsten te staan, en het wordt écht getekend.
+   * keuzelijsten te staan, het wordt écht getekend, en het wordt herkleurd
+   * naar de icoonkleur — vandaar rood in beide proefbestanden: als de test
+   * nog rood zou zien, is de herkleuring stuk.
    */
   const svgMetMaat = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">' +
-    '<path d="M4 12h16M12 4v16" stroke="#112233" stroke-width="2"/></svg>';
+    '<path d="M4 12h16M12 4v16" stroke="#ff0000" stroke-width="2"/></svg>';
   const svgZonderMaat = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
-    '<circle cx="12" cy="12" r="8" fill="#112233"/></svg>';
+    '<circle cx="12" cy="12" r="8" fill="#ff0000"/></svg>';
+  const svgOngeldig = 'dit is geen svg, gewoon platte tekst';
 
   const kiesIcoon = async (p, bestandsnaam, inhoud, type) => {
     await p.setInputFiles('#eigeninvoer', {
@@ -712,13 +715,34 @@ const zichtbaar = (page, id) => page.evaluate((i) => {
       mimeType: type || 'image/svg+xml',
       buffer: Buffer.from(inhoud),
     });
-    await p.waitForTimeout(250);
+    await p.waitForTimeout(350);
   };
 
   const groepen = (p, id) => p.evaluate((i) => [...document.getElementById(i).querySelectorAll('optgroup')]
     .map((g) => g.label + ': ' + [...g.children].map((o) => o.value).join(', ')), id);
 
-  alles &= await run('een eigen icoon komt in beide lijsten, in de badge en op het doek',
+  /* De kleur van het middelste pixel van een gecachet icoon, als #rrggbb —
+     zo valt te bewijzen dat de herkleuring echt gebeurt en niet toevallig
+     al klopte omdat het proefbestand toevallig de icoonkleur gebruikte. */
+  /* Op natuurlijke grootte tekenen en het middelste pixel lezen — geen
+     extra verkleining, want die vermengt via bilineaire filtering de
+     icoonkleur met de doorzichtige rand ernaast en geeft dan een net
+     "verkeerde" kleur terug die niets met de herkleuring te maken heeft. */
+  const icoonPixel = (p, naam) => p.evaluate((n) => {
+    const icoon = icoonCache[n];
+    const b = icoon.naturalWidth || 128;
+    const h = icoon.naturalHeight || 128;
+    const c = document.createElement('canvas');
+    c.width = b; c.height = h;
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(icoon, 0, 0);
+    const [r, g, blauw] = ctx.getImageData(b >> 1, h >> 1, 1, 1).data;
+    const hex = (x) => x.toString(16).padStart(2, '0');
+    return '#' + hex(r) + hex(g) + hex(blauw);
+  }, naam);
+
+  alles &= await run('een eigen icoon komt in beide lijsten, in de badge, op het doek en in de icoonkleur',
     { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
     async (p) => {
       await kiesIcoon(p, 'ambassade.svg', svgMetMaat);
@@ -733,6 +757,7 @@ const zichtbaar = (page, id) => page.evaluate((i) => {
         kaartjes: document.querySelectorAll('#eigenrij .eigenkaart').length,
         melding: document.getElementById('melding').textContent,
       }));
+      const kleur = await icoonPixel(p, 'Ambassade');
 
       const lijsten = (await groepen(p, 'icoon0')).concat(await groepen(p, 'icoon1'));
       const beide = lijsten.filter((g) => g.startsWith('Eigen iconen:')).length === 2;
@@ -745,27 +770,71 @@ const zichtbaar = (page, id) => page.evaluate((i) => {
       if (!uit.getekend) fouten.push('het icoon is niet geladen');
       if (uit.kaartjes !== 1) fouten.push('kaartjes: ' + uit.kaartjes);
       if (uit.melding) fouten.push('onverwachte melding: ' + uit.melding);
-      return { ok: fouten.length === 0, uitleg: fouten.length ? fouten.join('; ') : 'Ambassade staat overal' };
+      if (kleur !== '#112233') fouten.push('niet herkleurd naar de icoonkleur, staat op ' + kleur);
+      return { ok: fouten.length === 0, uitleg: fouten.length ? fouten.join('; ') : 'Ambassade staat overal, in ' + kleur };
     });
 
   /*
-   * Chrome vult een ontbrekende maat aan, Edge en Firefox tekenen zo'n SVG
-   * helemaal niet op een canvas. Zou de tool hem aannemen, dan zag de redacteur
-   * hier een gevulde badge en in de download een lege.
+   * Rijkshuisstijl.nl levert SVG's met alleen een viewBox, geen width/height.
+   * Chrome vult dat zelf aan, Edge en Firefox tekenen zo'n SVG dan helemaal
+   * niet op een canvas. De tool moet dit zelf oplossen — niet de redacteur
+   * naar een beheerder sturen voor iets wat bij elke download hetzelfde is.
    */
-  alles &= await run('een SVG zonder width en height wordt geweigerd, met uitleg',
+  alles &= await run('een SVG zonder width en height krijgt de maat van de viewBox, niet een afwijzing',
     { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
     async (p) => {
       await kiesIcoon(p, 'zonder-maat.svg', svgZonderMaat);
       const uit = await p.evaluate(() => ({
         eigen: state.eigenIconen.length,
         badge0: state.iconen[0],
+        getekend: Boolean(icoonCache['Zonder maat'] && icoonCache['Zonder maat'].complete &&
+                          icoonCache['Zonder maat'].naturalWidth),
+        melding: document.getElementById('melding').textContent,
+      }));
+      const kleur = await icoonPixel(p, 'Zonder maat');
+      const ok = uit.eigen === 1 && uit.badge0 === 'Zonder maat' && uit.getekend &&
+                 !uit.melding && kleur === '#112233';
+      return { ok, uitleg: `eigen=${uit.eigen} badge0=${uit.badge0} getekend=${uit.getekend} kleur=${kleur} melding="${uit.melding}"` };
+    });
+
+  alles &= await run('een bestand dat geen svg is wordt geweigerd, met uitleg',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      await kiesIcoon(p, 'stuk.svg', svgOngeldig);
+      const uit = await p.evaluate(() => ({
+        eigen: state.eigenIconen.length,
         melding: document.getElementById('melding').textContent,
         soort: document.getElementById('melding').className,
       }));
-      const ok = uit.eigen === 0 && uit.badge0 === 'Aanvraag' &&
-                 /width en height/.test(uit.melding) && /fout/.test(uit.soort);
-      return { ok, uitleg: `eigen=${uit.eigen} badge0=${uit.badge0} melding=${uit.melding.slice(0, 40)}` };
+      const ok = uit.eigen === 0 && /geldige SVG/.test(uit.melding) && /fout/.test(uit.soort);
+      return { ok, uitleg: `eigen=${uit.eigen} melding=${uit.melding.slice(0, 40)}` };
+    });
+
+  /*
+   * Ook een PNG moet de eigen kleur verliezen. Een rode cirkel als echte
+   * PNG-bytes (getekend op canvas in de pagina zelf, niet nagebouwd in
+   * Node), en dan hetzelfde bewijs als bij de SVG: het middelste pixel moet
+   * de icoonkleur zijn, niet rood.
+   */
+  alles &= await run('een PNG wordt ook herkleurd naar de icoonkleur, niet de eigen kleur behouden',
+    { sessie: { user: { id: 'u1', email: 'redacteur@example.org' } }, rijen: rijenToegestaan },
+    async (p) => {
+      const roodeCirkel = await p.evaluate(() => {
+        const c = document.createElement('canvas');
+        c.width = 24; c.height = 24;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(12, 12, 10, 0, Math.PI * 2);
+        ctx.fill();
+        return c.toDataURL('image/png');
+      });
+      await kiesIcoon(p, 'rood.png', Buffer.from(roodeCirkel.split(',')[1], 'base64'), 'image/png');
+
+      const badge0 = await p.evaluate(() => state.iconen[0]);
+      const kleur = await icoonPixel(p, 'Rood');
+      const ok = badge0 === 'Rood' && kleur === '#112233';
+      return { ok, uitleg: `badge0=${badge0} kleur=${kleur}` };
     });
 
   alles &= await run('een te groot bestand en een verkeerd bestandstype komen er niet in',
