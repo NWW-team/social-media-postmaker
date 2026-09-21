@@ -429,7 +429,7 @@ stap 6.
 | `TESTEN.md` | Testdraaiboek voor de toegangscontrole |
 | `vendor/supabase-js.js` | De officiële Supabase-client, meegeleverd |
 | `vendor/rijkshuisstijl/` | De Rijkshuisstijl Community, meegeleverd: tokens, componenten-CSS, lettertype |
-| `mockups/` | De vijf indelingsvoorstellen waaruit dit scherm gekozen is |
+| `mockups/` | De indelingsvoorstellen waaruit dit scherm gekozen is, en de voorstellen die nog openstaan |
 | `tests/poort.test.js` | Geautomatiseerde test van de poortlogica |
 | `STRATEGY.md` | Waarom dit product bestaat |
 

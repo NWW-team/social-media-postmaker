@@ -1,11 +1,48 @@
 # Mockups — de tool in de Rijkshuisstijl
 
-Twee pagina's, allebei zonder server te openen:
+Drie pagina's, alle drie zonder server te openen:
 
 | Pagina | Waarover | Stand |
 | --- | --- | --- |
 | [`index.html`](index.html) | Vijf indelingen voor de hele tool | Beslist: nummer 4 |
 | [`teksteditor.html`](teksteditor.html) | Drie manieren om de letterknoppen in het tekstveld te zetten | **Open — nog te kiezen** |
+| [`eigen-icoon.html`](eigen-icoon.html) | Twee manieren om een eigen icoon uit de beeldbank in de badge te zetten | **Open — nog te kiezen** |
+
+## Een eigen icoon in de badge
+
+De iconen in de badges komen uit de huisstijl in Supabase; wie er een wil
+bijzetten, moet de beheerder vragen. Hij staat dan meteen bij iedereen in de
+lijst. [`eigen-icoon.html`](eigen-icoon.html) zet twee manieren naast elkaar om
+de redacteur er zelf een te laten toevoegen, gedownload van Rijksbeeldbank.nl.
+Ook deze voorstellen wérken: kies een icoon of sleep er zelf een in het vak, en
+het voorbeeld verandert mee.
+
+| | Voorstel | Waar het uploaden staat | Bouwwerk |
+| --- | --- | --- | --- |
+| 1 | **In de keuzelijst** | Onderaan de keuzelijst van elke badge, als optie *Eigen icoon uploaden…* | Klein — een optie, een uploadvak, en het icoon als data-URI in de bestaande icoonvoorraad |
+| 2 | **Eigen blok met beeldbankiconen** | Een blok *Eigen iconen* onder de twee keuzelijsten, met een sleepvak en wat je toevoegde | Middel — als 1, plus een lijstje eigen iconen met toevoegen en weghalen |
+
+Het verschil dat er het meest toe doet: in 1 hangt een eigen icoon aan één
+badge en is het weg zodra je iets anders kiest, in 2 is het een verzameling die
+blijft staan en in beide keuzelijsten verschijnt. Daar staat tegenover dat 2
+altijd een sleepvak in beeld heeft, ook bij wie nooit een eigen icoon gebruikt.
+
+Allebei hebben ze hetzelfde **'i'tje** naast het veld: één klik, en er klapt
+uitleg open dat je een eigen icoon kunt downloaden van Rijksbeeldbank.nl en hier
+kunt uploaden om in de badges te gebruiken, met daaronder wat voor bestand
+werkt. Een knop en geen tooltip op hover, want op een aanraakscherm is er geen
+hover.
+
+Twee dingen die de mockup vast laat zien en die bij het bouwen terugkomen:
+
+- **Het bestand blijft op de eigen computer.** Het wordt met `FileReader`
+  gelezen en meteen als data-URI getekend, net als de foto — er is geen
+  upload-aanroep. Wil je een eigen icoon bewaren bij een concept, dan gaat het
+  wél naar Supabase, en dan is dat een bewuste keuze en geen bijvangst.
+- **SVG zonder `width` en `height` weigert de mockup**, met dezelfde uitleg als
+  het kopje *Een pictogram toevoegen* in de hoofd-LEESMIJ: Chrome vult zo'n maat
+  aan, Edge en Firefox tekenen het bestand dan helemaal niet in een canvas, en
+  dan blijft de badge in de export leeg.
 
 ## De letterknoppen in het tekstveld
 

@@ -1,0 +1,1145 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Een eigen icoon in de badge — twee voorstellen</title>
+
+<!--
+  Zelfde opzet als de andere twee pagina's in deze map: de échte Rijkshuisstijl
+  Community uit npm, en verder laadt deze pagina niets van buiten.
+  Dubbelklikken werkt.
+
+  Het icoon dat je hier kiest gaat nergens heen. Net als de foto in de tool
+  wordt het met FileReader in de browser gelezen en meteen als data-URI
+  getekend; er is geen upload-aanroep om te vergeten.
+-->
+<link rel="stylesheet" href="../vendor/rijkshuisstijl/font.css">
+<link rel="stylesheet" href="../vendor/rijkshuisstijl/rhc-tokens-hemelblauw.css">
+<link rel="stylesheet" href="../vendor/rijkshuisstijl/rhc-components.css">
+
+<style>
+/* ===================================================================== *
+ * 1. De keuzebalk eromheen — met opzet NIET in de huisstijl.
+ *
+ * Overgenomen uit teksteditor.html in deze map, zodat de mockuppagina's zich
+ * hetzelfde gedragen: donker en neutraal, zodat je de vergelijkingsbalk nooit
+ * aanziet voor een onderdeel van het ontwerp.
+ * ===================================================================== */
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  font: 15px/1.5 "Fira Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.vlag {
+  background: #7c2d12;
+  color: #fff;
+  padding: 12px 20px;
+  font-size: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: baseline;
+}
+.vlag b { color: #fff; }
+.vlag a { color: #fed7aa; }
+
+.kiezer {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 40;
+  background: #0f172a;
+  border-block-end: 1px solid #1e293b;
+  padding: 14px 20px 0;
+}
+.kiezer__titel { margin: 0 0 2px; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.kiezer__onder { margin: 0 0 12px; font-size: 13px; color: #94a3b8; max-width: 82ch; }
+.kiezer__rij { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.kiezer__spatie { flex: 1 1 20px; }
+
+.tab {
+  appearance: none;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #cbd5e1;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.tab:hover { border-color: #475569; color: #f1f5f9; }
+.tab[aria-selected="true"] { background: #e2e8f0; border-color: #e2e8f0; color: #0f172a; font-weight: 600; }
+.tab__nr { opacity: 0.6; margin-inline-end: 5px; }
+
+.breedterij { display: flex; gap: 6px; align-items: center; }
+.breedterij__label { font-size: 12px; color: #94a3b8; }
+.breedteknop {
+  appearance: none;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #cbd5e1;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.breedteknop[aria-pressed="true"] { background: #334155; color: #f1f5f9; }
+
+.uitleg {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 4px 22px;
+  padding: 12px 0 14px;
+  font-size: 13px;
+}
+.uitleg h2 { grid-column: 1 / -1; margin: 0 0 2px; font-size: 14px; color: #f1f5f9; }
+.uitleg dl { margin: 0; }
+.uitleg dt { color: #94a3b8; font-size: 12px; }
+.uitleg dd { margin: 0 0 6px; color: #cbd5e1; }
+.uitleg .duur { color: #fdba74; }
+
+/* ===================================================================== *
+ * 2. Het raam waarin een voorstel staat.
+ * ===================================================================== */
+
+.raam {
+  margin: 22px auto 60px;
+  background: #fff;
+  color: #000;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  transition: max-inline-size 0.18s ease;
+
+  /* Containerquery, geen mediaquery: Laptop/Telefoon versmalt het raam, niet
+     het browservenster. */
+  container-type: inline-size;
+}
+.raam--breed { max-inline-size: min(1180px, calc(100% - 40px)); }
+.raam--smal  { max-inline-size: min(400px, calc(100% - 40px)); }
+
+.mockup {
+  font-family: var(--rhc-text-font-family-default);
+  font-size: var(--rhc-text-font-size-sm);
+  line-height: var(--rhc-text-line-height-md);
+  color: var(--rhc-color-foreground-default);
+  background: #fff;
+  padding: 26px clamp(16px, 3vw, 30px) 34px;
+}
+.mockup h1, .mockup h2, .mockup h3, .mockup p, .mockup fieldset, .mockup legend { margin: 0; padding: 0; }
+.mockup fieldset { border: 0; min-inline-size: 0; }
+.mockup button, .mockup input, .mockup select, .mockup textarea { font: inherit; }
+
+@media (prefers-reduced-motion: reduce) { .raam { transition: none; } }
+
+/* ===================================================================== *
+ * 3. De stap zoals hij in de tool staat: invoer links, voorbeeld rechts.
+ * ===================================================================== */
+
+.stap__kop { margin-block-end: 18px; }
+.stap__kop h2 { font-size: var(--rhc-text-font-size-sm); font-weight: 700; }
+.stap__kop p { color: var(--rhc-color-foreground-subtle); margin-block-start: 4px !important; }
+
+.werkvlak {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 30px;
+  align-items: start;
+}
+@container (max-width: 860px) {
+  .werkvlak { grid-template-columns: minmax(0, 1fr); }
+}
+
+.veldnaam { font-weight: 600; display: block; margin-block-end: 6px; }
+.blok + .blok { margin-block-start: 20px; }
+.knoprij { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.aanvink { display: flex; align-items: center; gap: 10px; }
+.mockup select { inline-size: 100%; }
+
+.noot {
+  font-size: 0.875rem;
+  color: var(--rhc-color-foreground-subtle);
+  margin-block-start: 14px !important;
+}
+
+/* De melding: dezelfde toon als in de tool. */
+.melding {
+  margin-block-start: 14px !important;
+  padding: 10px 12px;
+  border-inline-start: 4px solid #e17000;
+  background: #fdf6ec;
+  font-size: 0.875rem;
+}
+.melding:empty { display: none; }
+
+/* ===================================================================== *
+ * 4. Het 'i'tje en zijn uitleg — het onderwerp van deze pagina.
+ *
+ * Een knop en geen tooltip op hover: op een aanraakscherm is er geen hover, en
+ * met aria-expanded leest een schermlezer voor dat er uitleg open te klappen
+ * is. De uitleg staat onder de knop in de leesvolgorde, dus hij komt terecht
+ * waar hij over gaat.
+ * ===================================================================== */
+
+.labelrij { display: flex; align-items: center; gap: 8px; }
+
+.infoknop {
+  appearance: none;
+  inline-size: 20px;
+  block-size: 20px;
+  padding: 0;
+  border: 1px solid var(--rhc-color-primary-500);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--rhc-color-primary-500);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-style: italic;
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.infoknop:hover { background: var(--rhc-color-primary-100); }
+.infoknop:focus-visible {
+  outline: var(--rhc-focus-outline-width) solid var(--rhc-focus-outline-color);
+  outline-offset: var(--rhc-focus-outline-offset);
+}
+.infoknop[aria-expanded="true"] { background: var(--rhc-color-primary-500); color: #fff; }
+
+.infopaneel {
+  margin-block: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--rhc-color-border-subtle);
+  border-inline-start: 4px solid var(--rhc-color-primary-500);
+  border-radius: var(--rhc-border-radius-md);
+  background: var(--rhc-color-primary-50);
+  font-size: 0.875rem;
+  max-inline-size: 60ch;
+}
+.infopaneel p + p { margin-block-start: 8px !important; }
+.infopaneel ul { margin: 8px 0 0; padding-inline-start: 18px; }
+.infopaneel li { margin-block-end: 2px; }
+
+/* Alleen zichtbaar voor een schermlezer. */
+.verborgen {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ===================================================================== *
+ * 5. Het uploadvak.
+ *
+ * Dezelfde gestippelde rand als het fotovak in de tool, maar lager: een icoon
+ * is één bestandje en geen foto om in te passen.
+ * ===================================================================== */
+
+.uploadvak {
+  margin-block-start: 14px;
+  border: 2px dashed var(--rhc-color-primary-300);
+  border-radius: var(--rhc-border-radius-md);
+  background: #fff;
+  padding: 16px;
+  text-align: center;
+}
+.uploadvak.actief { border-color: var(--rhc-color-primary-500); background: var(--rhc-color-primary-100); }
+.uploadvak__rij { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; }
+.uploadvak p { font-size: 0.875rem; color: var(--rhc-color-foreground-subtle); }
+
+/* De eigen iconen die al binnen zijn, als strookje kaartjes. */
+.eigenrij { display: flex; flex-wrap: wrap; gap: 10px; margin-block-start: 14px; }
+.eigenkaart {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 6px;
+  border: 1px solid var(--rhc-color-border-default);
+  border-radius: var(--rhc-border-radius-md);
+  background: #fff;
+  font-size: 0.8125rem;
+}
+.eigenkaart__beeld {
+  inline-size: 30px;
+  block-size: 30px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--rhc-color-border-subtle);
+  object-fit: contain;
+  padding: 4px;
+}
+.eigenkaart__naam { max-inline-size: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eigenkaart__weg {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--rhc-color-foreground-subtle);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+.eigenkaart__weg:hover { color: #a04500; }
+
+.bestandsnaam {
+  display: block;
+  margin-block-start: 8px;
+  font-size: 0.8125rem;
+  color: var(--rhc-color-foreground-subtle);
+  word-break: break-all;
+}
+
+/* ===================================================================== *
+ * 6. Het voorbeeld van de post.
+ *
+ * Dezelfde maten als in teksteditor.html: alles afgeleid van --pb, met de
+ * verhoudingen uit de PowerPoint-toolkit.
+ * ===================================================================== */
+
+.voorbeeldkolom { display: grid; gap: 10px; justify-items: start; }
+.voorbeeldkolom > p { color: var(--rhc-color-foreground-subtle); font-size: 0.875rem; }
+
+/* Zonder deze grens trekt het zinnetje onder het voorbeeld de hele
+   voorbeeldkolom breed, en houdt de invoer ernaast te weinig ruimte over. */
+.voorbeeldkolom .noot { max-inline-size: 300px; }
+
+.post {
+  --pb: 300px;
+  --inspring: calc(var(--pb) * 0.0576);
+  --hoek: calc(var(--pb) * 0.09492);
+
+  --blauw: #007bc7;
+  --lichtblauw: #c7e5f3;
+
+  position: relative;
+  inline-size: var(--pb);
+  max-inline-size: 100%;
+  aspect-ratio: 4 / 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  border-end-end-radius: var(--hoek);
+  background: #0b3a5c;
+  isolation: isolate;
+}
+.post__beeld {
+  position: relative;
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: hidden;
+  z-index: 1;
+}
+.post__foto {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(90% 60% at 72% 12%, #ffd9a3 0%, rgba(255, 217, 163, 0) 58%),
+    radial-gradient(85% 60% at 12% 92%, #07293f 0%, rgba(7, 41, 63, 0) 62%),
+    linear-gradient(158deg, #5aa9d0 0%, #2f74a0 42%, #123c58 100%);
+}
+.post__foto::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(38% 26% at 26% 62%, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0) 70%),
+    radial-gradient(22% 30% at 62% 74%, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0) 70%);
+}
+
+/*
+ * Vierkant, even breed als de foto. Eén eenheid van de viewBox is dan precies
+ * 1 % van de fotobreedte, net als in de huisstijl. Met de onderkant op de
+ * onderkant van de foto voor de plekken "onder"; voor "boven" klapt hij naar
+ * de bovenkant en spiegelt de code de y om — dezelfde som als in app.js.
+ */
+.post__ringen {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-end: 0;
+  inline-size: 100%;
+  aspect-ratio: 1;
+}
+.post__ringen--boven { inset-block-end: auto; inset-block-start: 0; }
+
+.post__vlak {
+  position: relative;
+  z-index: 2;
+  background: var(--lichtblauw);
+  color: var(--blauw);
+  padding: calc(var(--pb) * 0.059) var(--inspring) calc(var(--pb) * 0.0625);
+}
+.post__kop {
+  display: block;
+  font-size: calc(var(--pb) * 0.05);      /* 54 pt */
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+.post__sub {
+  display: block;
+  font-size: calc(var(--pb) * 0.027778);  /* 30 pt */
+  line-height: 1.2;
+  margin-block-start: calc(var(--pb) * 0.022) !important;
+}
+</style>
+</head>
+<body>
+
+<p class="vlag">
+  <b>Dit is niet de tool.</b>
+  Twee voorstellen om een eigen icoon uit de beeldbank in de badge te zetten.
+  Ze werken: kies een icoon of upload er zelf een, en het voorbeeld verandert mee.
+  <a href="../">Naar de tool &rarr;</a>
+  <a href="index.html">De vijf indelingsmockups &rarr;</a>
+  <a href="teksteditor.html">De letterknoppen in het tekstveld &rarr;</a>
+</p>
+
+<div class="kiezer">
+  <p class="kiezer__titel">Een eigen icoon in de badge — twee voorstellen</p>
+  <p class="kiezer__onder">
+    De iconen in de badges komen nu uit de huisstijl in Supabase; wie er een
+    wil bijzetten moet de beheerder vragen. Hieronder twee manieren om de
+    redacteur er zelf een te laten toevoegen, gedownload van Rijksbeeldbank.nl.
+    Allebei met hetzelfde 'i'tje dat uitlegt waar dat icoon vandaan komt — het
+    verschil zit in wáár het uploaden staat en of een eigen icoon blijft staan
+    als je een andere badge kiest.
+  </p>
+
+  <div class="kiezer__rij" role="tablist" aria-label="Voorstel kiezen">
+    <button type="button" class="tab" role="tab" aria-selected="true"  aria-controls="v1" id="t1"><span class="tab__nr">1</span> In de keuzelijst</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="v2" id="t2"><span class="tab__nr">2</span> Eigen blok met beeldbankiconen</button>
+
+    <span class="kiezer__spatie"></span>
+
+    <span class="breedterij">
+      <span class="breedterij__label">Toon op</span>
+      <button type="button" class="breedteknop" id="breedLaptop" aria-pressed="true">Laptop</button>
+      <button type="button" class="breedteknop" id="breedTelefoon" aria-pressed="false">Telefoon</button>
+    </span>
+  </div>
+
+  <div class="uitleg">
+    <h2 id="uitlegNaam"></h2>
+    <dl><dt>Wat je ziet</dt><dd id="uitlegZiet"></dd></dl>
+    <dl><dt>Goed voor</dt><dd id="uitlegGoed"></dd></dl>
+    <dl><dt>Zwakke kant</dt><dd id="uitlegZwak"></dd></dl>
+    <dl><dt>Bouwwerk</dt><dd id="uitlegBouw"></dd></dl>
+  </div>
+</div>
+
+<div class="raam raam--breed" id="raam">
+
+<!-- ==================================================================== 1 -->
+<section class="mockup hemelblauw" id="v1" role="tabpanel" aria-labelledby="t1" data-voorstel="v1">
+  <div class="stap__kop">
+    <h2>3. Opmaak</h2>
+    <p>Onderaan de keuzelijst staat <b>Eigen icoon uploaden…</b>, naast de iconen uit de huisstijl.</p>
+  </div>
+
+  <div class="werkvlak">
+    <div>
+      <fieldset>
+        <legend class="veldnaam labelrij">
+          Cirkels en icoontjes
+          <button type="button" class="infoknop" data-rol="infoknop" aria-expanded="false" aria-controls="v1-info">
+            <span aria-hidden="true">i</span><span class="verborgen">Uitleg over een eigen icoon</span>
+          </button>
+        </legend>
+
+        <div class="infopaneel" data-rol="infopaneel" id="v1-info" role="note" hidden>
+          <p>
+            <b>Een eigen icoon downloaden van de beeldbank.</b>
+            Staat het pictogram dat je nodig hebt niet in de lijst? Je kunt een
+            eigen icoon downloaden van
+            <a href="https://www.rijksbeeldbank.nl/" target="_blank" rel="noopener">Rijksbeeldbank.nl</a>
+            en hier uploaden om te gebruiken in de badges.
+          </p>
+          <ul>
+            <li>Kies een <b>SVG</b> of een <b>PNG</b> met een doorzichtige achtergrond.</li>
+            <li>Vierkant en in één kleur werkt het beste: het icoon komt in een witte cirkel te staan.</li>
+            <li>Het bestand blijft op je eigen computer, net als je foto.</li>
+          </ul>
+        </div>
+
+        <div class="aanvink">
+          <input type="checkbox" class="utrecht-checkbox rhc-checkbox" data-rol="aan" id="v1-aan" checked>
+          <label class="utrecht-form-label utrecht-form-label--checkbox" for="v1-aan">
+            Witte cirkellijnen met icoonbadges over de foto
+          </label>
+        </div>
+
+        <div class="knoprij" data-rol="icoonrij" style="margin-block-start:14px">
+          <label class="veldnaam" for="v1-positie" style="flex:1 1 150px">Plek op de foto
+            <select class="utrecht-select rhc-form-field-select" id="v1-positie" data-rol="positie" style="margin-block-start:5px;font-weight:400"></select>
+          </label>
+          <label class="veldnaam" for="v1-icoon0" style="flex:1 1 150px">Grote badge
+            <select class="utrecht-select rhc-form-field-select" id="v1-icoon0" data-rol="badge" data-badge="0" style="margin-block-start:5px;font-weight:400"></select>
+          </label>
+          <label class="veldnaam" for="v1-icoon1" style="flex:1 1 150px">Kleine badge
+            <select class="utrecht-select rhc-form-field-select" id="v1-icoon1" data-rol="badge" data-badge="1" style="margin-block-start:5px;font-weight:400"></select>
+          </label>
+        </div>
+
+        <!-- Komt pas te voorschijn als je in een van de twee lijsten
+             "Eigen icoon uploaden…" kiest. -->
+        <div class="uploadvak" data-rol="uploadvak" hidden>
+          <p style="margin-block-end:12px !important" data-rol="uploaduitleg">
+            Sleep het icoon hierheen, of:
+          </p>
+          <div class="uploadvak__rij">
+            <button type="button" class="utrecht-button utrecht-button--primary-action rhc-button" data-rol="kiesknop">Bestand kiezen</button>
+            <button type="button" class="utrecht-button utrecht-button--subtle rhc-button" data-rol="afbreken">Annuleren</button>
+          </div>
+          <input type="file" data-rol="invoer" accept=".svg,image/svg+xml,image/png" hidden>
+          <span class="bestandsnaam" data-rol="bestandsnaam"></span>
+        </div>
+      </fieldset>
+
+      <p class="melding" data-rol="melding"></p>
+
+      <p class="noot">
+        Het uploaden zit in de keuzelijst zelf, dus er staat geen enkel extra
+        vak in beeld zolang je het niet gebruikt. Het eigen icoon geldt voor
+        deze badge: kies je hem weg, dan is hij weg.
+      </p>
+    </div>
+
+    <div class="voorbeeldkolom">
+      <p>Voorbeeld</p>
+      <div class="post">
+        <span class="post__beeld">
+          <span class="post__foto"></span>
+          <svg class="post__ringen" data-rol="ringen" viewBox="0 0 100 100" aria-hidden="true"></svg>
+        </span>
+        <span class="post__vlak">
+          <span class="post__kop">Souvenirs meenemen uit het buitenland?</span>
+          <span class="post__sub">Dit zijn de regels.</span>
+        </span>
+      </div>
+      <p class="noot" style="margin-block-start:0 !important">
+        De cirkels en de badges staan op de maten uit de huisstijl; het icoon
+        vult 65 % van de badge, net als in de export.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================================== 2 -->
+<section class="mockup hemelblauw" id="v2" role="tabpanel" aria-labelledby="t2" data-voorstel="v2" hidden>
+  <div class="stap__kop">
+    <h2>3. Opmaak</h2>
+    <p>Een eigen blok onder de keuzelijsten, waarin je eigen iconen blijven staan.</p>
+  </div>
+
+  <div class="werkvlak">
+    <div>
+      <fieldset>
+        <legend class="veldnaam">Cirkels en icoontjes</legend>
+
+        <div class="aanvink">
+          <input type="checkbox" class="utrecht-checkbox rhc-checkbox" data-rol="aan" id="v2-aan" checked>
+          <label class="utrecht-form-label utrecht-form-label--checkbox" for="v2-aan">
+            Witte cirkellijnen met icoonbadges over de foto
+          </label>
+        </div>
+
+        <div class="knoprij" data-rol="icoonrij" style="margin-block-start:14px">
+          <label class="veldnaam" for="v2-positie" style="flex:1 1 150px">Plek op de foto
+            <select class="utrecht-select rhc-form-field-select" id="v2-positie" data-rol="positie" style="margin-block-start:5px;font-weight:400"></select>
+          </label>
+          <label class="veldnaam" for="v2-icoon0" style="flex:1 1 150px">Grote badge
+            <select class="utrecht-select rhc-form-field-select" id="v2-icoon0" data-rol="badge" data-badge="0" style="margin-block-start:5px;font-weight:400"></select>
+          </label>
+          <label class="veldnaam" for="v2-icoon1" style="flex:1 1 150px">Kleine badge
+            <select class="utrecht-select rhc-form-field-select" id="v2-icoon1" data-rol="badge" data-badge="1" style="margin-block-start:5px;font-weight:400"></select>
+          </label>
+        </div>
+
+        <div style="margin-block-start:22px">
+          <span class="veldnaam labelrij" id="v2-eigenlabel">
+            Eigen iconen
+            <button type="button" class="infoknop" data-rol="infoknop" aria-expanded="false" aria-controls="v2-info">
+              <span aria-hidden="true">i</span><span class="verborgen">Uitleg over een eigen icoon</span>
+            </button>
+          </span>
+
+          <div class="infopaneel" data-rol="infopaneel" id="v2-info" role="note" hidden>
+            <p>
+              <b>Een eigen icoon downloaden van de beeldbank.</b>
+              Staat het pictogram dat je nodig hebt niet in de lijst? Je kunt een
+              eigen icoon downloaden van
+              <a href="https://www.rijksbeeldbank.nl/" target="_blank" rel="noopener">Rijksbeeldbank.nl</a>
+              en hier uploaden om te gebruiken in de badges.
+            </p>
+            <ul>
+              <li>Kies een <b>SVG</b> of een <b>PNG</b> met een doorzichtige achtergrond.</li>
+              <li>Vierkant en in één kleur werkt het beste: het icoon komt in een witte cirkel te staan.</li>
+              <li>Het bestand blijft op je eigen computer, net als je foto.</li>
+            </ul>
+          </div>
+
+          <div class="uploadvak" data-rol="uploadvak" style="margin-block-start:8px">
+            <p style="margin-block-end:12px !important" data-rol="uploaduitleg">
+              Sleep een icoon van de beeldbank hierheen, of:
+            </p>
+            <div class="uploadvak__rij">
+              <button type="button" class="utrecht-button utrecht-button--secondary-action rhc-button" data-rol="kiesknop">Bestand kiezen</button>
+            </div>
+            <input type="file" data-rol="invoer" accept=".svg,image/svg+xml,image/png" hidden>
+            <span class="bestandsnaam" data-rol="bestandsnaam"></span>
+          </div>
+
+          <div class="eigenrij" data-rol="eigenrij" aria-labelledby="v2-eigenlabel"></div>
+        </div>
+      </fieldset>
+
+      <p class="melding" data-rol="melding"></p>
+
+      <p class="noot">
+        Je eigen iconen staan bij elkaar en blijven staan, ook als je ze even
+        niet in een badge gebruikt. Ze komen in beide keuzelijsten onder het
+        kopje <b>Eigen iconen</b> te staan.
+      </p>
+    </div>
+
+    <div class="voorbeeldkolom">
+      <p>Voorbeeld</p>
+      <div class="post">
+        <span class="post__beeld">
+          <span class="post__foto"></span>
+          <svg class="post__ringen" data-rol="ringen" viewBox="0 0 100 100" aria-hidden="true"></svg>
+        </span>
+        <span class="post__vlak">
+          <span class="post__kop">Souvenirs meenemen uit het buitenland?</span>
+          <span class="post__sub">Dit zijn de regels.</span>
+        </span>
+      </div>
+      <p class="noot" style="margin-block-start:0 !important">
+        De cirkels en de badges staan op de maten uit de huisstijl; het icoon
+        vult 65 % van de badge, net als in de export.
+      </p>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================================== *
+ * De huisstijl, voor zover deze pagina hem nodig heeft.
+ *
+ * In de tool komt dit uit Supabase (tabel public.huisstijl). Hier staan de
+ * maten hardgecodeerd, met dezelfde getallen als in de andere mockups: ringen
+ * en badges gerekend vanaf de linkeronderhoek van de foto, in eenheden van de
+ * fotobreedte.
+ * ===================================================================== */
+
+const DECORATIE = {
+  lijnkleur: 'rgba(255,255,255,0.9)',
+  lijndikte: 0.00208,
+  badgeKleur: '#ffffff',
+  icoonKleur: '#007bc7',
+  icoonDeel: 0.65,
+  ringen: [
+    { x:  0.1399, y: -0.1379, d: 0.5623 },
+    { x:  0.5428, y: -0.0240, d: 0.5623 },
+    { x: -0.0748, y: -0.3073, d: 0.5623 },
+  ],
+  badges: [
+    { x: 0.1850, y: -0.4017, d: 0.1596 },
+    { x: 0.3942, y: -0.2563, d: 0.1242 },
+  ],
+};
+
+const POSITIES = {
+  linksonder:  { label: 'Linksonder',  zij: 'links',  hoogte: 'onder' },
+  middenonder: { label: 'Middenonder', zij: 'midden', hoogte: 'onder' },
+  rechtsonder: { label: 'Rechtsonder', zij: 'rechts', hoogte: 'onder' },
+  linksboven:  { label: 'Linksboven',  zij: 'links',  hoogte: 'boven' },
+  middenboven: { label: 'Middenboven', zij: 'midden', hoogte: 'boven' },
+  rechtsboven: { label: 'Rechtsboven', zij: 'rechts', hoogte: 'boven' },
+};
+
+/*
+ * Vijf iconen uit de huisstijl, als SVG-tekst met {kleur} erin — precies de
+ * vorm waarin ze in Supabase staan. Let op de width én height op het
+ * svg-element: zonder die twee tekent Edge zo'n SVG niet in een canvas, en dan
+ * blijft de badge in de export leeg.
+ */
+const ICONEN = {
+  'Gesprek (toolkit)':
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="{kleur}" stroke-width="1.7" stroke-linejoin="round"><path d="M4 5h16v11H10l-6 4.5z"/></svg>',
+  'Megafoon (toolkit)':
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="{kleur}" stroke-width="1.7" stroke-linejoin="round"><path d="M3 10v4h3.5l7.5 4.5v-13L6.5 10z"/><path d="M17.5 9.2a4 4 0 0 1 0 5.6" stroke-linecap="round"/></svg>',
+  'Paspoort':
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="{kleur}" stroke-width="1.7"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M9 16.5h6" stroke-linecap="round"/></svg>',
+  'Vlag':
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="{kleur}" stroke-width="1.7" stroke-linejoin="round"><path d="M6 3v18" stroke-linecap="round"/><path d="M6 4.5h12l-2.6 4 2.6 4H6z"/></svg>',
+  'Wereld (toolkit)':
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="{kleur}" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.4 2.5 3.7 5.5 3.7 9s-1.3 6.5-3.7 9c-2.4-2.5-3.7-5.5-3.7-9S9.6 5.5 12 3z"/></svg>',
+};
+
+/* De sleutel die in een keuzelijst "hier wil ik zelf een bestand kiezen" zegt.
+   Geen icoonnaam, dus hij kan nooit botsen met een naam uit de huisstijl. */
+const UPLOADSLEUTEL = '\u0000upload';
+
+const MAXBYTES = 512 * 1024;
+
+/* Een icoon uit de huisstijl als data-URI. Geen los bestand: in de tool raakt
+   een canvas waar een extern plaatje in getekend is "besmet" en weigert daarna
+   te exporteren. */
+function bronVan(svgtekst) {
+  return 'data:image/svg+xml;charset=utf-8,' +
+    encodeURIComponent(svgtekst.replace(/\{kleur\}/g, DECORATIE.icoonKleur));
+}
+
+/* ===================================================================== *
+ * De stand van elk voorstel.
+ * ===================================================================== */
+
+const stand = {};   // per voorstel: { aan, positie, iconen, eigen, uploadVoor }
+
+function nieuweStand() {
+  return {
+    aan: true,
+    positie: 'linksonder',
+    iconen: ['Wereld (toolkit)', 'Gesprek (toolkit)'],
+    eigen: [],          // { naam, bron }
+    uploadVoor: null,   // voorstel 1: voor welke badge het uploadvak openstaat
+  };
+}
+
+function deel(v, rol) { return document.querySelector('#' + v + ' [data-rol="' + rol + '"]'); }
+function delen(v, rol) { return [...document.querySelectorAll('#' + v + ' [data-rol="' + rol + '"]')]; }
+
+function icoonBron(v, naam) {
+  const eigen = stand[v].eigen.find((e) => e.naam === naam);
+  if (eigen) return eigen.bron;
+  return ICONEN[naam] ? bronVan(ICONEN[naam]) : null;
+}
+
+/*
+ * De iconen op alfabet, net als in de tool: Postgres geeft de sleutels van een
+ * jsonb-waarde terug op lengte en pas daarbinnen op alfabet, dus zonder dit
+ * staat "Euro" boven "Ambassade".
+ */
+function opAlfabet(namen) {
+  return namen.slice().sort((a, b) => a.localeCompare(b, 'nl'));
+}
+
+/* ===================================================================== *
+ * De keuzelijsten.
+ * ===================================================================== */
+
+function vulKeuzelijsten(v) {
+  delen(v, 'badge').forEach((lijst) => {
+    const i = Number(lijst.dataset.badge);
+    lijst.textContent = '';
+
+    const huisstijl = document.createElement('optgroup');
+    huisstijl.label = 'Uit de huisstijl';
+    opAlfabet(Object.keys(ICONEN)).forEach((naam) => huisstijl.appendChild(optie(naam)));
+    lijst.appendChild(huisstijl);
+
+    if (stand[v].eigen.length) {
+      const eigen = document.createElement('optgroup');
+      eigen.label = 'Eigen iconen';
+      opAlfabet(stand[v].eigen.map((e) => e.naam)).forEach((naam) => eigen.appendChild(optie(naam)));
+      lijst.appendChild(eigen);
+    }
+
+    /* Voorstel 1: het uploaden zit ín de lijst. Voorstel 2 heeft er een eigen
+       blok voor en laat de lijst een lijst. */
+    if (v === 'v1') {
+      const erbij = document.createElement('optgroup');
+      erbij.label = 'Zelf toevoegen';
+      erbij.appendChild(optie('Eigen icoon uploaden…', UPLOADSLEUTEL));
+      lijst.appendChild(erbij);
+    }
+
+    lijst.value = stand[v].iconen[i];
+  });
+}
+
+function optie(tekst, waarde) {
+  const o = document.createElement('option');
+  o.value = waarde === undefined ? tekst : waarde;
+  o.textContent = tekst;
+  return o;
+}
+
+/* ===================================================================== *
+ * Het voorbeeld.
+ *
+ * Van een cirkel uit de huisstijl naar een plek in het vierkant onder de foto,
+ * met dezelfde som als app.js: rechts en boven zijn spiegelingen om het midden
+ * van de foto, het midden is een verschuiving. Alleen de cirkels verhuizen,
+ * niet de iconen — die staan dus nooit op hun kop.
+ * ===================================================================== */
+
+function plaatsing(positienaam) {
+  const positie = POSITIES[positienaam] || POSITIES.linksonder;
+
+  let verschuif = 0;
+  if (positie.zij === 'midden') {
+    const vormen = DECORATIE.ringen.concat(DECORATIE.badges);
+    const links = Math.min.apply(null, vormen.map((f) => f.x - f.d / 2));
+    const rechts = Math.max.apply(null, vormen.map((f) => f.x + f.d / 2));
+    verschuif = 0.5 - (links + rechts) / 2;
+  }
+
+  return (vorm) => {
+    const x = positie.zij === 'rechts' ? 1 - vorm.x : vorm.x + verschuif;
+    return {
+      cx: x * 100,
+      /* "onder": het vierkant staat met zijn onderkant op de onderkant van de
+         foto, en y loopt negatief naar boven. "boven": het vierkant klapt naar
+         de bovenkant van de foto en dezelfde y meet dan vanaf boven. */
+      cy: positie.hoogte === 'boven' ? -vorm.y * 100 : 100 + vorm.y * 100,
+      straal: vorm.d / 2 * 100,
+    };
+  };
+}
+
+function teken(v) {
+  const svg = deel(v, 'ringen');
+  const boven = (POSITIES[stand[v].positie] || POSITIES.linksonder).hoogte === 'boven';
+  svg.classList.toggle('post__ringen--boven', boven);
+
+  /* Let op: een SVG-element heeft geen .hidden-eigenschap zoals een
+     HTML-element; die zou hier stil blijven liggen. Vandaar het attribuut. */
+  if (!stand[v].aan) {
+    svg.setAttribute('hidden', '');
+    svg.textContent = '';
+    return;
+  }
+  svg.removeAttribute('hidden');
+
+  const plaats = plaatsing(stand[v].positie);
+  const stukken = [];
+
+  DECORATIE.ringen.forEach((ring) => {
+    const p = plaats(ring);
+    stukken.push('<circle cx="' + p.cx + '" cy="' + p.cy + '" r="' + p.straal + '" fill="none" stroke="' +
+      DECORATIE.lijnkleur + '" stroke-width="' + DECORATIE.lijndikte * 100 + '"/>');
+  });
+
+  DECORATIE.badges.forEach((badge, i) => {
+    const p = plaats(badge);
+    stukken.push('<circle cx="' + p.cx + '" cy="' + p.cy + '" r="' + p.straal + '" fill="' + DECORATIE.badgeKleur + '"/>');
+
+    const bron = icoonBron(v, stand[v].iconen[i]);
+    if (!bron) return;
+    const maat = p.straal * 2 * DECORATIE.icoonDeel;
+    stukken.push('<image href="' + bron.replace(/"/g, '&quot;') + '" x="' + (p.cx - maat / 2) +
+      '" y="' + (p.cy - maat / 2) + '" width="' + maat + '" height="' + maat +
+      '" preserveAspectRatio="xMidYMid meet"/>');
+  });
+
+  svg.innerHTML = stukken.join('');
+}
+
+/* ===================================================================== *
+ * Een bestand binnenhalen.
+ *
+ * Met FileReader, net als de foto in de tool: het bestand gaat nergens heen.
+ * SVG wordt als tekst gelezen en daarna zelf tot data-URI gemaakt, zodat we
+ * onderweg kunnen controleren of er width en height op het svg-element staan.
+ * ===================================================================== */
+
+function meld(v, tekst) { deel(v, 'melding').textContent = tekst || ''; }
+
+function naamUit(bestandsnaam) {
+  const kaal = bestandsnaam.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
+  return kaal ? kaal.charAt(0).toUpperCase() + kaal.slice(1) : 'Eigen icoon';
+}
+
+function neemBestand(v, bestand) {
+  if (!bestand) return;
+
+  const isSvg = bestand.type === 'image/svg+xml' || /\.svg$/i.test(bestand.name);
+  const isPng = bestand.type === 'image/png' || /\.png$/i.test(bestand.name);
+
+  if (!isSvg && !isPng) {
+    meld(v, 'Kies een SVG of een PNG. Van de beeldbank komt meestal een SVG; die is het scherpst.');
+    return;
+  }
+  if (bestand.size > MAXBYTES) {
+    meld(v, 'Dit bestand is groter dan 512 kB. Een pictogram hoort klein te zijn — is dit misschien een foto?');
+    return;
+  }
+
+  const lezer = new FileReader();
+  lezer.onerror = () => meld(v, 'Dit bestand kon niet gelezen worden.');
+  lezer.onload = () => {
+    let bron;
+    if (isSvg) {
+      const tekst = String(lezer.result);
+      const kop = (tekst.match(/<svg[^>]*>/i) || [''])[0];
+      if (!/\swidth=/i.test(kop) || !/\sheight=/i.test(kop)) {
+        meld(v, 'Deze SVG heeft geen width en height op het <svg>-element. Edge en Firefox tekenen zo’n ' +
+                'bestand niet in de export, dus de badge zou leeg blijven. Open hem in de beeldbank ' +
+                'opnieuw als PNG, of laat de beheerder de maten erin zetten.');
+        return;
+      }
+      bron = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(tekst);
+    } else {
+      bron = String(lezer.result);
+    }
+    voegToe(v, naamUit(bestand.name), bron);
+    deel(v, 'bestandsnaam').textContent = bestand.name;
+  };
+
+  if (isSvg) lezer.readAsText(bestand); else lezer.readAsDataURL(bestand);
+}
+
+/* Een eigen icoon erbij, en meteen in de badge waar het om begonnen was. */
+function voegToe(v, naam, bron) {
+  meld(v, '');
+
+  let uniek = naam;
+  let teller = 2;
+  while (stand[v].eigen.some((e) => e.naam === uniek) || ICONEN[uniek]) {
+    uniek = naam + ' ' + teller++;
+  }
+  stand[v].eigen.push({ naam: uniek, bron });
+
+  const badge = stand[v].uploadVoor === null ? 0 : stand[v].uploadVoor;
+  stand[v].iconen[badge] = uniek;
+  stand[v].uploadVoor = null;
+
+  werkbij(v);
+}
+
+function haalWeg(v, naam) {
+  stand[v].eigen = stand[v].eigen.filter((e) => e.naam !== naam);
+  if (!stand[v].eigen.length) deel(v, 'bestandsnaam').textContent = '';
+  stand[v].iconen = stand[v].iconen.map((huidig, i) =>
+    huidig === naam ? opAlfabet(Object.keys(ICONEN))[i] : huidig);
+  werkbij(v);
+}
+
+/* ===================================================================== *
+ * Alles wat in beeld staat bijwerken.
+ * ===================================================================== */
+
+function werkbij(v) {
+  const s = stand[v];
+
+  deel(v, 'icoonrij').hidden = !s.aan;
+  vulKeuzelijsten(v);
+
+  const vak = deel(v, 'uploadvak');
+  if (v === 'v1') {
+    vak.hidden = !s.aan || s.uploadVoor === null;
+    if (s.uploadVoor !== null) {
+      deel(v, 'uploaduitleg').textContent =
+        'Sleep het icoon voor de ' + (s.uploadVoor === 0 ? 'grote' : 'kleine') + ' badge hierheen, of:';
+    }
+  } else {
+    vak.hidden = !s.aan;
+    const rij = deel(v, 'eigenrij');
+    rij.hidden = !s.aan;
+    rij.textContent = '';
+    s.eigen.forEach((e) => rij.appendChild(eigenkaart(v, e)));
+  }
+
+  deel(v, 'positie').value = s.positie;
+  teken(v);
+}
+
+function eigenkaart(v, e) {
+  const kaart = document.createElement('span');
+  kaart.className = 'eigenkaart';
+
+  const beeld = document.createElement('img');
+  beeld.className = 'eigenkaart__beeld';
+  beeld.src = e.bron;
+  beeld.alt = '';
+
+  const naam = document.createElement('span');
+  naam.className = 'eigenkaart__naam';
+  naam.textContent = e.naam;
+  naam.title = e.naam;
+
+  const weg = document.createElement('button');
+  weg.type = 'button';
+  weg.className = 'eigenkaart__weg';
+  weg.innerHTML = '<span aria-hidden="true">&times;</span>';
+  weg.setAttribute('aria-label', 'Verwijder eigen icoon ' + e.naam);
+  weg.addEventListener('click', () => haalWeg(v, e.naam));
+
+  kaart.append(beeld, naam, weg);
+  return kaart;
+}
+
+/* ===================================================================== *
+ * Opbouw en invoer.
+ * ===================================================================== */
+
+['v1', 'v2'].forEach((v) => {
+  stand[v] = nieuweStand();
+
+  const positie = deel(v, 'positie');
+  Object.keys(POSITIES).forEach((naam) => positie.appendChild(optie(POSITIES[naam].label, naam)));
+  positie.addEventListener('change', () => {
+    stand[v].positie = positie.value;
+    teken(v);
+  });
+
+  deel(v, 'aan').addEventListener('change', (e) => {
+    stand[v].aan = e.target.checked;
+    werkbij(v);
+  });
+
+  delen(v, 'badge').forEach((lijst) => {
+    lijst.addEventListener('change', () => {
+      const i = Number(lijst.dataset.badge);
+      if (lijst.value === UPLOADSLEUTEL) {
+        /* De lijst zelf terugzetten: er is nog niets gekozen, dus hij hoort
+           te blijven staan op wat er in de badge staat. */
+        lijst.value = stand[v].iconen[i];
+        stand[v].uploadVoor = i;
+        werkbij(v);
+        deel(v, 'uploadvak').scrollIntoView({ block: 'nearest' });
+        return;
+      }
+      stand[v].iconen[i] = lijst.value;
+      teken(v);
+    });
+  });
+
+  /* Het 'i'tje. */
+  delen(v, 'infoknop').forEach((knop) => {
+    const paneel = document.getElementById(knop.getAttribute('aria-controls'));
+    knop.addEventListener('click', () => {
+      const open = knop.getAttribute('aria-expanded') === 'true';
+      knop.setAttribute('aria-expanded', String(!open));
+      paneel.hidden = open;
+    });
+    paneel.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      knop.setAttribute('aria-expanded', 'false');
+      paneel.hidden = true;
+      knop.focus();
+    });
+  });
+
+  /* Het uploadvak: knop, sleep en neerzetten. */
+  const vak = deel(v, 'uploadvak');
+  const invoer = deel(v, 'invoer');
+
+  deel(v, 'kiesknop').addEventListener('click', () => invoer.click());
+  invoer.addEventListener('change', () => {
+    neemBestand(v, invoer.files[0]);
+    invoer.value = '';
+  });
+
+  const afbreken = deel(v, 'afbreken');
+  if (afbreken) {
+    afbreken.addEventListener('click', () => {
+      stand[v].uploadVoor = null;
+      meld(v, '');
+      werkbij(v);
+    });
+  }
+
+  ['dragenter', 'dragover'].forEach((soort) => {
+    vak.addEventListener(soort, (e) => {
+      e.preventDefault();
+      vak.classList.add('actief');
+    });
+  });
+  ['dragleave', 'drop'].forEach((soort) => {
+    vak.addEventListener(soort, () => vak.classList.remove('actief'));
+  });
+  vak.addEventListener('drop', (e) => {
+    e.preventDefault();
+    neemBestand(v, e.dataTransfer.files[0]);
+  });
+
+  werkbij(v);
+});
+
+/* ===================================================================== *
+ * De balk bovenaan.
+ * ===================================================================== */
+
+const UITLEG = {
+  v1: {
+    naam: '1 — In de keuzelijst',
+    ziet: 'Onderaan de keuzelijst van elke badge staat <b>Eigen icoon uploaden…</b>. Kies je dat, dan klapt er een uploadvak open onder de rij; daarna staat je icoon in de lijst en in de badge.',
+    goed: 'Je vindt het uploaden precies waar je naar een icoon zoekt, en zolang je het niet gebruikt staat er geen extra vak in beeld. Het kleinste scherm wint hier het meest.',
+    zwak: 'Een keuzelijst die niet alleen kiest maar ook iets opent, is een lijst met twee taken. En er is geen plek waar je eigen iconen bij elkaar staan: kwijtraken gaat vanzelf, terugvinden niet.',
+    bouw: '<span class="duur">Klein.</span> Eén extra optie in de twee lijsten, een uploadvak en een icoon dat als data-URI in de bestaande icoonvoorraad komt. De tekencode verandert niet: die tekent al een plaatje in de badge.',
+  },
+  v2: {
+    naam: '2 — Eigen blok met beeldbankiconen',
+    ziet: 'Onder de keuzelijsten een blok <b>Eigen iconen</b>: een sleepvak, en daaronder wat je hebt toegevoegd als strookje met een kruisje om het weer weg te halen. Wat hier staat, staat in beide lijsten onder <b>Eigen iconen</b>.',
+    goed: 'Je eigen iconen zijn een verzameling in plaats van een eenmalige keuze: twee badges kunnen hetzelfde icoon gebruiken, en weghalen kan zonder de badge te veranderen. Ook de logische plek om ze later te bewaren.',
+    zwak: 'Er staat altijd een sleepvak in beeld, ook bij wie nooit een eigen icoon gebruikt. Dat maakt de stap langer, en op een telefoon het meest.',
+    bouw: '<span class="duur">Middel.</span> Als 1, plus een lijstje eigen iconen met toevoegen en weghalen. Wil je ze bewaren bij een concept, dan komt daar opslag bij — en dan gaat het icoon wél naar Supabase, in tegenstelling tot de foto.',
+  },
+};
+
+const tabs = [...document.querySelectorAll('[role="tab"]')];
+const raam = document.getElementById('raam');
+
+function toon(id) {
+  tabs.forEach((tab) => {
+    const doel = document.getElementById(tab.getAttribute('aria-controls'));
+    const aan = tab.getAttribute('aria-controls') === id;
+    tab.setAttribute('aria-selected', String(aan));
+    doel.hidden = !aan;
+  });
+  const u = UITLEG[id];
+  document.getElementById('uitlegNaam').textContent = u.naam;
+  document.getElementById('uitlegZiet').innerHTML = u.ziet;
+  document.getElementById('uitlegGoed').innerHTML = u.goed;
+  document.getElementById('uitlegZwak').innerHTML = u.zwak;
+  document.getElementById('uitlegBouw').innerHTML = u.bouw;
+}
+
+tabs.forEach((tab) => tab.addEventListener('click', () => toon(tab.getAttribute('aria-controls'))));
+
+const laptop = document.getElementById('breedLaptop');
+const telefoon = document.getElementById('breedTelefoon');
+
+function breedte(smal) {
+  raam.classList.toggle('raam--smal', smal);
+  raam.classList.toggle('raam--breed', !smal);
+  laptop.setAttribute('aria-pressed', String(!smal));
+  telefoon.setAttribute('aria-pressed', String(smal));
+}
+
+laptop.addEventListener('click', () => breedte(false));
+telefoon.addEventListener('click', () => breedte(true));
+
+document.querySelector('[role="tablist"]').addEventListener('keydown', (e) => {
+  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+  const nu = tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true');
+  const volgende = (nu + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+  toon(tabs[volgende].getAttribute('aria-controls'));
+  tabs[volgende].focus();
+  e.preventDefault();
+});
+
+toon('v1');
+</script>
+
+</body>
+</html>
