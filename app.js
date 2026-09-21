@@ -31,7 +31,7 @@ const state = {
   sub: [],
   decoratie: true,
   decoratiepositie: 'linksonder',
-  iconen: ['Wereld (toolkit)', 'Gesprek'],
+  iconen: ['Wereld (NederlandWereldwijd)', 'Gesprek'],
 
   /*
    * Iconen die de redacteur zelf heeft toegevoegd, als { naam, bron } met de

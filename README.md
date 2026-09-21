@@ -300,10 +300,10 @@ toevoegen of vervangen.
 - **Iconenset**: de plaatshouders zijn eruit. In de huisstijl staan nu veertig
   officiële pictogrammen van Rijkshuisstijl.nl, plus de wereldbol — dat is het
   eigen beeldmerk en die zat niet in de aangeleverde set, dus die is bewust
-  blijven staan onder zijn oude naam *Wereld (toolkit)*. Het Nederlandkaartje
-  met het hoofd, dat hier met de hand niet na te maken was, zit er nu wél bij
-  als *Nederland*. Zie `supabase/06_iconen.sql` voor wat er precies in de
-  tabel is gezet. De keuzelijsten staan op alfabet.
+  blijven staan onder de naam *Wereld (NederlandWereldwijd)*. Het
+  Nederlandkaartje met het hoofd, dat hier met de hand niet na te maken was,
+  zit er nu wél bij als *Nederland*. Zie `supabase/06_iconen.sql` voor wat er
+  precies in de tabel is gezet. De keuzelijsten staan op alfabet.
 - **Controle** door communicatie of de export echt aan de huisstijl voldoet.
 
 ### Zelf een icoon toevoegen
